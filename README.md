@@ -166,6 +166,6 @@ skills/
 
 ---
 
-## Благодарности
+## Лицензия
 
-Autopilot оркеструет навыки из набора [mattpocock/skills](https://github.com/mattpocock/skills) — `grilling`, `to-spec`, `to-tickets`, `implement`. Устанавливается через CLI [vercel-labs/skills](https://github.com/vercel-labs/skills).
+[MIT](LICENSE) © Nick Vels — можно использовать, изменять и распространять, в том числе в коммерческих проектах.
