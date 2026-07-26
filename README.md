@@ -10,15 +10,7 @@ Autopilot — это навык (skill) для AI-агентов вроде Clau
 
 ## Установка
 
-Скопируйте эти две строки в терминал — по очереди.
-
-**1. Базовый набор навыков** (Autopilot работает поверх него):
-
-```bash
-npx skills add mattpocock/skills
-```
-
-**2. Сам Autopilot:**
+Скопируйте строку в терминал.
 
 ```bash
 npx skills add nick-vels/skills
