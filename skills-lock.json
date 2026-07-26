@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "autopilot": {
+      "source": "nick-vels/skills",
+      "sourceType": "github",
+      "skillPath": "skills/autopilot/SKILL.md",
+      "computedHash": "7057fb5171f3254bbc23e5753f349c766b0a88907cd56fa88abe4c3453a50bb9"
+    }
+  }
+}

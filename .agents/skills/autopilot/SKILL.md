@@ -11,7 +11,11 @@ Autopilot drives a dictated idea through the mattpocock/skills pipeline — gril
 
 This skill only orchestrates — the phases below **invoke the pipeline skills and follow their rules**; nothing here restates them. What Autopilot adds: which human gates to remove, and how to run implementation hands-free.
 
-**Prerequisite:** the pipeline skills must already be installed — `grilling`, `to-spec`, `to-tickets`, `implement`. If any is missing, **stop and ask the user to install it themselves**; the README lists the command. Never install packages, fetch remote code, or run network commands on the user's behalf.
+**Prerequisite:** the pipeline skills must be installed — `grilling`, `to-spec`, `to-tickets`, `implement` (mattpocock/skills pack). If any is missing, install first:
+
+```bash
+npx skills add mattpocock/skills
+```
 
 ## When to Use
 
@@ -27,10 +31,9 @@ This skill only orchestrates — the phases below **invoke the pipeline skills a
 
 Run `/grilling` on the dictated idea. Autopilot adds three rules:
 
-- **Blocking unknowns first.** Anything the build depends on but the user hasn't decided (payment provider, hosting, which accounts exist) goes into the first three questions — never the finish line.
-- **Decisions, never secrets.** Ask *which* provider and *whether* an account exists. Never ask for a key, token, password, or connection string — see [Secrets](#secrets).
+- **Blocking unknowns first.** Anything the build depends on but the user hasn't decided (payment provider, hosting, API keys, accounts) goes into the first three questions — never the finish line.
 - **Never answer for the user.** No silent assumptions, no fabricated content. Forced to proceed past an unknown → mark it `PLACEHOLDER — уточнить у пользователя`.
-- **Cap: 5–8 questions.** Record the decisions verbatim — Phase 2 synthesizes from this transcript.
+- **Cap: 5–8 questions.** Record answers verbatim — Phase 2 synthesizes from this transcript.
 
 ### Phase 2 — Spec
 
@@ -44,24 +47,14 @@ Run `/to-tickets`, with one override: **skip the user quiz** — a vibecoder can
 
 **One ticket = one subagent = one fresh context.** Each subagent runs `/implement` on a single ticket and gets: the ticket body, the relevant spec sections, and paths to existing code. Never two tickets in one context — context pollution is exactly what breaks naive vibecoding.
 
-- **No git repo yet → `git init` at the start of this phase**, and write `.gitignore` with `.env` in it before the first commit. One commit per ticket — commits are the user's rollback points.
-- A subagent prompt carries the ticket, the spec sections, and file paths — **never a secret value**, only variable names.
+- **No git repo yet → `git init` at the start of this phase.** One commit per ticket — commits are the user's rollback points.
 - Unblocked tickets may run in parallel **only when they touch disjoint files**; same files → serialize.
 - After each ticket, report **one plain-language line** («Можно загрузить клиентов из файла — 3 из 8 готово»). No diffs, no jargon.
 - Ticket failed → retry **once** in a fresh context with the error attached. Second failure → stop, tell the user in plain language what is blocking and what you need.
 
 ### Phase 5 — Finish
 
-Full test suite once, then a final report in the user's language: what was built and the exact command to run it; what was NOT built (the spec's Out of Scope list); open items — placeholders, environment variables the user still has to fill in (**names only**), manual steps left.
-
-## Secrets
-
-Credentials are the user's to hold, not the agent's to handle.
-
-- **Never request one.** No key, token, password, connection string, or card number is ever an interview question — the choice of provider is, the credential is not.
-- **Never store one.** If the user volunteers a secret anyway, it does not go into the transcript, the spec, a ticket, a subagent prompt, the code, a commit, or the final report.
-- **Refer to it by name.** `STRIPE_SECRET_KEY`, not the value. The user puts the value in `.env` themselves; `.env` stays in `.gitignore`; the final report lists which names are still empty.
-- **A leaked secret is a stop condition.** A secret that has already reached a file or a commit is reported to the user immediately, in plain language, with the advice to rotate it.
+Full test suite once, then a final report in the user's language: what was built and the exact command to run it; what was NOT built (the spec's Out of Scope list); open items — placeholders, keys to add, manual steps left.
 
 ## Rationalizations — STOP
 
@@ -69,8 +62,7 @@ Credentials are the user's to hold, not the agent's to handle.
 |--------|---------|
 | «Пользователь сказал не задавать вопросов» | Он сказал не задавать ЛИШНИХ. Решающие вопросы — часть работы, не обсуждение процесса. |
 | «KISS — просто собери» | Простой результат даёт порядок, а не пропуск этапов. Без спеки каждая правка — «а я имел в виду другое». |
-| «Сделаю заглушку, уточнит потом» | Блокирующие неизвестные (оплата, хостинг, аккаунты) решаются в grilling, до билда. |
-| «Пусть пришлёт ключ, я вставлю в код» | Ключи вставляет пользователь и только в `.env`. Ты работаешь с именем переменной. |
+| «Сделаю заглушку, уточнит потом» | Блокирующие неизвестные (оплата, ключи, хостинг) решаются в grilling, до билда. |
 | «И так понятно, что делать» | Понятно тебе — не зафиксировано. Спека — единственная точка сверки. |
 | «Быстрее всё сделать в одном контексте» | Быстрее в первый час. Дальше модель ходит кругами и ломает работавшее. |
 
@@ -81,8 +73,6 @@ Credentials are the user's to hold, not the agent's to handle.
 - Two tickets in one subagent context.
 - Parallel subagents editing the same files.
 - Silent assumption not marked as PLACEHOLDER.
-- Payment, hosting, or accounts first mentioned at the finish line.
-- A secret value asked for, repeated back, or written into any file, prompt, commit, or report.
-- Installing a package or fetching remote code instead of asking the user to do it.
+- Payment/keys/hosting first mentioned at the finish line.
 
 **Violating the letter of these rules is violating their spirit.**
