@@ -1,46 +1,85 @@
 ---
 name: autopilot
-description: Use when the user dictates an app, site, bot, or feature to build end-to-end and expects a finished result without reviewing specs, tickets, or code — vibecoding sessions, non-technical users, "собери под ключ", "build it for me", "не задавай лишних вопросов" requests. Also use when the user explicitly invokes /autopilot.
+description: Use when the user dictates an app, site, bot, or feature to build end-to-end and expects a finished result without reviewing specs, tickets, or code — vibecoding sessions, non-technical users, "собери под ключ", "build it for me", "не задавай лишних вопросов" requests. Also use when the user explicitly invokes /autopilot, optionally with a mode — full ("полный автомат", no questions at all), semi (default, grilling only), manual ("ручной режим", approve spec and tickets by hand).
 ---
 
 # Autopilot
 
 ## Overview
 
-Autopilot drives a dictated idea through the mattpocock/skills pipeline — grill → spec → tickets → implement — **in one dialogue**, without making the user approve each stage. The user answers questions once at the start and receives a working project at the end. Core principle: **the order is the product** — code is written only in the last phase, and every ticket is implemented by a separate subagent with a fresh, isolated context.
+Autopilot drives a dictated idea through the mattpocock/skills pipeline — grill → spec → tickets → implement — **in one dialogue**, without making the user approve each stage. By default the user answers questions once at the start and receives a working project at the end. Core principle: **the order is the product** — code is written only in the last phase, and every ticket is implemented by a separate subagent with a fresh, isolated context.
 
-This skill only orchestrates — the phases below **invoke the pipeline skills and follow their rules**; nothing here restates them. What Autopilot adds: which human gates to remove, and how to run implementation hands-free.
+This skill only orchestrates — the phases below **invoke the pipeline skills and follow their rules**; nothing here restates them. What Autopilot adds: which human gates to remove — the [mode](#modes) decides how many — and how to run implementation hands-free.
 
 **Prerequisite:** the pipeline skills must already be installed — `grilling`, `to-spec`, `to-tickets`, `implement`. If any is missing, **stop and ask the user to install it themselves**; the README lists the command. Never install packages, fetch remote code, or run network commands on the user's behalf.
+
+## Modes
+
+Everything typed after `/autopilot` splits into two parts: **the mode** (optional) and **the brief** (the idea plus any extra instructions). Text that is not a mode trigger is always brief, never a mode.
+
+| Mode | Triggers | Human gates |
+|---|---|---|
+| **full** — полный автомат | `--full`, «полный автомат», «полностью сам», «ничего не спрашивай», "fully automatic", "don't ask me anything" | none |
+| **semi** — полуавтомат **(default)** | `--semi`, «полуавтомат», nothing specified | grilling only |
+| **manual** — ручной | `--manual`, «ручной режим», «согласовывай каждый шаг», "ask me everything", "approve every step" | grilling + spec + tickets |
+
+- **Announce the resolved mode in one line before Phase 1** — «Режим: полуавтомат — задам 5–8 вопросов, дальше соберу сам». The user must never discover the mode by noticing questions that did or did not arrive.
+- **Ambiguity resolves to semi.** A mode word contradicting the rest of the sentence («ручной режим, но не спрашивай») → the explicit mode word wins; two mode words → ask which one, in one line.
+- **The mode can be switched mid-run** («переключись в ручной») — it applies from the next phase onward. Phases already passed are not replayed.
+- **Extra instructions in the brief** (stack, language, budget, «без базы данных», deadline) go into the spec verbatim as hard requirements, in every mode. They constrain the build; they never replace a phase.
+- **No mode removes the safety gates.** Irreversible or outward-facing actions — deploy, publish, pay, send messages to third parties, delete data, rewrite git history — stay a question in **all three** modes, including full.
 
 ## When to Use
 
 - User dictates what to build and expects the finished thing, not a collaboration on process.
 - User is non-technical: will not read specs, judge ticket granularity, or review code.
 - "Собери под ключ", "just build it", "не задавай лишних вопросов".
+- User wants to approve the spec and the tickets but not to run the pipeline by hand — that is **manual** mode, still Autopilot.
 
-**When NOT to use:** the user wants to co-design step by step (use the underlying skills manually); the task is a small single-file change (just do it); the idea is huge and foggy — bigger than one project, destination unclear (run `/wayfinder` first, then return here).
+**When NOT to use:** the user wants to co-author the code itself, not just approve spec and tickets (use the underlying skills manually); the task is a small single-file change (just do it); the idea is huge and foggy — bigger than one project, destination unclear (run `/wayfinder` first, then return here).
 
 ## The Pipeline
 
-### Phase 1 — Grill (the only human gate)
+| Phase | full | semi (default) | manual |
+|---|---|---|---|
+| 1 Grill | skipped → self-brief | 5–8 questions | questions until clear, no cap |
+| 2 Spec | auto | auto | show → wait for explicit «ок» |
+| 3 Tickets | auto, notify only | auto, stoppable | quiz on → wait for explicit «ок» |
+| 4 Implement | auto | auto | auto |
+| 5 Finish | report + Assumptions | report | report |
+
+### Phase 1 — Grill (the human gate in semi and manual)
 
 Run `/grilling` on the dictated idea. Autopilot adds three rules:
 
 - **Blocking unknowns first.** Anything the build depends on but the user hasn't decided (payment provider, hosting, which accounts exist) goes into the first three questions — never the finish line.
 - **Decisions, never secrets.** Ask *which* provider and *whether* an account exists. Never ask for a key, token, password, or connection string — see [Secrets](#secrets).
-- **Never answer for the user.** No silent assumptions, no fabricated content. Forced to proceed past an unknown → mark it `PLACEHOLDER — уточнить у пользователя`.
-- **Cap: 5–8 questions.** Record the decisions verbatim — Phase 2 synthesizes from this transcript.
+- **Never answer for the user.** No silent assumptions, no fabricated content. Forced to proceed past an unknown → mark it `PLACEHOLDER — уточнить у пользователя`. In **full** the decisions do get made for the user — labelled, never silent; the self-brief below draws the line.
+- **Cap: 5–8 questions** — in **manual** the cap is lifted: keep asking until nothing blocking is left. Record the decisions verbatim — Phase 2 synthesizes from this transcript.
+
+**In full mode there is no interview.** Run the same checklist against yourself and write a **self-brief** in place of the transcript — every blocking unknown gets an answer, and the answer is labelled by kind:
+
+- **Decisions are yours to make.** Stack, structure, provider, data model: pick the option that runs on the user's machine **without a third-party account and without money**, and record it as `ASSUMPTION — принято за пользователя: ...`. That list is a required section of the Phase 5 report.
+- **Facts about the user are not yours to invent.** Their prices, texts, accounts, business rules — never fabricated. They become `PLACEHOLDER` in the spec, filler content in the code, and a line in the final report.
+- **A paid or account-bound service becomes an adapter**, not a guess: one interface, a local stub behind it, the real key an empty variable name in `.env.example`.
 
 ### Phase 2 — Spec
 
-Run `/to-spec` on the grilling transcript. No new questions to the user — anything still open becomes a PLACEHOLDER in the spec, not an interview.
+Run `/to-spec` on the grilling transcript (in full — on the self-brief). No new questions to the user — anything still open becomes a PLACEHOLDER in the spec, not an interview.
+
+**In manual mode the spec is a gate:** show it, stop, wait for an explicit «ок», rewrite on every objection, ask again. Silence is not agreement, and neither is work already started.
 
 ### Phase 3 — Tickets
 
-Run `/to-tickets`, with one override: **skip the user quiz** — a vibecoder cannot judge granularity or blocking edges. Validate the breakdown yourself against the skill's own slicing rules, then show the user **one screen of plain-language lines** (what each ticket delivers, no technical detail) with a default: «Запускаю через 60 секунд, если не скажешь стоп». Do not wait for explicit approval — waiting is the failure mode this skill exists to remove.
+Run `/to-tickets`, with one override in **full** and **semi**: **skip the user quiz** — a vibecoder cannot judge granularity or blocking edges. Validate the breakdown yourself against the skill's own slicing rules, then show the user **one screen of plain-language lines** (what each ticket delivers, no technical detail).
+
+- **semi** — attach a default: «Показываю список и начинаю сборку. Скажи "стоп", если что-то не так». Then start — do not wait for approval, waiting is the failure mode this skill exists to remove. **Never promise a countdown**: you cannot hold a pause, so a stated delay is a promise you will break. The user's window to object is their own reaction, and saying so plainly is the honest version of it.
+- **full** — the same screen as a notification, no pause; move straight into Phase 4.
+- **manual** — the quiz stays **on**, the screen carries technical detail, and the tickets are a gate: wait for an explicit «ок», adjust boundaries and order on request, ask again. Phase 4 starts only on agreed tickets.
 
 ### Phase 4 — Implement (subagent per ticket)
+
+**Identical in all three modes — this phase is always hands-free.** Manual mode buys the user control over *what* gets built, not over each edit; once the tickets are agreed, the subagents run to the end without further approvals.
 
 **One ticket = one subagent = one fresh context.** Each subagent runs `/implement` on a single ticket and gets: the ticket body, the relevant spec sections, and paths to existing code. Never two tickets in one context — context pollution is exactly what breaks naive vibecoding.
 
@@ -53,6 +92,8 @@ Run `/to-tickets`, with one override: **skip the user quiz** — a vibecoder can
 ### Phase 5 — Finish
 
 Full test suite once, then a final report in the user's language: what was built and the exact command to run it; what was NOT built (the spec's Out of Scope list); open items — placeholders, environment variables the user still has to fill in (**names only**), manual steps left.
+
+**In full mode the report opens with «Решения, принятые за вас»** — every `ASSUMPTION` from the self-brief, in plain language, each with the one-line reason it was chosen. The user never asked for these; they have the right to see all of them in one place.
 
 ## Secrets
 
@@ -69,18 +110,27 @@ Credentials are the user's to hold, not the agent's to handle.
 |--------|---------|
 | «Пользователь сказал не задавать вопросов» | Он сказал не задавать ЛИШНИХ. Решающие вопросы — часть работы, не обсуждение процесса. |
 | «KISS — просто собери» | Простой результат даёт порядок, а не пропуск этапов. Без спеки каждая правка — «а я имел в виду другое». |
-| «Сделаю заглушку, уточнит потом» | Блокирующие неизвестные (оплата, хостинг, аккаунты) решаются в grilling, до билда. |
+| «Сделаю заглушку, уточнит потом» | Блокирующие неизвестные (оплата, хостинг, аккаунты) решаются в grilling — в полном автомате в self-brief, — но всегда до билда. |
 | «Пусть пришлёт ключ, я вставлю в код» | Ключи вставляет пользователь и только в `.env`. Ты работаешь с именем переменной. |
 | «И так понятно, что делать» | Понятно тебе — не зафиксировано. Спека — единственная точка сверки. |
 | «Быстрее всё сделать в одном контексте» | Быстрее в первый час. Дальше модель ходит кругами и ломает работавшее. |
+| «Полный автомат — значит можно и задеплоить» | Автомат снимает вопросы о продукте, а не право на необратимое. Деплой, оплата, рассылка, удаление — гейт во всех режимах. |
+| «В полном автомате можно додумать за пользователя всё» | Решения — да, и все в ASSUMPTIONS. Факты о пользователе (цены, тексты, аккаунты) — нет: заглушка и строка в отчёте. |
+| «Напишу "запускаю через 60 секунд"» | Ты не умеешь ждать — обещанной паузы не будет. Честная формулировка: «начинаю, скажи стоп». |
+| «В ручном режиме тоже начну и подожду возражений» | В ручном согласование — это явное «ок». Молчание им не является, начатая работа тем более. |
+| «Режим не назвали — спрошу, какой» | Не назвали — полуавтомат. Вопрос о режиме сам по себе лишний вопрос. |
 
 ## Red Flags — start the phase over
 
 - Writing code before the spec exists.
-- Asking the user to review tickets, granularity, or code.
+- The announced mode and the actual behaviour diverge: questions in full, a start-and-see instead of «ок» in manual, a skipped grilling in semi.
+- Promising the user a wait — a countdown, «через минуту», «если не ответишь за N секунд» — that you have no way to honour.
+- Starting without announcing the mode at all.
+- In full: an invented fact about the user standing where an ASSUMPTION, a stub, or a PLACEHOLDER belongs.
+- Asking the user to review tickets, granularity, or code (outside manual, where spec and tickets are gates by design).
 - Two tickets in one subagent context.
 - Parallel subagents editing the same files.
-- Silent assumption not marked as PLACEHOLDER.
+- Silent assumption not marked as PLACEHOLDER — or, in full, as ASSUMPTION in the final report.
 - Payment, hosting, or accounts first mentioned at the finish line.
 - A secret value asked for, repeated back, or written into any file, prompt, commit, or report.
 - Installing a package or fetching remote code instead of asking the user to do it.
