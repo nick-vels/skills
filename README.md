@@ -38,7 +38,7 @@ npx skills add nick-vels/skills --skill autopilot -a claude-code -g -y
 
 **Требуется:** установленный [Node.js](https://nodejs.org) (для `npx`) и любой поддерживаемый AI-агент — Claude Code, Cursor, Codex и [70+ других](https://github.com/vercel-labs/skills#supported-agents).
 
-Autopilot не работает сам по себе — он управляет четырьмя навыками из набора [mattpocock/skills](https://github.com/mattpocock/skills): `grilling`, `to-spec`, `to-tickets`, `implement`. Если агент скажет, что какого-то не хватает, поставьте их:
+Autopilot не работает сам по себе — он управляет пятью навыками из набора [mattpocock/skills](https://github.com/mattpocock/skills): `setup-matt-pocock-skills`, `grilling`, `to-spec`, `to-tickets`, `implement`. Если агент скажет, что какого-то не хватает, поставьте их:
 
 ```bash
 npx skills add mattpocock/skills
@@ -223,7 +223,10 @@ npx skills remove autopilot
 ```
 skills/
 └── autopilot/
-    └── SKILL.md    ← сам навык: инструкции для агента
+    └── SKILL.md    ← сам навык: инструкции для агента (единственный источник истины)
+
+.agents/skills/
+└── autopilot       ← симлинк на skills/autopilot, чтобы навык был доступен при работе в этом репо
 ```
 
 Навык — это обычный markdown-файл с инструкциями. Его можно открыть и прочитать: [skills/autopilot/SKILL.md](skills/autopilot/SKILL.md).
