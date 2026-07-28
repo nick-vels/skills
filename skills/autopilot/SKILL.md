@@ -15,13 +15,13 @@ This skill only orchestrates — the phases below **invoke the pipeline skills a
 
 ## Modes
 
-Everything typed after `/autopilot` splits into two parts: **the mode** (optional) and **the brief** (the idea plus any extra instructions). Text that is not a mode trigger is always brief, never a mode.
+Everything typed after `/autopilot` splits into two parts: **the mode** (optional, a bare word — `full`, `semi`, `manual`, no dashes) and **the brief** (the idea plus any extra instructions). Text that is not a mode trigger is always brief, never a mode.
 
 | Mode | Triggers | Human gates |
 |---|---|---|
-| **full** — полный автомат | `--full`, «полный автомат», «полностью сам», «ничего не спрашивай», "fully automatic", "don't ask me anything" | none |
-| **semi** — полуавтомат **(default)** | `--semi`, «полуавтомат», nothing specified | grilling only |
-| **manual** — ручной | `--manual`, «ручной режим», «согласовывай каждый шаг», "ask me everything", "approve every step" | grilling + spec + tickets |
+| **full** — полный автомат | `/autopilot full`, «полный автомат», «полностью сам», «ничего не спрашивай», "fully automatic", "don't ask me anything" | none |
+| **semi** — полуавтомат **(default)** | `/autopilot semi`, «полуавтомат», nothing specified | grilling only |
+| **manual** — ручной | `/autopilot manual`, «ручной режим», «согласовывай каждый шаг», "ask me everything", "approve every step" | grilling + spec + tickets |
 
 - **Announce the resolved mode in one line before Phase 1** — «Режим: полуавтомат — задам 5–8 вопросов, дальше соберу сам». The user must never discover the mode by noticing questions that did or did not arrive.
 - **Ambiguity resolves to semi.** A mode word contradicting the rest of the sentence («ручной режим, но не спрашивай») → the explicit mode word wins; two mode words → ask which one, in one line.
@@ -36,7 +36,7 @@ Everything typed after `/autopilot` splits into two parts: **the mode** (optiona
 - "Собери под ключ", "just build it", "не задавай лишних вопросов".
 - User wants to approve the spec and the tickets but not to run the pipeline by hand — that is **manual** mode, still Autopilot.
 
-**When NOT to use:** the user wants to co-author the code itself, not just approve spec and tickets (use the underlying skills manually); the task is a small single-file change (just do it); the idea is huge and foggy — bigger than one project, destination unclear (run `/wayfinder` first, then return here).
+**When NOT to use:** the user wants to co-author the code itself, not just approve spec and tickets (use the underlying skills manually); the task is a small single-file change (just do it); the idea is huge and foggy — bigger than one project, destination unclear (run skill `/wayfinder` first, then return here).
 
 ## The Pipeline
 
@@ -50,7 +50,7 @@ Everything typed after `/autopilot` splits into two parts: **the mode** (optiona
 
 ### Phase 1 — Grill (the human gate in semi and manual)
 
-Run `/grilling` on the dictated idea. Autopilot adds three rules:
+Run skill `/grilling` on the dictated idea. Autopilot adds three rules:
 
 - **Blocking unknowns first.** Anything the build depends on but the user hasn't decided (payment provider, hosting, which accounts exist) goes into the first three questions — never the finish line.
 - **Decisions, never secrets.** Ask *which* provider and *whether* an account exists. Never ask for a key, token, password, or connection string — see [Secrets](#secrets).
@@ -65,13 +65,13 @@ Run `/grilling` on the dictated idea. Autopilot adds three rules:
 
 ### Phase 2 — Spec
 
-Run `/to-spec` on the grilling transcript (in full — on the self-brief). No new questions to the user — anything still open becomes a PLACEHOLDER in the spec, not an interview.
+Run skill `/to-spec` on the grilling transcript (in full — on the self-brief). No new questions to the user — anything still open becomes a PLACEHOLDER in the spec, not an interview.
 
 **In manual mode the spec is a gate:** show it, stop, wait for an explicit «ок», rewrite on every objection, ask again. Silence is not agreement, and neither is work already started.
 
 ### Phase 3 — Tickets
 
-Run `/to-tickets`, with one override in **full** and **semi**: **skip the user quiz** — a vibecoder cannot judge granularity or blocking edges. Validate the breakdown yourself against the skill's own slicing rules, then show the user **one screen of plain-language lines** (what each ticket delivers, no technical detail).
+Run skill `/to-tickets`, with one override in **full** and **semi**: **skip the user quiz** — a vibecoder cannot judge granularity or blocking edges. Validate the breakdown yourself against the skill's own slicing rules, then show the user **one screen of plain-language lines** (what each ticket delivers, no technical detail).
 
 - **semi** — attach a default: «Показываю список и начинаю сборку. Скажи "стоп", если что-то не так». Then start — do not wait for approval, waiting is the failure mode this skill exists to remove. **Never promise a countdown**: you cannot hold a pause, so a stated delay is a promise you will break. The user's window to object is their own reaction, and saying so plainly is the honest version of it.
 - **full** — the same screen as a notification, no pause; move straight into Phase 4.
@@ -81,7 +81,7 @@ Run `/to-tickets`, with one override in **full** and **semi**: **skip the user q
 
 **Identical in all three modes — this phase is always hands-free.** Manual mode buys the user control over *what* gets built, not over each edit; once the tickets are agreed, the subagents run to the end without further approvals.
 
-**One ticket = one subagent = one fresh context.** Each subagent runs `/implement` on a single ticket and gets: the ticket body, the relevant spec sections, and paths to existing code. Never two tickets in one context — context pollution is exactly what breaks naive vibecoding.
+**One ticket = one subagent = one fresh context.** Each subagent runs skill `/implement` on a single ticket and gets: the ticket body, the relevant spec sections, and paths to existing code. Never two tickets in one context — context pollution is exactly what breaks naive vibecoding.
 
 - **No git repo yet → `git init` at the start of this phase**, and write `.gitignore` with `.env` in it before the first commit. One commit per ticket — commits are the user's rollback points.
 - A subagent prompt carries the ticket, the spec sections, and file paths — **never a secret value**, only variable names.
