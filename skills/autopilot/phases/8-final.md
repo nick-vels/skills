@@ -1,0 +1,115 @@
+# Phase 8 — Touchdown
+
+Landing. Two things happen here, and the first one is the reason this framework exists.
+
+## 1. Blind acceptance — gate G4
+
+Every check so far has measured the build against the **spec**. But the spec is your own paraphrase of the brief, written several phases ago. If a requirement was lost on the way into it, everything downstream has been faithfully confirming that loss.
+
+So the last check does not use the spec.
+
+**Spawn a subagent that receives:**
+
+- `.autopilot/<slug>/brief.md` — the user's own words
+- the repository as it now stands
+- how to run the project and its tests
+
+**It must not receive:** `spec.md`, `manifest.md`, the tickets, or any summary of them. A checker given the spec inherits the spec's blind spots and will confirm them. Independence is the entire mechanism — take it away and this phase is theatre.
+
+Its brief:
+
+> Прочитай `brief.md` — это задача, которую поставил заказчик. Затем изучи
+> репозиторий и определи, что из этого действительно реализовано.
+>
+> По каждому требованию из брифа: реализовано / частично / нет — и одна строка,
+> где именно это видно в коде (или почему ты решил, что этого нет).
+>
+> Не оценивай качество кода. Не предлагай улучшений. Не ищи оправданий
+> отсутствию — просто зафиксируй факт. Если требование выполнено формально,
+> но по сути не работает (данные сохраняются, но пользователю не показываются) —
+> это «частично», а не «реализовано».
+
+**Then compare its verdict with `manifest.md`:**
+
+| Manifest says | Blind says | Meaning |
+|---|---|---|
+| `done` | реализовано | agreed |
+| `done` | **частично / нет** | 🔴 **drift** — the manifest is wrong. Report it, and fix it if it is small |
+| `placeholder` | частично | expected — confirm the placeholder is visible, not an invented fact |
+| `dropped` / `deferred` | нет | expected — must appear in the report as not built |
+| — | реализовано, но не из брифа | scope that grew without a parent; report it |
+
+Every 🔴 goes in the report **and** in `state.json` under `blind`. A drift found here is not a failure of the run — it is the run working. Hiding it is the failure.
+
+If there are no tickets (tier T0), this check still runs. Small builds drift too, and it is one subagent.
+
+## 2. The final report
+
+Run the full test suite once more first. Then write in the user's language, plain, no jargon.
+
+Order matters — the user reads the top and skims the rest.
+
+**In full mode, the report opens with «Решения, принятые за вас»** — every `ASSUMPTION` from the self-briefing, in plain language, each with the one-line reason. They never asked for these; they have the right to see all of them in one place, first.
+
+```markdown
+## Готово
+
+<Что теперь работает — 3–6 строк обычным языком, от лица пользователя.>
+
+**Запустить:**
+```
+npm install && npm run dev
+```
+Открыть http://localhost:3000
+
+## Что нужно от тебя
+
+1. Впиши в `.env` — `TELEGRAM_BOT_TOKEN`, `GOOGLE_SHEETS_ID`.
+   Файл `.env.example` уже лежит рядом, скопируй и заполни.
+2. Замени заглушки: цены в `src/data/prices.ts`, тексты писем
+   в `src/emails/`. Сейчас там видимые метки `[ВПИШИ]`, не выдуманные значения.
+
+## Что не вошло
+
+| Что | Почему |
+|---|---|
+| Уведомления на SMS | ты сказал «SMS не надо, только телега» |
+| Админка для заявок | отложено: заявки видно в таблице, отдельный экран — следующий заход |
+
+## Что я добавил сверх заказанного
+
+<Каждая `A##`-история, дошедшая до кода, — обычным языком, с требованием,
+ради которого добавлена. Раздел опускается только если добавлений не было
+(на глубине `strict` — всегда). Пользователь должен узнать о них отсюда,
+а не наткнувшись в коде.>
+
+| Что добавил | Ради чего |
+|---|---|
+| Номер заявки в подтверждении | чтобы клиент мог на неё сослаться — R01 |
+
+## Открытые вопросы
+
+<Расхождения слепой приёмки, если есть. Прямо, без смягчения:
+«Требование "клиент видит статус" я считал готовым, независимая проверка
+показала, что статус сохраняется, но нигде не отображается. Исправлено /
+требует отдельной задачи.»>
+
+## Где что лежит
+
+- Прогресс и цифры — `.autopilot/dashboard.html`
+- Твоя изначальная задача — `.autopilot/<slug>/brief.md`
+- Требования и их судьба — `.autopilot/<slug>/manifest.md`
+- Техзадание — `.autopilot/<slug>/spec.md`
+```
+
+## Rules for the report
+
+- **Плейсхолдеры и пустые переменные — обязательный раздел**, даже если их ноль (тогда одной строкой: «всё заполнено»). Это то, что отделяет «работает» от «работает у тебя».
+- **Секреты — только именами.** Никогда значениями, включая те, что пользователь присылал сам.
+- **«Что не вошло» пишется всегда**, даже когда всё вошло. Пустой раздел с одной строкой честнее отсутствующего: он показывает, что вопрос задавался.
+- **Не приукрашивать.** Упавший тест, невыполненный тикет, найденное расхождение — называются прямо, с тем, что именно сломано и что для починки нужно. Отчёт, скрывающий дефект, стоит дороже дефекта.
+- **Никаких диффов, имён файлов кода, названий тестов** — они в инструментах, для тех, кому нужны.
+
+## Closing the instruments
+
+Set `finishedAt`, write the `blind` block, refresh the counts in `state.json`, mirror into `dashboard.html`. A run whose dashboard says «в работе» a day after it landed is lying to the person who trusted it.
