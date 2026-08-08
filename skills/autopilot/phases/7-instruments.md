@@ -97,17 +97,17 @@ Say it in one line, once:
   "tier": "T2",
   "briefFile": "2026-08-07-brief.md",
   "memoryFile": "AGENTS.md",
-  "startedAt": "2026-08-07T14:02:00+03:00",
-  "updatedAt": "2026-08-07T15:31:00+03:00",
+  "startedAt": "2026-08-07T14:02:06+03:00",
+  "updatedAt": "2026-08-07T15:31:43+03:00",
   "finishedAt": null,
   "stages": [
-    { "id": "preflight", "status": "done",    "startedAt": "2026-08-07T14:02:00+03:00", "finishedAt": "2026-08-07T14:05:00+03:00" },
-    { "id": "manifest",  "status": "done",    "startedAt": "2026-08-07T14:05:00+03:00", "finishedAt": "2026-08-07T14:11:00+03:00" },
-    { "id": "briefing",  "status": "done",    "startedAt": "2026-08-07T14:11:00+03:00", "finishedAt": "2026-08-07T14:26:00+03:00", "note": "6 вопросов" },
-    { "id": "spec",      "status": "done",    "startedAt": "2026-08-07T14:26:00+03:00", "finishedAt": "2026-08-07T14:44:00+03:00" },
-    { "id": "plan",      "status": "done",    "startedAt": "2026-08-07T14:44:00+03:00", "finishedAt": "2026-08-07T14:50:00+03:00", "note": "5 тасков, ярус T2" },
-    { "id": "build",     "status": "active",  "startedAt": "2026-08-07T14:50:00+03:00", "note": "3 из 5 тасков готовы" },
-    { "id": "review",    "status": "active",  "startedAt": "2026-08-07T15:04:00+03:00", "note": "проверено 3 из 5" },
+    { "id": "preflight", "status": "done",    "startedAt": "2026-08-07T14:02:06+03:00", "finishedAt": "2026-08-07T14:05:28+03:00" },
+    { "id": "manifest",  "status": "done",    "startedAt": "2026-08-07T14:05:28+03:00", "finishedAt": "2026-08-07T14:11:09+03:00" },
+    { "id": "briefing",  "status": "done",    "startedAt": "2026-08-07T14:11:09+03:00", "finishedAt": "2026-08-07T14:26:22+03:00", "note": "6 вопросов" },
+    { "id": "spec",      "status": "done",    "startedAt": "2026-08-07T14:26:22+03:00", "finishedAt": "2026-08-07T14:44:13+03:00" },
+    { "id": "plan",      "status": "done",    "startedAt": "2026-08-07T14:44:13+03:00", "finishedAt": "2026-08-07T14:50:38+03:00", "note": "5 тасков, ярус T2" },
+    { "id": "build",     "status": "active",  "startedAt": "2026-08-07T14:50:38+03:00", "note": "3 из 5 тасков готовы" },
+    { "id": "review",    "status": "active",  "startedAt": "2026-08-07T15:04:04+03:00", "note": "проверено 3 из 5" },
     { "id": "final",     "status": "pending" }
   ],
   "requirements": {
@@ -123,8 +123,8 @@ Say it in one line, once:
       "wave": 2,
       "zone": ["src/bot/"],
       "status": "done",
-      "startedAt": "2026-08-07T14:35:00+03:00",
-      "finishedAt": "2026-08-07T14:53:00+03:00",
+      "startedAt": "2026-08-07T14:35:31+03:00",
+      "finishedAt": "2026-08-07T14:53:26+03:00",
       "retries": 0,
       "files": ["src/bot/intake.ts", "src/bot/validate.ts"],
       "tests": { "passed": 34, "failed": 0 },
@@ -195,7 +195,8 @@ Two consequences worth knowing: it is not the same number as «покрытие 
 
 Every timer on the dashboard is computed from these fields — total elapsed, per stage, per ticket, all ticking in real time from the marks you wrote. Nothing is stored as a duration.
 
-- **ISO 8601 with the offset** (`2026-08-07T14:50:00+03:00`). A bare `14:50` gives an invalid date and a dead dash on the dashboard.
+- **ISO 8601 with the offset** (`2026-08-07T14:50:17+03:00`). A bare `14:50` gives an invalid date and a dead dash on the dashboard.
+- **Read the clock, do not compose it.** `date -Iseconds` at the moment the thing happens — one cheap call, and the only way the number is true. **Seconds are part of the answer**: a column of durations that all end in `:00` is the visible tell that the times were written from memory and rounded to the minute, and once the user notices it they stop believing the rest of the screen.
 - **`startedAt` goes in when the thing starts, not when it ends.** An interval with a start and no end is what makes the timer run; filling both in at the end means the user watched a frozen clock while the work was happening.
 - **`updatedAt` moves on every write.** The dashboard shows «обновлено N назад» from it and marks it in warning colour after five silent minutes — that is the user's only way to tell «идёт работа» from «агент умер».
 
@@ -220,8 +221,8 @@ At T0 there are no tickets by design, and a dashboard that shows only a running 
 
 ```json
 "singlePass": {
-  "startedAt": "2026-08-07T14:26:00+03:00",
-  "finishedAt": "2026-08-07T14:40:00+03:00",
+  "startedAt": "2026-08-07T14:26:43+03:00",
+  "finishedAt": "2026-08-07T14:40:06+03:00",
   "files": ["index.html", "styles.css", "script.js"],
   "tests": { "passed": 6, "failed": 0 },
   "commit": "9f8e7d6"

@@ -8,12 +8,13 @@
   :root, :root[data-theme="light"]{
     --bg:#fbfbfa; --panel:#fff; --ink:#16150f; --dim:#6b6a63; --line:#e4e3dd;
     --accent:#111; --ok:#1f7a4d; --warn:#a8700a; --bad:#b3352b; --ghost:#eeede8;
-    --radius:14px; --logo-light:block; --logo-dark:none;
+    --radius:14px; --logo-light:block; --logo-dark:none; --glow:rgba(168,112,10,.38);
   }
   @media (prefers-color-scheme:dark){
     :root:not([data-theme]){
       --bg:#141412; --panel:#1c1c19; --ink:#f2f1ea; --dim:#918f86; --line:#2e2e29;
       --accent:#f2f1ea; --ok:#4bbd84; --warn:#d9a341; --bad:#e0685c; --ghost:#262622;
+      --glow:rgba(217,163,65,.45);
       --logo-light:none; --logo-dark:block;
     }
   }
@@ -132,7 +133,11 @@
   .fill{position:absolute;inset:0 auto 0 0;border-radius:6px;display:flex;align-items:center;
     padding:0 8px;white-space:nowrap;font-size:12px;color:#fff;overflow:hidden}
   .fill.pend{background:transparent;border:1px dashed var(--line);color:var(--dim)}
-  .fill.active{animation:pulse 1.8s ease-in-out infinite}
+  /* «в работе» должно читаться как живое, а не как исчезающее: раньше плашка
+     гасла до opacity .3 вместе с названием таска. Теперь дышит свечение вокруг
+     дорожки и яркость плашки, текст остаётся читаемым всё время. */
+  .row.now .track{animation:trackGlow 1.9s ease-in-out infinite}
+  .fill.active{animation:fillPulse 1.9s ease-in-out infinite}
   .mins{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim);font-size:12px}
   /* этапы — вертикальная лента с рельсом */
   .stages{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:4px 18px;min-width:0}
@@ -154,7 +159,19 @@
   .st.active .nm{font-weight:650}
   .st.done .nm,.st.skipped .nm{color:var(--dim)}
   .st .mins{padding-top:1px}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  @keyframes trackGlow{
+    0%,100%{box-shadow:0 0 0 0 var(--glow)}
+    50%{box-shadow:0 0 0 4px transparent}
+  }
+  @keyframes fillPulse{
+    0%,100%{filter:brightness(1)}
+    50%{filter:brightness(1.18)}
+  }
+  /* у кого выключена анимация в системе — просто статичная подсветка */
+  @media (prefers-reduced-motion:reduce){
+    .row.now .track,.fill.active{animation:none}
+    .row.now .track{box-shadow:0 0 0 3px var(--glow)}
+  }
   .note{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
     padding:14px 18px;font-size:13px;color:var(--dim)}
   .note b{color:var(--ink);font-weight:600}
@@ -481,7 +498,8 @@ function render(lang){
     const rows = inWave.map(t => {
       const m = mins(t), started = !!t.startedAt, active = t.status === 'in-progress';
       const width = Math.max(6, Math.round(((m || median || 10)/maxMin)*100));
-      const clock = t.startedAt ? timerHTML(t.startedAt, t.finishedAt) : '—';
+      // у не начатого таска часов нет: «0:00» читается как «идёт и стоит на месте»
+      const clock = (started && t.status !== 'pending') ? timerHTML(t.startedAt, t.finishedAt) : '—';
       return `<div class="row${active?' now':''}"><b>${esc(t.id)}</b>
         <div class="track"><div class="fill${started?'':' pend'}${active?' active':''}"
           style="width:${width}%${started?';background:'+statusColor(t.status):''}">${esc(t.title)}</div></div>
