@@ -77,6 +77,10 @@ A wave of one is a normal answer. Ticket 01 — the shell, the schema, the share
 
 **Do not manufacture parallelism.** Splitting a ticket in two so a wave looks wider spends two contexts to save one, and the merge pass exists to undo exactly that. Waves are *discovered* in the dependency graph, never designed into it. If everything genuinely depends on everything, the answer is N waves of one — say so and fly it.
 
+**A wave number is assigned once, here, and is not recomputed later.** It describes the plan, not the frontier: when a ticket finishes and the next one becomes launchable, that is the build moving through the plan, not the plan changing. Renumbering waves as the run progresses makes rows jump between groups on the dashboard, and the user — who has no way to know the numbers were rewritten — reads it as the agent losing the plan.
+
+If a wave genuinely has to change, that is a re-cut and it follows the rules for a plan that moved: the reason goes in one line to the user, and if the code forced it, a `D##` row records why. Silent renumbering is the thing to avoid, not renumbering.
+
 Write `wave` into every ticket file and into `state.json`. The dashboard groups the build by waves and marks the parallel ones («Волна 3 — 2 таска параллельно»); Phase 5 launches each wave in one go.
 
 ## Publishing the plan to the instruments
