@@ -10,7 +10,7 @@ So the last check does not use the spec.
 
 **Spawn a subagent that receives:**
 
-- `.autopilot/<slug>/brief.md` — the user's own words
+- `.autopilot/<slug>/<дата>-brief.md` — the user's own words (the path is `briefFile` in `state.json`)
 - the repository as it now stands
 - how to run the project and its tests
 
@@ -18,7 +18,7 @@ So the last check does not use the spec.
 
 Its brief:
 
-> Прочитай `brief.md` — это задача, которую поставил заказчик. Затем изучи
+> Прочитай приложенный файл брифа — это задача, которую поставил заказчик. Затем изучи
 > репозиторий и определи, что из этого действительно реализовано.
 >
 > По каждому требованию из брифа: реализовано / частично / нет — и одна строка,
@@ -43,9 +43,19 @@ Every 🔴 goes in the report **and** in `state.json` under `blind`. A drift fou
 
 If there are no tickets (tier T0), this check still runs. Small builds drift too, and it is one subagent.
 
-## 2. The final report
+## 2. The project memory — written from the code
 
-Run the full test suite once more first. Then write in the user's language, plain, no jargon.
+**Launch this at the same time as the blind acceptance.** Two subagents, the same finished repository, no contact between them: one asks «что из брифа сделано», the other asks «как этим пользоваться завтра». Running them in parallel costs one wall-clock slot instead of two.
+
+The memory agent writes the full description of the project into `CLAUDE.md` or `AGENTS.md` — architecture, key files, conventions, environment, tests, gotchas — scaled to the tier, folding in what `interfaces.md` accumulated. Like the blind checker, **it does not receive `spec.md` or the tickets**: a memory written from the plan documents intentions, and the next session has no way to tell the difference.
+
+Everything about it — which file, the markers, the sections per tier, what must never go in, and the verification pass over the commands — is in `phases/9-memory.md`. Read it before spawning.
+
+This is the artifact that decides what the *next* run costs. A project whose second session begins by re-reading the whole codebase paid for that in the first session and got nothing.
+
+## 3. The final report
+
+Run the full test suite once more first, and wait for both subagents. Then write in the user's language, plain, no jargon.
 
 Order matters — the user reads the top and skims the rest.
 
@@ -92,14 +102,15 @@ npm install && npm run dev
 <Расхождения слепой приёмки, если есть. Прямо, без смягчения:
 «Требование "клиент видит статус" я считал готовым, независимая проверка
 показала, что статус сохраняется, но нигде не отображается. Исправлено /
-требует отдельной задачи.»>
+требует отдельного таска.»>
 
 ## Где что лежит
 
+- Описание проекта для следующего раза — `AGENTS.md` в корне
 - Прогресс и цифры — `.autopilot/dashboard.html`
-- Твоя изначальная задача — `.autopilot/<slug>/brief.md`
+- Твоя изначальная задача — `.autopilot/<slug>/<дата>-brief.md`
 - Требования и их судьба — `.autopilot/<slug>/manifest.md`
-- Техзадание — `.autopilot/<slug>/spec.md`
+- Спецификация — `.autopilot/<slug>/spec.md`
 ```
 
 ## Rules for the report
@@ -107,9 +118,11 @@ npm install && npm run dev
 - **Плейсхолдеры и пустые переменные — обязательный раздел**, даже если их ноль (тогда одной строкой: «всё заполнено»). Это то, что отделяет «работает» от «работает у тебя».
 - **Секреты — только именами.** Никогда значениями, включая те, что пользователь присылал сам.
 - **«Что не вошло» пишется всегда**, даже когда всё вошло. Пустой раздел с одной строкой честнее отсутствующего: он показывает, что вопрос задавался.
-- **Не приукрашивать.** Упавший тест, невыполненный тикет, найденное расхождение — называются прямо, с тем, что именно сломано и что для починки нужно. Отчёт, скрывающий дефект, стоит дороже дефекта.
+- **Не приукрашивать.** Упавший тест, невыполненный таск, найденное расхождение — называются прямо, с тем, что именно сломано и что для починки нужно. Отчёт, скрывающий дефект, стоит дороже дефекта.
 - **Никаких диффов, имён файлов кода, названий тестов** — они в инструментах, для тех, кому нужны.
 
 ## Closing the instruments
 
-Set `finishedAt`, write the `blind` block, refresh the counts in `state.json`, mirror into `dashboard.html`. A run whose dashboard says «в работе» a day after it landed is lying to the person who trusted it.
+The memory file goes in with the final commit, before this. Then: set `finishedAt`, write the `blind` block, refresh the counts in `state.json`, close every stage — `final` to `done`, and anything still `active` or `pending` to `done`, `skipped` (with a note) or `failed`, whichever is true — then mirror into `dashboard.html`. A run whose dashboard says «в работе» a day after it landed is lying to the person who trusted it.
+
+`finishedAt` also stops the clocks and the ten-second self-refresh: the page freezes on the final numbers instead of counting time nobody is spending. Leave it `null` on a finished run and the user's total keeps growing overnight.

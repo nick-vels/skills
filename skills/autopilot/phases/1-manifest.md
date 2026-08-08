@@ -34,9 +34,9 @@ On a hit:
 
 Before the first commit, run this gate over everything under `.autopilot/`. A secret that got in through some path nobody predicted still must not reach git history.
 
-## 2. Write brief.md
+## 2. Write the brief file
 
-The redacted brief, **word for word**, into `.autopilot/<slug>/brief.md`:
+The redacted brief, **word for word**, into `.autopilot/<slug>/<YYYY-MM-DD>-brief.md` — today's date, then `-brief.md`: `2026-08-07-brief.md`. The date is part of the name because a slug directory outlives one sitting; a month later «доделай ещё вот это» arrives, and the files have to say which brief came when. Record the chosen name in `state.json` as `briefFile`, so nothing downstream has to guess it.
 
 ```markdown
 # Изначальная задача
@@ -51,7 +51,7 @@ Rules that make this file worth having:
 
 - **No paraphrase, no cleanup, no reordering.** Bad grammar, contradictions, half-sentences and duplicated thoughts all stay. A tidied brief is already a spec, and a spec is the thing you cannot check against.
 - **Everything counts as brief** — the idea, the asides, the constraints, the "и ещё хорошо бы", the stack preference, the deadline mentioned in passing.
-- **Never edited again.** Later thoughts from the user are appended under `## Дополнения`, dated, never merged into the original text.
+- **Never edited again.** Later thoughts from the same sitting are appended under `## Дополнения`, dated, never merged into the original text. A brief dictated on a **later day** is a new file with that day's date — appending it to an older one erases the fact that the project was asked for twice.
 
 ## 3. Atomise into requirements
 
@@ -62,7 +62,7 @@ Every requirement is a row, and every row carries the **exact words it came from
 ```markdown
 # Манифест требований
 
-Источник: `brief.md`. Строку из этого списка может снять **только пользователь**.
+Источник: `<дата>-brief.md`. Строку из этого списка может снять **только пользователь**.
 
 | ID | Из брифа (дословно) | Статус | Основание | Где |
 |----|---------------------|--------|-----------|-----|

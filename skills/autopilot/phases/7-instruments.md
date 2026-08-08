@@ -1,6 +1,6 @@
 # Phase 7 — Instruments
 
-The user's live view of the build. Not a phase in sequence — raised in Phase 0, updated after every ticket, read whenever they want to know where things stand.
+The user's live view of the build. Not a phase in sequence — raised in Phase 0, updated at every stage transition and after every ticket, read whenever they want to know where things stand.
 
 Two files, and the split matters:
 
@@ -17,7 +17,29 @@ Copy the template — do not regenerate it, do not read it into context:
 cp <skill-dir>/phases/dashboard-template.html .autopilot/dashboard.html
 ```
 
-Then write `state.json` and mirror it into the dashboard. From then on, updating is two small edits.
+Then write `state.json` and mirror it into the dashboard.
+
+## Opening it — once, by you, at the start
+
+The user should not have to be told where a file is and then go find it. **Open the dashboard yourself, immediately after the first write**, before Phase 1 asks anything:
+
+```bash
+open .autopilot/dashboard.html 2>/dev/null \
+  || xdg-open .autopilot/dashboard.html 2>/dev/null \
+  || start "" .autopilot\dashboard.html 2>/dev/null \
+  || echo "открой вручную: .autopilot/dashboard.html"
+```
+
+Four rules, and they are all about not being annoying:
+
+- **Exactly once per run.** The page reloads itself every ten seconds while the build is unfinished — reopening it after each ticket would steal focus from whatever the user is doing and stack up browser tabs.
+- **Never on resume into an already-open tab.** On a resume, open it again only if the previous session ended (`finishedAt` was set) — otherwise assume the tab is still there.
+- **A failure is not an error.** Headless machine, SSH session, CI, no default browser — the command fails, you print the path in one line and carry on. Do not retry, do not install anything, do not try a second launcher.
+- **Do not open it in a remote session.** If `$SSH_CONNECTION` or `$CI` is set, skip the command entirely and print the path — a browser window on someone else's machine helps nobody.
+
+Say it in one line, once:
+
+> Дашборд открыл — `.autopilot/dashboard.html`, обновляется сам.
 
 ## state.json
 
@@ -28,9 +50,21 @@ Then write `state.json` and mirror it into the dashboard. From then on, updating
   "mode": "semi",
   "depth": "normal",
   "tier": "T2",
+  "briefFile": "2026-08-07-brief.md",
+  "memoryFile": "AGENTS.md",
   "startedAt": "2026-08-07T14:02:00+03:00",
   "updatedAt": "2026-08-07T15:31:00+03:00",
   "finishedAt": null,
+  "stages": [
+    { "id": "preflight", "status": "done",    "startedAt": "2026-08-07T14:02:00+03:00", "finishedAt": "2026-08-07T14:05:00+03:00" },
+    { "id": "manifest",  "status": "done",    "startedAt": "2026-08-07T14:05:00+03:00", "finishedAt": "2026-08-07T14:11:00+03:00" },
+    { "id": "briefing",  "status": "done",    "startedAt": "2026-08-07T14:11:00+03:00", "finishedAt": "2026-08-07T14:26:00+03:00", "note": "6 вопросов" },
+    { "id": "spec",      "status": "done",    "startedAt": "2026-08-07T14:26:00+03:00", "finishedAt": "2026-08-07T14:44:00+03:00" },
+    { "id": "plan",      "status": "done",    "startedAt": "2026-08-07T14:44:00+03:00", "finishedAt": "2026-08-07T14:50:00+03:00", "note": "5 тасков, ярус T2" },
+    { "id": "build",     "status": "active",  "startedAt": "2026-08-07T14:50:00+03:00", "note": "3 из 5 тасков готовы" },
+    { "id": "review",    "status": "active",  "startedAt": "2026-08-07T15:04:00+03:00", "note": "проверено 3 из 5" },
+    { "id": "final",     "status": "pending" }
+  ],
   "requirements": {
     "total": 23, "done": 9, "inTicket": 8, "inSpec": 0,
     "placeholder": 2, "deferred": 1, "dropped": 3
@@ -52,6 +86,8 @@ Then write `state.json` and mirror it into the dashboard. From then on, updating
       "concerns": []
     }
   ],
+  "singlePass": null,
+  "tests": { "passed": 34, "failed": 0 },
   "debt": {
     "placeholders": ["R05 — фирменные цвета", "R11 — тексты писем"],
     "assumptions": ["SQLite вместо Postgres — не нужен сервер"],
@@ -63,18 +99,65 @@ Then write `state.json` and mirror it into the dashboard. From then on, updating
 ```
 
 Ticket `status`: `pending` · `in-progress` · `done` · `failed`.
-`blind` stays `null` until the final phase, then holds the blind-acceptance result.
+`tests` is the last **full** suite run; `blind` stays `null` until the final phase.
+`memoryFile` is the project memory chosen in Phase 0 — `CLAUDE.md` or `AGENTS.md`, see `phases/9-memory.md`. A resume reads that file first.
 
 **Never put a secret value in here.** `emptyEnv` holds names only — the whole point of the list.
 
+## Stages — the answer to «где мы сейчас»
+
+Eight ids, fixed, in this order: `preflight` · `manifest` · `briefing` · `spec` · `plan` · `build` · `review` · `final`. The dashboard knows them all and shows the ones you did not write as `pending`, so the user sees the whole road from the first minute, not just the piece already travelled.
+
+| Stage status | When |
+|---|---|
+| `pending` | not reached yet — the default, no timestamps |
+| `active` | entered: set `startedAt` **when you enter the phase**, not when you finish it |
+| `done` | left: set `finishedAt` |
+| `skipped` | consciously not run — **always with a `note` saying why** |
+| `failed` | the phase stopped on a blocker the user has to resolve |
+
+- **`note` is one short human phrase**, not a log line: «6 вопросов», «ярус T0 — без разбивки на таски», «полный автомат — самобрифинг», «проверено 3 из 5».
+- **`build` and `review` may both be `active`.** Reviews run per ticket inside the build, and pretending otherwise would make the timings lie.
+- **`skipped` is normal and must be visible.** Briefing in full mode, `plan` at tier T0 — a stage silently left `pending` forever reads as «сборка застряла».
+
+## Timestamps are the clock
+
+Every timer on the dashboard is computed from these fields — total elapsed, per stage, per ticket, all ticking in real time from the marks you wrote. Nothing is stored as a duration.
+
+- **ISO 8601 with the offset** (`2026-08-07T14:50:00+03:00`). A bare `14:50` gives an invalid date and a dead dash on the dashboard.
+- **`startedAt` goes in when the thing starts, not when it ends.** An interval with a start and no end is what makes the timer run; filling both in at the end means the user watched a frozen clock while the work was happening.
+- **`updatedAt` moves on every write.** The dashboard shows «обновлено N назад» from it and marks it in warning colour after five silent minutes — that is the user's only way to tell «идёт работа» from «агент умер».
+
 ## Updating — two edits, not a rewrite
 
-After each ticket:
+At every stage transition, and after every ticket:
 
-1. Edit the ticket's object in `state.json` and the `requirements` counts. Change the rows that changed; do not rewrite the file.
+1. Edit the affected rows of `state.json` — the stage object, the ticket object, the `requirements` counts, `updatedAt`. Change the rows that changed; do not rewrite the file.
 2. In `dashboard.html`, replace the single line beginning `const STATE =` with `const STATE = ` + the new JSON + `;`.
 
-That is roughly thirty tokens per ticket. **Never rewrite the dashboard**, and never hand-maintain a progress table in prose: a rewritten table grows quadratically in cost and invites tidying up history that should not be tidied.
+That is roughly thirty tokens per update. **Never rewrite the dashboard**, and never hand-maintain a progress table in prose: a rewritten table grows quadratically in cost and invites tidying up history that should not be tidied.
+
+The user does not need to reload anything — the page refreshes itself every ten seconds until `finishedAt` is set, and there is a toggle in the header to stop that.
+
+## Tier T0 — the dashboard still has to say something
+
+At T0 there are no tickets by design, and a dashboard that shows only a running clock is the failure this section exists to prevent. **A small build is not an excuse for empty instruments.** Fill in:
+
+- **stages** — `plan` as `skipped` with the reason, everything else with real timestamps. This alone is most of what the user wants to know.
+- **`requirements` counts** — updated when the build lands, exactly as they would be after a ticket. This is what makes «покрытие брифа» a number instead of a zero.
+- **`singlePass`** — the one build pass, in the shape a ticket would have had:
+
+```json
+"singlePass": {
+  "startedAt": "2026-08-07T14:26:00+03:00",
+  "finishedAt": "2026-08-07T14:40:00+03:00",
+  "files": ["index.html", "styles.css", "script.js"],
+  "tests": { "passed": 6, "failed": 0 },
+  "commit": "9f8e7d6"
+}
+```
+
+- **`debt`, `additions`, `blind`** — same as any other run. A T0 build has placeholders and assumptions like any other, and they are what the user actually has to act on.
 
 ## What the dashboard shows
 
@@ -83,13 +166,15 @@ The template computes all of this from `STATE`. You supply the facts; it does th
 | Metric | Why it earns its place |
 |---|---|
 | **Покрытие брифа, %** | *The* completion number. Ticket progress measures effort; brief coverage measures value. They diverge, and when they do, this one is right |
-| Задачи готовы, % | familiar progress, honest about effort |
-| Прошло времени | fact |
+| **Этап сейчас, N из 8** | where the run is in the cycle, and how long it has been there. The first thing a person looks for and the last thing a ticket count answers |
+| **Лента этапов** | the whole cycle at once — what is done, what was skipped and why, what has not started. Works when there are no tickets at all |
+| **Прошло времени** | live, to the second, from `startedAt` |
 | **Осталось по критическому пути** | remaining time is `median × longest remaining chain of blockers`, **not** the sum of what is left. With parallel waves the sum overstates by two or three times |
+| Таски готовы, % | familiar progress, honest about effort. At T0 it says «без разбивки» instead of a fake zero |
 | **Долг: заглушки · допущения · пустые переменные** | decides whether the result is *usable*. 100% of tickets with eight placeholders is not a finished project, and this is the number that says so |
-| Тесты и их дельта по тикетам | catches a regression at ticket 3 instead of at the end |
+| Тесты и их дельта по таскам | catches a regression at ticket 3 instead of at the end |
 | Повторы | a ticket that needed a retry is a signal the cut was wrong, not that luck was bad |
-| **Минут на задачу** | over-cutting made visible: a ticket that took forty minutes of context to produce forty lines should not have existed |
+| **Время на каждый таск и каждый этап** | over-cutting made visible: a ticket that took forty minutes of context to produce forty lines should not have existed |
 | Пересечения по файлам | validates parallel waves — an overlap is visible before it becomes a conflict |
 | Расхождения слепой приёмки | at the end: what the manifest calls done and an independent check does not |
 
@@ -107,6 +192,4 @@ After each ticket, in the chat: what became possible, and the count.
 
 Not: file lists, diffs, test names, ticket IDs. Those are in the instruments, for anyone who wants them.
 
-Mention the dashboard once, when it first has something to show:
-
-> Прогресс видно тут: `.autopilot/dashboard.html` — открой двойным кликом.
+The dashboard is mentioned **once**, when you open it in Phase 0. After that it speaks for itself.

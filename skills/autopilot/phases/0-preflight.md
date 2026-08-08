@@ -23,7 +23,7 @@ Read what is already here; assume nothing:
 ```
 .autopilot/
 ├── <feature-slug>/
-│   ├── brief.md
+│   ├── <YYYY-MM-DD>-brief.md
 │   ├── manifest.md
 │   ├── spec.md
 │   ├── interfaces.md
@@ -32,7 +32,22 @@ Read what is already here; assume nothing:
 └── dashboard.html
 ```
 
-`state.json` and `dashboard.html` are written now, empty-but-valid, per `phases/7-instruments.md`. The dashboard exists from the first minute so the user can watch the build from the start rather than read about it at the end.
+The brief carries **the date it was dictated in its filename** — `2026-08-07-brief.md`. A slug directory outlives one conversation: the user comes back a month later with «доделай», a second brief gets appended, and a file called `brief.md` gives no way to tell which sitting is which. The date is the cheapest possible answer, and it sorts.
+
+`state.json` and `dashboard.html` are written now, empty-but-valid, per `phases/7-instruments.md`. The initial `stages` array lists all eight stages — `preflight` as `active`, the rest `pending` — so the dashboard shows the whole road from the first minute instead of a blank page.
+
+## 3a. Open the dashboard
+
+The moment it is written, open it — once, per `phases/7-instruments.md`:
+
+```bash
+open .autopilot/dashboard.html 2>/dev/null \
+  || xdg-open .autopilot/dashboard.html 2>/dev/null \
+  || start "" .autopilot\dashboard.html 2>/dev/null \
+  || echo "открой вручную: .autopilot/dashboard.html"
+```
+
+Skip it entirely in a remote session (`$SSH_CONNECTION`, `$CI`) and treat a failure as nothing: print the path in one line and carry on. Do not reopen it later — the page refreshes itself.
 
 ## 4. Record the conventions
 
@@ -41,28 +56,23 @@ Write `.autopilot/README.md` — a short note for the human, not for the agent:
 ```markdown
 # Как читать эту папку
 
-- `dashboard.html` — открой двойным кликом. Прогресс, график, что осталось.
-- `<проект>/brief.md` — твоя изначальная задача, слово в слово. Не редактируется.
+- `dashboard.html` — открывается сам в начале сборки; можно и двойным кликом.
+  Этапы, прогресс, время, что осталось. Обновляется сам, пока сборка идёт.
+- `<проект>/<дата>-brief.md` — твоя изначальная задача, слово в слово. Не редактируется.
 - `<проект>/manifest.md` — список требований и что с каждым стало.
-- `<проект>/spec.md` — техзадание.
-- `<проект>/tickets/` — задачи, на которые разбита сборка.
+- `<проект>/spec.md` — спецификация.
+- `<проект>/tickets/` — таски, на которые разбита сборка (если сборка мелкая, их нет).
 
 Если сборка прервалась — скажи агенту «продолжи автопилот», он поднимет состояние отсюда.
 ```
 
-## 5. Note the skill in the agent file
+## 5. Raise the project memory
 
-If `CLAUDE.md` exists, edit it. Else if `AGENTS.md` exists, edit it. Else create `AGENTS.md`. Never create one when the other already exists. Add or update a single block — in place, never duplicated:
+The repo needs a file that tells the **next** session what this project is — `CLAUDE.md` or `AGENTS.md`. Which one is decided by detection, never by a question; the skeleton is written now and finished in Phase 8. The rules are in `phases/9-memory.md` — read it now, it is short.
 
-```markdown
-## Autopilot
+Two things happen here: pick the file, write the skeleton between the `<!-- autopilot:start -->` markers. Announce the choice in one line inside the opening block, together with the mode — and do not wait for a reply.
 
-Сборка ведётся навыком `/autopilot`. Требования, спека и задачи — в `.autopilot/`.
-Прогресс — `.autopilot/dashboard.html`. Правило: требование из `manifest.md`
-может снять только пользователь.
-```
-
-Note in the Phase 8 report which file was chosen.
+Record the chosen file in `state.json` as `memoryFile`, and note it in the Phase 8 report.
 
 ## 6. Git
 
@@ -81,12 +91,17 @@ __pycache__/
 
 If a repo already exists and its working tree is dirty, say so in one line and continue — do not stash, reset, or clean the user's uncommitted work.
 
+## 7. Close the stage
+
+Leaving any phase means the same two marks, here and everywhere after: the stage you are leaving goes `done` with `finishedAt`, the stage you are entering goes `active` with `startedAt`, `updatedAt` moves, and the dashboard line is replaced. Two edits, per `phases/7-instruments.md`. **A run whose stage list never moves is a run the user cannot see** — and that is the same as no dashboard at all.
+
 ## Resuming an interrupted flight
 
 `.autopilot/state.json` exists and has unfinished tickets → this is a resume, not a new flight.
 
-1. Read `state.json`, `manifest.md`, `interfaces.md`. Do **not** re-read the whole dialogue; the files are the memory.
-2. Tell the user in one line where things stand: «Продолжаю: 7 из 12 задач готовы, следующая — корзина».
+1. Read the project memory file first (`memoryFile` in `state.json` — `CLAUDE.md` or `AGENTS.md`), then `state.json`, `manifest.md`, `interfaces.md`. Do **not** re-read the whole dialogue; the files are the memory. The brief is `<slug>/*-brief.md` — the newest one if there is more than one.
+2. Tell the user in one line where things stand: «Продолжаю: 7 из 12 тасков готовы, следующий — корзина».
+   Reopen the dashboard only if the previous run had finished (`finishedAt` set) — mid-flight, assume the tab is still open and just say the path.
 3. A ticket marked `in-progress` in `state.json` with no commit behind it was interrupted mid-flight. Reset it to `pending` and run it again from scratch — a half-applied ticket is worse than a fresh one.
 4. Re-run the Phase 6 checklist over the whole diff since the last green commit before continuing. Something may have been left broken.
 5. Continue from the frontier. Do not redo finished phases; do not re-ask answered questions.

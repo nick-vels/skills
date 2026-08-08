@@ -26,6 +26,8 @@ Decide the tier from the spec, then cut to it. State the tier and the count in o
 
 **T0 is real and it is common.** A landing page, a form, a script, a single endpoint — cut nothing, build it in one pass, review once, done. Skipping tickets here is not a shortcut; creating them would be the waste. Say so plainly: «Задача небольшая — собираю сразу, без разбивки».
 
+At T0 the `plan` stage in `state.json` is marked `skipped` with the reason as its note — «ярус T0 — без разбивки на таски» — not left `pending`. A stage that never moves reads as a stuck build, and the whole point of the dashboard is that it does not have to be explained.
+
 Crossing a tier upward needs a reason written into the spec, not a feeling.
 
 ## How to cut
@@ -78,7 +80,7 @@ Every ticket file:
 > «принимает заявки на ремонт техники»
 > «чтобы клиент видел статус»
 
-## Разделы спеки
+## Разделы спецификации
 
 Истории 1–5, Решения §2 и §4, Швы §1.
 

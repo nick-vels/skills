@@ -4,6 +4,8 @@ Where the code gets written. **Identical in all three modes — this phase is al
 
 At tier T0 there are no tickets: you are the crew, working straight from the spec in the current context. Everything below about contracts and returns still applies to you — write `interfaces.md`, run the Phase 6 checklist, commit once.
 
+**T0 does not excuse empty instruments.** Mark the `build` stage `active` before you start and `done` when you finish, record the pass in `state.json` under `singlePass` (files, tests, commit, both timestamps), and update the `requirements` counts exactly as a ticket would. A run that finished the whole project and left the user a dashboard showing nothing but a running clock has failed at the one job the dashboard has. See `phases/7-instruments.md`.
+
 ## One ticket, one subagent, one fresh context
 
 Never two tickets in one context. Accumulated context is precisely what makes long vibecoding sessions start breaking things that used to work — the model stops reading and starts remembering, and its memory is worse than the files.
@@ -38,13 +40,13 @@ Created empty in Phase 0. **You** — the orchestrator — append to it after ea
 - Что менять запрещено (файл конфигурации, схема, общий модуль и его владелец)
 - Если не хватает зависимости — не добавляй сам, верни `BLOCKED` с названием
 
-## Из тикета 01 — каркас
+## Из таска 01 — каркас
 
 - `db.connect(path) -> Connection` — единственная точка подключения
-- Таблицы `requests`, `clients`; миграции в `migrations/`, владелец — тикет 01
+- Таблицы `requests`, `clients`; миграции в `migrations/`, владелец — таск 01
 - Тесты: `npm test`, один файл — `npm test -- <path>`
 
-## Из тикета 02 — приём заявок
+## Из таска 02 — приём заявок
 
 - `createRequest({phone, address, problem}) -> {id, createdAt}`
 - Валидация телефона — `validatePhone(raw) -> {ok, normalized}`, не пиши свою
@@ -61,7 +63,7 @@ STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
 FILES: созданные и изменённые
 TESTS: команда → результат (например, `npm test` → 34 passed)
 INTERFACES: публичные сигнатуры, схемы, форматы событий, которые ты выставил
-            — то, чем будут пользоваться следующие тикеты
+            — то, чем будут пользоваться следующие таски
 REQUIREMENTS: R01 done | R01.1 placeholder — <чего не хватило>
 CONCERNS: что сделано с оговоркой и почему
 BLOCKERS: чего не хватило (зависимость, решение, доступ)
@@ -77,6 +79,10 @@ Unblocked tickets may run in parallel **only when they touch disjoint files**. S
 
 Cap parallelism at three. Beyond that the orchestrator's own context fills with returns it cannot usefully hold, and the whole point of the design leaks away.
 
+## Before each ticket
+
+Set the ticket's `status` to `in-progress` and its `startedAt` to now **before** launching the subagent, and mirror it into the dashboard. It costs one edit, and it is the difference between the user watching a ticket run and the user watching nothing happen for eighteen minutes.
+
 ## After each ticket
 
 In this order, every time:
@@ -87,8 +93,9 @@ In this order, every time:
 4. **Run the Phase 6 checklist** over the diff (`phases/6-review.md`).
 5. **Run the full test suite**, not just the ticket's own tests. A regression introduced now costs minutes; found eight tickets later it costs the evening. Red → fix before moving on.
 6. **Commit** — one commit per ticket, the ticket number in the subject. These are the user's rollback points.
-7. **Update the instruments** (`phases/7-instruments.md`) — one line of state, one line of the dashboard.
-8. **Tell the user one plain-language line**: «Бот принимает заявки — 3 из 8 готово». No diffs, no jargon, no file lists.
+7. **Update the instruments** (`phases/7-instruments.md`) — one line of state, one line of the dashboard: the ticket's `finishedAt`, tests and commit, the `requirements` counts, the `build` and `review` stage notes («3 из 5 тасков готовы»), `updatedAt`.
+8. **Top up the project memory — only if something was discovered.** The real test command, a gotcha that cost time, a new variable in `.env.example`. One line appended between the markers, never a rewrite; the architecture is written once, at the end. Most tickets add nothing, and that is the correct rate. Rules in `phases/9-memory.md`.
+9. **Tell the user one plain-language line**: «Бот принимает заявки — 3 из 8 готово». No diffs, no jargon, no file lists.
 
 ## When a ticket fails
 

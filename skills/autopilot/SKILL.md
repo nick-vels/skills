@@ -32,10 +32,31 @@ This file is the orchestrator: modes, phase order, gates. The rules for each pha
 | 4 Plan | `phases/4-plan.md` | `tickets/NN-*.md` (or none — see tiers) |
 | 5 Subagents | `phases/5-subagents.md` | code, commits, `interfaces.md` |
 | 6 Review | `phases/6-review.md` | per-ticket review |
-| 7 Instruments | `phases/7-instruments.md` | `state.json`, `dashboard.html` |
+| 7 Instruments | `phases/7-instruments.md` | `state.json`, `dashboard.html` (opened for the user) |
 | 8 Final | `phases/8-final.md` | blind acceptance, final report |
+| 9 Memory | `phases/9-memory.md` | `CLAUDE.md` / `AGENTS.md` — the project as the next session will find it |
 
-Phase 7 is not sequential — the instruments are written in Phase 0 and updated after every ticket.
+## The words the user sees
+
+The phases have English names in this file and the user never sees them. In the chat, on the dashboard and in the final report there is **exactly one Russian word per stage**, and it is this one. Two vocabularies for one process is how a person reads the README and then cannot find any of it on the screen.
+
+| Phase | `stages[].id` | Пользователю |
+|---|---|---|
+| 0 Preflight | `preflight` | Подготовка |
+| 1 Manifest | `manifest` | Требования |
+| 2 Briefing | `briefing` | Брифинг |
+| 3 Spec | `spec` | Спецификация |
+| 4 Plan | `plan` | План |
+| 5 Subagents | `build` | Разработка |
+| 6 Review | `review` | Код-ревью |
+| 8 Final | `final` | Приёмка |
+
+Two rules hold this together:
+
+- **«Сборка» — это весь прогон, а не один этап.** «Сборка идёт», «сборка прервалась», «продолжи сборку» — про процесс целиком. Поэтому пятый этап называется «Разработка»: иначе одно слово означает и часть, и целое. И «сборка» в смысле `npm run build` — тоже не он.
+- **Единица работы — «таск».** Не «задача», не «тикет», не «issue». «Задача» — это то, что поставил пользователь (бриф); одно слово на две разные вещи ломает и отчёт, и дашборд.
+
+Phases 7 and 9 are not sequential. The instruments are written and opened in Phase 0, then updated at every stage transition and after every ticket. The project memory is raised in Phase 0, topped up when the build discovers something, and written in full in Phase 8 by a subagent reading the finished code.
 
 ## Modes
 
@@ -49,7 +70,20 @@ Everything typed after `/autopilot` splits into three parts: **the mode** (optio
 | **semi** — полуавтомат **(default)** | `/autopilot semi`, «полуавтомат», nothing specified | questions only |
 | **manual** — ручной | `/autopilot manual`, «ручной режим», «согласовывай каждый шаг», "ask me everything", "approve every step" | questions + spec + tickets |
 
-- **Announce the resolved mode in one line before Phase 1** — «Режим: полуавтомат — задам 5–8 вопросов, дальше соберу сам». The user must never discover the mode by noticing questions that did or did not arrive.
+- **Announce the resolved mode and offer the others, once, before Phase 1.** The user must never discover the mode by noticing questions that did or did not arrive — and they cannot ask for a mode they do not know exists. In a chat client there is no `--help` to read: this block is the only place the dials are ever named, so it is not optional.
+
+  ```
+  Режим: полуавтомат · глубина: обычная — задам 5–8 вопросов, дальше соберу сам.
+  Дашборд открыл: .autopilot/dashboard.html — обновляется сам.
+  Память проекта — AGENTS.md (+ CLAUDE.md со ссылкой). Скажи, если нужен другой.
+
+  Можно переключить в любой момент, просто скажи:
+  • «полный автомат» — не спрашиваю вообще ничего
+  • «ручной режим» — согласуешь со мной спецификацию и список тасков
+  • «строго по брифу» / «проработай глубоко» — меньше или больше проработки сверх сказанного
+  ```
+
+  One short block, once, at the start. **It is a hint, not a question** — say it and go straight into Phase 1; waiting for a reply to it is exactly the pause this skill exists to remove. Do not repeat it later, do not restate it after a mid-run switch (one line is enough there: «Понял, дальше ручной режим»).
 - **Ambiguity resolves to semi.** A mode word contradicting the rest of the sentence («ручной режим, но не спрашивай») → the explicit mode word wins; two mode words → ask which one, in one line.
 - **The mode can be switched mid-run** («переключись в ручной») — it applies from the next phase onward. Phases already passed are not replayed.
 - **Extra instructions in the brief** (stack, language, budget, «без базы данных», deadline) are manifest requirements like any other. They constrain the build; they never replace a phase.
@@ -68,7 +102,7 @@ How far past the brief's own words the spec is allowed to go. The mode decides *
 - **Default is normal, and normal means permitted.** The agent elaborates where elaboration obviously helps and does not chase every edge of every requirement. This is the setting most briefs should run on.
 - **`strict` does not mean careless.** Errors and empty states are still handled — a build that crashes on bad input does not satisfy the requirement it was written for. What `strict` removes is anything the user did not ask for: no extra capabilities, no anticipating needs, no "пока я тут, добавлю".
 - **`deep` does not lift the attachment rules.** Every `A##` still names its parent requirement; the proportion limit still holds. `deep` buys thoroughness, never a different project.
-- **Depth is announced with the mode**, in the same line: «Режим: полуавтомат, глубина: максимальная».
+- **Depth is announced with the mode**, in the same opening block: «Режим: полуавтомат · глубина: максимальная».
 - **Depth can be changed mid-run** («поменьше отсебятины», «продумай глубже») — applies from the next phase. Already-written spec sections are not retroactively trimmed unless the user asks.
 
 The rules for each level live in `phases/3-spec.md`.
@@ -121,14 +155,20 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 ```
 .autopilot/
 ├── <feature-slug>/
-│   ├── brief.md         the user's original words, redacted, never edited again
+│   ├── <YYYY-MM-DD>-brief.md   the user's original words, redacted, never edited again
 │   ├── manifest.md      R01…Rnn — requirements and their status
 │   ├── spec.md          the specification
 │   ├── interfaces.md    what finished tickets built, for the tickets that follow
 │   └── tickets/NN-<slug>.md
-├── state.json           machine-readable run state
-└── dashboard.html       the human view — open it by double-clicking
+├── state.json           machine-readable run state: stages, tickets, timings, debt
+└── dashboard.html       the human view — opened automatically in Phase 0, refreshes itself
+
+CLAUDE.md | AGENTS.md   the project memory — what the next session reads first
 ```
+
+The brief is dated in its filename because a slug directory outlives one sitting. The dashboard is opened for the user, not described to them: it shows the eight stages of the cycle, where the run is now, and a live clock on the run, the current stage and the current ticket.
+
+`.autopilot/` is the record of **this** run; the memory file at the root is the project as it stands, for whoever opens the repo next. Autopilot's content there lives between `<!-- autopilot:start -->` markers — everything the user wrote outside them is untouchable. See `phases/9-memory.md`.
 
 `.autopilot/` is committed, not ignored — it is the user's record of what was promised and what was delivered. A run that leaves nothing under `.autopilot/` did not happen.
 
@@ -137,19 +177,19 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 | Excuse | Reality |
 |--------|---------|
 | «Пользователь сказал не задавать вопросов» | Он сказал не задавать ЛИШНИХ. Решающие вопросы — часть работы, не обсуждение процесса. |
-| «KISS — просто собери» | Простой результат даёт порядок, а не пропуск этапов. Без спеки каждая правка — «а я имел в виду другое». |
+| «KISS — просто собери» | Простой результат даёт порядок, а не пропуск этапов. Без спецификации каждая правка — «а я имел в виду другое». |
 | «Бриф весь в диалоге, зачем его переписывать в файл» | Диалог сжимается, и бриф в нём — самое старое. Через три фазы ты будешь синтезировать по пересказу пересказа. |
 | «Это требование явно неважное, пропущу» | Важность требований определяет пользователь. Ты можешь предложить `deferred` — вычеркнуть может только он. |
 | «Пользователь про это больше не вспоминал — значит, отменил» | Молчание не отменяет. Отмена — это его слова, записанные в манифест цитатой. |
 | «Сделаю заглушку, уточнит потом» | Блокирующие неизвестные (оплата, хостинг, аккаунты) решаются в брифинге — в полном автомате в self-briefing, — но всегда до билда. |
 | «Пусть пришлёт ключ, я вставлю в код» | Ключи вставляет пользователь и только в `.env`. Ты работаешь с именем переменной. |
 | «Ключ уже в контексте, значит, можно записать» | Наоборот: значит, надо отредактировать и предупредить. Контекст — не разрешение. |
-| «И так понятно, что делать» | Понятно тебе — не зафиксировано. Манифест и спека — единственные точки сверки. |
+| «И так понятно, что делать» | Понятно тебе — не зафиксировано. Манифест и спецификация — единственные точки сверки. |
 | «Быстрее всё сделать в одном контексте» | Быстрее в первый час. Дальше модель ходит кругами и ломает работавшее. |
-| «Задача маленькая, но тикеты положено делать» | Не положено. Ярус T0 — ноль тикетов. Граница тикета стоит дороже мелкой работы внутри неё. |
+| «Задача маленькая, но таски положено делать» | Не положено. Ярус T0 — ноль тасков. Граница таска стоит дороже мелкой работы внутри неё. |
 | «Нарежу помельче, так надёжнее» | Каждая лишняя граница — ещё один свежий контекст, который заново въезжает в проект. Дробление покупает не надёжность, а расход. |
-| «Бриф краткий — значит, и спека краткая» | Бриф — силуэт: пользователь описал happy path и не описал ни пустых состояний, ни ошибок, ни обрывов. На нормальной и максимальной глубине продумать их — твоя работа. |
-| «Это и так очевидно, писать не буду» | Очевидное, не записанное в спеку, каждый субагент додумает по-своему. Три исполнителя — три разные «очевидности». |
+| «Бриф краткий — значит, и спецификация краткая» | Бриф — силуэт: пользователь описал happy path и не описал ни пустых состояний, ни ошибок, ни обрывов. На нормальной и максимальной глубине продумать их — твоя работа. |
+| «Это и так очевидно, писать не буду» | Очевидное, не записанное в спецификацию, каждый субагент додумает по-своему. Три исполнителя — три разные «очевидности». |
 | «Придумал полезную фичу, добавлю» | Углубление заказанного (`R##.n`) — да. Новая возможность (`A`) — только с родительским требованием, в пределах пропорции и в отчёт. На `strict` — нельзя вообще. |
 | «Глубина strict — значит, можно не обрабатывать ошибки» | `strict` убирает лишнее, а не обязательное. Падение на неверном вводе не выполняет требование, ради которого писалось. |
 | «Глубина deep — можно строить что хочу» | `deep` покупает тщательность, а не другой проект. Родитель и пропорция действуют на всех уровнях. |
@@ -158,9 +198,18 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 | «Напишу "запускаю через 60 секунд"» | Ты не умеешь ждать — обещанной паузы не будет. Честная формулировка: «начинаю, скажи стоп». |
 | «В ручном режиме тоже начну и подожду возражений» | В ручном согласование — это явное «ок». Молчание им не является, начатая работа тем более. |
 | «Режим не назвали — спрошу, какой» | Не назвали — полуавтомат. Вопрос о режиме сам по себе лишний вопрос. |
-| «Сверю результат со спекой, этого хватит» | Спека может уже потерять требование. Финальная сверка идёт с брифом и без спеки — иначе она подтвердит собственную ошибку. |
-| «Тикеты и спека видны в чате — зачем файлы» | Файл в `.autopilot/` и есть артефакт; чат — только его пересказ. Диалог умрёт, файлы останутся. |
+| «Сверю результат со спецификацией, этого хватит» | Спецификация может уже потерять требование. Финальная сверка идёт с брифом и без спецификации — иначе она подтвердит собственную ошибку. |
+| «Таски и спецификация видны в чате — зачем файлы» | Файл в `.autopilot/` и есть артефакт; чат — только его пересказ. Диалог умрёт, файлы останутся. |
 | «Перепишу дашборд целиком, так проще» | Дашборд обновляется заменой одной строки состояния. Перезапись — расход на пустом месте и потеря истории. |
+| «Скажу, где лежит дашборд, — сам откроет» | Не откроет. Файл в скрытой папке, который надо найти, — это не приборная панель. Открывается он один раз, командой, в самом начале. |
+| «Проект маленький, тасков не было — заполнять нечего» | Этапы, требования, тесты, коммит и заглушки есть всегда. Дашборд с одним тикающим таймером — это не «нечего показать», это несделанная работа. |
+| «Отмечу этапы в конце, разом» | Этапы нужны, пока сборка идёт: «где мы сейчас» на готовом проекте никому не нужно. Метка ставится на входе в фазу, а не по памяти после. |
+| «Проставлю время, когда закончу» | Таймер считается из `startedAt`. Не проставил на старте — пользователь смотрел на замерший ноль ровно тогда, когда шла работа. |
+| «CLAUDE.md — это уже детали, спрошу пользователя, какой файл создать» | Имя служебного файла — процессное решение, как и всё в Phase 0. Детект отвечает сам, вслух, одной строкой. Слот брифинга стоит вопроса про оплату, а не про расширение файла. |
+| «Опишу проект в CLAUDE.md по спецификации — так быстрее» | Спецификация — это план. Память проекта, написанная по плану, врёт ровно там, где сборка отклонилась, и следующая сессия ей верит. Описание пишется по коду. |
+| «Допишу в CLAUDE.md заодно пару полезных советов» | Общие советы про тесты и имена переменных верны везде и бесполезны нигде. В файл идёт только то, что выяснилось здесь и стоило времени. |
+| «Перепишу CLAUDE.md целиком, там уже каша» | То, что вне маркеров, написал человек. Переписывать это ты не вправе — как и требование из манифеста. |
+| «Пользователь не спрашивал про режимы — не буду грузить» | Он и не спросит: в чате нет `--help`. Пять строк в начале — единственное место, где он вообще узнаёт, что у сборки есть ручки. |
 
 ## Red Flags — start the phase over
 
@@ -174,6 +223,16 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 - Final acceptance run with the spec in hand instead of blind against the brief.
 - Spec or tickets exist only in the dialogue — nothing written under `.autopilot/`.
 - `state.json` missing, or stale against what has actually been built.
+- The dashboard was never opened — the user was handed a path instead of a window.
+- A stage list that never moved: everything `pending` while the build is halfway, or `active` on a run that ended.
+- A finished run at tier T0 whose dashboard shows only a clock — no stages, no requirement counts, no `singlePass`.
+- A ticket running with no `startedAt`, or timestamps written in bulk at the end.
+- The run started without the mode-and-depth hint — the user cannot ask for a dial nobody named.
+- The run ended without a project memory file, or with one still holding only the Phase 0 skeleton.
+- The memory subagent was handed `spec.md` or the tickets — it now documents the plan instead of the code.
+- A command or a path in the memory file that was never checked against the repository.
+- Text outside the `autopilot` markers edited, moved, or dropped.
+- Which memory file to create was asked as a question — in any mode.
 - Phase 0 questions leaked to the user (which tracker, which labels, which doc file) — Autopilot answers those itself.
 - The announced mode and the actual behaviour diverge: questions in full, a start-and-see instead of «ок» in manual, skipped questions in semi.
 - Promising the user a wait — a countdown, «через минуту», «если не ответишь за N секунд» — that you have no way to honour.

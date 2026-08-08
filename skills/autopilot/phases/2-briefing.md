@@ -46,7 +46,9 @@ After each answer, update the manifest row immediately — not at the end of the
 
 ## Full mode — the self-briefing
 
-**No interview happens.** Run the same checklist against yourself and write the answers into the manifest, each labelled by kind. The line between the two kinds is the whole discipline of this mode:
+**No interview happens.** The `briefing` stage in `state.json` is marked `skipped` with the note «полный автомат — самобрифинг», not left `pending`: the user has to see that the step was a decision, not a stall.
+
+Run the same checklist against yourself and write the answers into the manifest, each labelled by kind. The line between the two kinds is the whole discipline of this mode:
 
 **Decisions are yours to make.** Stack, structure, provider, data model, layout. Pick the option that runs on the user's own machine **without a third-party account and without money**, and record it as `ASSUMPTION — принято за пользователя: …` in the manifest's Основание column. Every one of these is a required line in the Phase 8 report — the user never asked for them and has the right to see all of them in one place.
 
@@ -56,10 +58,10 @@ After each answer, update the manifest row immediately — not at the end of the
 
 ## Manual mode
 
-Same rules, no cap. Keep asking until nothing blocking remains, then say so plainly: «Вопросов больше нет, пишу техзадание».
+Same rules, no cap. Keep asking until nothing blocking remains, then say so plainly: «Вопросов больше нет, пишу спецификацию».
 
 ## Closing
 
-Before leaving this phase, check **gate G1**: every manifest row has a status; nothing is `open` without a recorded reason. Then announce the transition in one line — «Понял. Пишу техзадание» — and go to Phase 3.
+Before leaving this phase, check **gate G1**: every manifest row has a status; nothing is `open` without a recorded reason. Then announce the transition in one line — «Понял. Пишу спецификацию» — and go to Phase 3.
 
 Do not summarise the interview back to the user. The manifest holds it, and the spec is about to say it better.
