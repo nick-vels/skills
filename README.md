@@ -17,9 +17,9 @@ Autopilot — фреймворк разработки, skill, который б�
 Работает сам по себе: ставить что-то ещё не нужно.
 
 <p align="center">
-  <a href="assets/autopilot-dashboard.png"><img src="assets/dash-metrics.png" width="280" alt="Показатели: прогресс проекта, покрытие брифа, время, долг"></a>
-  <a href="assets/autopilot-dashboard.png"><img src="assets/dash-stages.png" width="280" alt="Этапы: весь цикл от подготовки до приёмки"></a>
-  <a href="assets/autopilot-dashboard.png"><img src="assets/dash-build.png" width="280" alt="Ход сборки: таски по волнам, что идёт параллельно"></a>
+  <a href="assets/autopilot-dashboard.png"><img src="assets/dash-metrics.png" width="380" alt="Показатели: прогресс проекта, покрытие брифа, время, долг"></a>
+  <a href="assets/autopilot-dashboard.png"><img src="assets/dash-stages.png" width="380" alt="Этапы: весь цикл от подготовки до приёмки"></a>
+  <a href="assets/autopilot-dashboard.png"><img src="assets/dash-build.png" width="380" alt="Ход сборки: таски по волнам, что идёт параллельно"></a>
 </p>
 
 <p align="center"><sub>Показатели · этапы · ход сборки — <a href="assets/autopilot-dashboard.png">открыть дашборд целиком</a></sub></p>
