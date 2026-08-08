@@ -20,7 +20,18 @@ The manifest already exists. Every question here exists to move a row in it.
 
 **Never answer for the user.** No silent assumptions, no invented content. Forced past an unknown → mark the row `placeholder` and move on. In **full** mode decisions do get made for the user — labelled, never silent. See below.
 
-**Usually five to eight questions in semi** — that is what an interview costs, not a quota to fill or a wall to stop at. Stop the moment the remaining unknowns are cosmetic, even at three; an extra question is not free, it is the user's attention. And if a brief genuinely carries more blocking unknowns than eight — several external services, an existing system to fit into — ask them and say why in one line. An unasked blocking question costs the project more than an extra question ever costs the user. In **manual** there is no cap at all.
+**Ask what the brief actually leaves open — however many that is, including none.**
+
+The count is an outcome, not a setting. A two-line brief about a marketplace can leave eight real forks; a careful brief for a landing page, with the copy already written and the stack named, can leave zero. Both are correct interviews. What is never correct is producing a question because a number implied there should be one: a manufactured question is answered badly, teaches the user that the interview is a formality, and spends the attention you will need for the one question that matters.
+
+In priority order:
+
+- **Every blocking unknown is asked, always.** Payment, hosting, accounts, where the data lives, an existing system to fit into. No count and no mode makes one of these skippable — an unasked blocking question costs the project far more than an extra question ever costs the user.
+- **A fork only the user can settle is asked** when the two branches lead to visibly different products.
+- **Everything else you decide yourself** and record it. Error wording, retry policy, sane defaults — that is craft, and Phase 3 is where it belongs.
+- **Nothing left open? Say so and go.** «Вопросов нет — в задаче всё однозначно, пишу спецификацию.» Mark the `briefing` stage `skipped` in `state.json` with the note «вопросов не потребовалось», so the user sees a decision rather than a step that quietly did not happen.
+
+Most briefs land somewhere between two and eight questions. That is an observation about briefs, not a target for you. In **manual** the same rules hold with more patience: keep going while genuine forks remain.
 
 ## What to ask about
 

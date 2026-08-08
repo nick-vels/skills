@@ -110,7 +110,7 @@
   .overall-head b small{font-size:14px;font-weight:500;color:var(--dim)}
   h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);
     margin:26px 0 12px;font-weight:600}
-  .tl{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+  .tl{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;min-width:0}
   /* сводка по таскам — ответ на «где разработка» до того, как всматриваешься в полосы */
   .tlsum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
   .chip{font-size:11.5px;letter-spacing:.03em;border:1px solid var(--line);border-radius:999px;
@@ -124,7 +124,8 @@
   .tlnow .nowclock{color:var(--warn);font-variant-numeric:tabular-nums}
   .wave{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:14px 0 8px}
   .wave:first-child{margin-top:0}
-  .row{display:grid;grid-template-columns:26px 1fr 56px;gap:10px;align-items:center;margin-bottom:6px;font-size:13px}
+  /* minmax(0,1fr), а не 1fr: у 1fr пол — min-content, и длинное имя таска раздвигает сетку шире экрана */
+  .row{display:grid;grid-template-columns:26px minmax(0,1fr) 56px;gap:10px;align-items:center;margin-bottom:6px;font-size:13px}
   .row b{font-weight:600;font-variant-numeric:tabular-nums;color:var(--dim)}
   .row.now b{color:var(--ink)}
   .track{background:var(--ghost);border-radius:6px;height:22px;position:relative;overflow:hidden;min-width:0}
@@ -134,8 +135,8 @@
   .fill.active{animation:pulse 1.8s ease-in-out infinite}
   .mins{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim);font-size:12px}
   /* этапы — вертикальная лента с рельсом */
-  .stages{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:4px 18px}
-  .st{display:grid;grid-template-columns:20px 1fr auto;gap:12px;align-items:start;
+  .stages{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:4px 18px;min-width:0}
+  .st{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:12px;align-items:start;
     padding:10px 0;border-bottom:1px solid var(--line)}
   .st:last-child{border-bottom:0}
   .st .rail{position:relative;align-self:stretch;min-height:18px}
@@ -192,6 +193,16 @@
     .st{grid-template-columns:18px 1fr auto;gap:9px}
     .badges{margin-left:0}
     .segs{margin-left:0}
+    /* семь колонок в узкую панель не влезают ни при каком min-width, поэтому здесь
+       таблица перестаёт требовать ширину, а второстепенные колонки уходят:
+       требования, повторы и коммит есть в файлах, а «что и сколько идёт» — нет */
+    .scroll table{min-width:0}
+    th:nth-child(3),td:nth-child(3),
+    th:nth-child(5),td:nth-child(5),
+    th:nth-child(7),td:nth-child(7){display:none}
+    /* переносится только название таска: заголовки и числа рвать по буквам нельзя */
+    th,td{padding:9px 8px;white-space:nowrap}
+    td:nth-child(2){white-space:normal;overflow-wrap:anywhere}
   }
 </style>
 </head>

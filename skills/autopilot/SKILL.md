@@ -74,7 +74,7 @@ Everything typed after `/autopilot` splits into three parts: **the mode** (optio
 - **Announce the resolved mode and offer the others, once, before Phase 1.** The user must never discover the mode by noticing questions that did or did not arrive — and they cannot ask for a mode they do not know exists. In a chat client there is no `--help` to read: this block is the only place the dials are ever named, so it is not optional.
 
   ```
-  Режим: полуавтомат · глубина: обычная — задам 5–8 вопросов, дальше соберу сам.
+  Режим: полуавтомат · глубина: обычная — спрошу только то, что в задаче не определено, дальше соберу сам.
   Дашборд открыл: .autopilot/dashboard.html — обновляется сам.
   Память проекта — AGENTS.md (+ CLAUDE.md со ссылкой). Скажи, если нужен другой.
 
@@ -123,7 +123,7 @@ The rules for each level live in `phases/3-spec.md`.
 |---|---|---|---|
 | 0 Preflight | auto | auto | auto |
 | 1 Manifest | auto | auto | auto |
-| 2 Briefing | skipped → self-briefing | 5–8 questions | questions until clear, no cap |
+| 2 Briefing | skipped → self-briefing | only what the brief leaves open — sometimes none | the same, with more patience |
 | 3 Spec | auto | auto | show → wait for explicit «ок» |
 | 4 Plan | auto, notify only | auto, stoppable | discuss → wait for explicit «ок» |
 | 5 Subagents | auto | auto | auto |
@@ -231,7 +231,8 @@ Every line here means something the user asked for is at risk. Phase mechanics �
 - Final acceptance measured against the spec instead of blind against the brief.
 - The blind checker or the memory subagent handed `spec.md` or the tickets. Independence is the entire mechanism; without it both of them confirm the plan instead of the code.
 - The finished project was never actually run — accepted on green tests and a reading of the code.
-- Starting without announcing mode and depth, or announcing one and behaving as another: questions in full, a start-and-see instead of «ок» in manual, skipped questions in semi.
+- Starting without announcing mode and depth, or announcing one and behaving as another: questions in full, a start-and-see instead of «ок» in manual.
+- A blocking unknown — payment, hosting, an account, where the data lives — left unasked in semi or manual because the brief «выглядел понятным». Asking nothing is legitimate only when nothing is open; a manufactured question and a skipped blocking one are both defects, in opposite directions.
 - Promising the user a wait — a countdown, «через минуту», «если не ответишь за N секунд» — that you have no way to honour.
 - In full: an invented fact about the user standing where an ASSUMPTION, a stub, or a PLACEHOLDER belongs.
 - Asking the user a process question — which tracker, which doc file, which memory file, ticket granularity, code review — outside manual, where spec and tickets are gates by design.

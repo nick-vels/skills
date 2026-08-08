@@ -49,7 +49,7 @@ Each answer becomes an `R##.n` story with its own acceptance line. `R##.n` never
 
 ### Two roads for depth
 
-**Propose it** — when the answer is genuinely the user's to give (which of two behaviours they want, what tone the messages take, whether something is worth its cost). That is a briefing question, and one of the best uses of the 5–8 available.
+**Propose it** — when the answer is genuinely the user's to give (which of two behaviours they want, what tone the messages take, whether something is worth its cost). That is a briefing question, and one of the best a briefing can spend itself on.
 
 **Decide it** — when the answer is craft, not preference. Error text, retry policy, empty-state copy, sensible limits, sane defaults. Decide, write it into the spec, and say so plainly in the summary. Asking the user which HTTP status to return is a wasted question; asking whether a cancelled order should refund automatically is not.
 
