@@ -202,6 +202,8 @@ The brief is dated in its filename because a slug directory outlives one sitting
 | «Сверю результат со спецификацией, этого хватит» | Спецификация может уже потерять требование. Финальная сверка идёт с брифом и без спецификации — иначе она подтвердит собственную ошибку. |
 | «Таски и спецификация видны в чате — зачем файлы» | Файл в `.autopilot/` и есть артефакт; чат — только его пересказ. Диалог умрёт, файлы останутся. |
 | «Перепишу дашборд целиком, так проще» | Дашборд обновляется заменой одной строки состояния. Перезапись — расход на пустом месте и потеря истории. |
+| «Панель сама перезагрузит страницу, как браузер» | Не перезагрузит: внутри встроенной панели `file://` не перечитывается вообще. Открыл там — обновляешь сам, той же строкой, что и состояние. |
+| «Подниму сервер, чтобы дашборд жил в панели» | Дашборд — один статический файл, в этом половина его ценности. Фоновый процесс ради обновления, которое стоит один вызов инструмента, — плохая сделка. |
 | «Скажу, где лежит дашборд, — сам откроет» | Не откроет. Файл в скрытой папке, который надо найти, — это не приборная панель. Открывается он один раз, командой, в самом начале. |
 | «Проект маленький, тасков не было — заполнять нечего» | Этапы, требования, тесты, коммит и заглушки есть всегда. Дашборд с одним тикающим таймером — это не «нечего показать», это несделанная работа. |
 | «Отмечу этапы в конце, разом» | Этапы нужны, пока сборка идёт: «где мы сейчас» на готовом проекте никому не нужно. Метка ставится на входе в фазу, а не по памяти после. |
@@ -225,6 +227,8 @@ The brief is dated in its filename because a slug directory outlives one sitting
 - Spec or tickets exist only in the dialogue — nothing written under `.autopilot/`.
 - `state.json` missing, or stale against what has actually been built.
 - The dashboard was never opened — the user was handed a path instead of a window.
+- The dashboard lives in an in-app pane and the pane was not refreshed after a state write — clocks tick, numbers lie.
+- A server started to serve the dashboard.
 - A stage list that never moved: everything `pending` while the build is halfway, or `active` on a run that ended.
 - A finished run at tier T0 whose dashboard shows only a clock — no stages, no requirement counts, no `singlePass`.
 - A ticket running with no `startedAt`, or timestamps written in bulk at the end.

@@ -21,7 +21,27 @@ Then write `state.json` and mirror it into the dashboard.
 
 ## Opening it — once, by you, at the start
 
-The user should not have to be told where a file is and then go find it. **Open the dashboard yourself, immediately after the first write**, before Phase 1 asks anything:
+The user should not have to be told where a file is and then go find it. **Open the dashboard yourself, immediately after the first write**, before Phase 1 asks anything.
+
+Where it opens decides how it stays fresh, and the two paths are not interchangeable.
+
+### Path A — inside the user's own window (preferred)
+
+If your harness gives you a way to show a local page in the window the user is already looking at — a preview pane, an in-app browser, a webview — **use it**. The whole point of a dashboard is being glanceable without leaving what you are doing; a separate browser window defeats half of that.
+
+In Claude Desktop that is the browser/preview pane: open it at the dashboard's `file://` path.
+
+**A page opened this way does not refresh itself. You refresh it.** Measured, not assumed: inside the pane a `file://` page runs its JavaScript and its clocks tick, but it never re-reads the file — two minutes with a ten-second timer produced zero reloads, and an explicit `location.reload()` was ignored. Re-pointing the pane at the same path, however, does load the new content.
+
+So the rule is one extra call, at a moment you are already writing files:
+
+> **Whenever you rewrite the `const STATE =` line, re-point the pane at the dashboard.** Same path, no new tab.
+
+That is roughly thirty tokens per update, and it makes the pane *more* accurate than polling: it refreshes exactly when there is something new, and the clocks keep ticking on their own in between.
+
+### Path B — the system browser
+
+No in-app viewer → hand it to the OS:
 
 ```bash
 open .autopilot/dashboard.html 2>/dev/null \
@@ -30,12 +50,17 @@ open .autopilot/dashboard.html 2>/dev/null \
   || echo "открой вручную: .autopilot/dashboard.html"
 ```
 
-Four rules, and they are all about not being annoying:
+Here the page **does** refresh itself every ten seconds until `finishedAt` is set, so you do nothing further. In a real browser a background tab may be throttled to about one refresh per minute — the data lags by a minute at worst, it does not freeze.
 
-- **Exactly once per run.** The page reloads itself every ten seconds while the build is unfinished — reopening it after each ticket would steal focus from whatever the user is doing and stack up browser tabs.
-- **Never on resume into an already-open tab.** On a resume, open it again only if the previous session ended (`finishedAt` was set) — otherwise assume the tab is still there.
-- **A failure is not an error.** Headless machine, SSH session, CI, no default browser — the command fails, you print the path in one line and carry on. Do not retry, do not install anything, do not try a second launcher.
-- **Do not open it in a remote session.** If `$SSH_CONNECTION` or `$CI` is set, skip the command entirely and print the path — a browser window on someone else's machine helps nobody.
+An IDE is Path B, not Path A. `code file.html` opens the *source* in an editor tab, and rendering it needs an extension — which this skill does not install on the user's behalf.
+
+### Rules for both paths
+
+- **Opened exactly once.** Path A is then refreshed in place; Path B refreshes itself. Neither ever opens a second window or tab.
+- **Never on resume into a window that is already open.** On a resume, open it again only if the previous session ended (`finishedAt` was set).
+- **A failure is not an error.** Headless machine, no default browser, no pane — print the path in one line and carry on. Do not retry, do not install anything, do not try a second launcher.
+- **Do not open it in a remote session.** If `$SSH_CONNECTION` or `$CI` is set, skip opening entirely and print the path — a browser window on someone else's machine helps nobody.
+- **No servers.** The dashboard is one static file, by design. Do not start an HTTP server to serve it, and do not add a build step.
 
 Say it in one line, once:
 
@@ -134,10 +159,11 @@ At every stage transition, and after every ticket:
 
 1. Edit the affected rows of `state.json` — the stage object, the ticket object, the `requirements` counts, `updatedAt`. Change the rows that changed; do not rewrite the file.
 2. In `dashboard.html`, replace the single line beginning `const STATE =` with `const STATE = ` + the new JSON + `;`.
+3. **If the dashboard lives in an in-app pane (Path A), re-point the pane at it.** It cannot refresh itself there. In the system browser (Path B) skip this — the page does it.
 
 That is roughly thirty tokens per update. **Never rewrite the dashboard**, and never hand-maintain a progress table in prose: a rewritten table grows quadratically in cost and invites tidying up history that should not be tidied.
 
-The user does not need to reload anything — the page refreshes itself every ten seconds until `finishedAt` is set, and there is a toggle in the header to stop that.
+The user never reloads anything by hand. In the system browser the page refreshes itself every ten seconds until `finishedAt` is set, with a toggle in the header to stop it; in an in-app pane you refresh it, on the same beat.
 
 ## Tier T0 — the dashboard still has to say something
 

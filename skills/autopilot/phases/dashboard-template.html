@@ -302,15 +302,22 @@ function tick(){
 
 // ——— автообновление ——————————————————————————————————————————————
 // STATE вшит в файл, поэтому свежие цифры приходят только с перезагрузкой страницы.
+// Видимость НЕ проверяем: встроенные панели (Claude Desktop, IDE-вьюверы) держат
+// document.hidden === true всё время, хотя пользователь смотрит именно туда.
+// Перезагрузка локального файла стоит почти ничего и фокус не забирает.
 function scheduleReload(){
   clearTimeout(reloadT);
   if (!autoOn || STATE.finishedAt) return;
-  reloadT = setTimeout(() => {
-    if (document.hidden) { scheduleReload(); return; }   // в фоне не дёргаемся
-    try { sessionStorage.setItem('autopilot-scroll', String(window.scrollY)); } catch(e) {}
-    location.reload();
-  }, RELOAD_MS);
+  reloadT = setTimeout(() => location.reload(), RELOAD_MS);
 }
+
+// Позицию чтения сохраняем на любой уход со страницы: и на своей перезагрузке,
+// и когда страницу переоткрывает агент (внутри панели self-reload не работает).
+const saveScroll = () => {
+  try { sessionStorage.setItem('autopilot-scroll', String(window.scrollY)); } catch(e) {}
+};
+window.addEventListener('pagehide', saveScroll);
+window.addEventListener('beforeunload', saveScroll);
 
 function render(lang){
   const L = I18N[lang] || I18N.ru;

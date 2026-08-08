@@ -38,7 +38,7 @@ The brief carries **the date it was dictated in its filename** — `2026-08-07-b
 
 ## 3a. Open the dashboard
 
-The moment it is written, open it — once, per `phases/7-instruments.md`:
+The moment it is written, open it — once. **If your harness can show a local page inside the user's own window** — a preview pane, an in-app browser — open it there; a separate browser window costs the user half the value of a glanceable dashboard. Otherwise hand it to the OS:
 
 ```bash
 open .autopilot/dashboard.html 2>/dev/null \
@@ -47,7 +47,9 @@ open .autopilot/dashboard.html 2>/dev/null \
   || echo "открой вручную: .autopilot/dashboard.html"
 ```
 
-Skip it entirely in a remote session (`$SSH_CONNECTION`, `$CI`) and treat a failure as nothing: print the path in one line and carry on. Do not reopen it later — the page refreshes itself.
+The two paths differ afterwards: a page in the system browser refreshes itself, a page in an in-app pane does not and you re-point the pane whenever you rewrite the state. Both are spelled out in `phases/7-instruments.md` — read it here.
+
+Skip opening entirely in a remote session (`$SSH_CONNECTION`, `$CI`) and treat a failure as nothing: print the path in one line and carry on. Never open a second window later.
 
 ## 4. Record the conventions
 
