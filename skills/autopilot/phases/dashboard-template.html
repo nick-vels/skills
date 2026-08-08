@@ -230,7 +230,9 @@
 <div class="wrap" id="app"></div>
 
 <script>
+/*autopilot:state:start*/
 const STATE = {"slug":"","title":"—","mode":"semi","depth":"normal","tier":"—","briefFile":null,"startedAt":null,"updatedAt":null,"finishedAt":null,"stages":[{"id":"preflight","status":"active","startedAt":null},{"id":"manifest","status":"pending"},{"id":"briefing","status":"pending"},{"id":"spec","status":"pending"},{"id":"plan","status":"pending"},{"id":"build","status":"pending"},{"id":"review","status":"pending"},{"id":"final","status":"pending"}],"requirements":{"total":0,"done":0,"inTicket":0,"inSpec":0,"placeholder":0,"deferred":0,"dropped":0},"tickets":[],"singlePass":null,"tests":null,"debt":{"placeholders":[],"assumptions":[],"emptyEnv":[]},"additions":[],"blind":null};
+/*autopilot:state:end*/
 </script>
 
 <script>
@@ -740,7 +742,35 @@ try { savedLang = localStorage.getItem('autopilot-lang')
   || ((navigator.language || '').startsWith('ru') ? 'ru' : 'en'); } catch(e) {}
 
 applyTheme(storedTheme());
-render(I18N[savedLang] ? savedLang : 'ru');
+
+// Состояние вшито отдельным блоком выше и переписывается на каждом обновлении.
+// Если этот блок испортили — объект не разобрался или их стало два — раньше
+// страница просто оставалась белой, и починить её было нечем: пустой экран
+// не говорит, что сломалось. Теперь она объясняет, что делать.
+function bootFail(why){
+  const app = document.getElementById('app');
+  if (!app) return;
+  const ru = (navigator.language || '').startsWith('ru');
+  app.innerHTML = '<div class="card"><div class="k">' +
+    (ru ? 'Дашборд не смог прочитать состояние' : 'Dashboard could not read its state') +
+    '</div><div class="sub" style="margin-top:10px">' + why + '</div>' +
+    '<div class="sub" style="margin-top:10px">' + (ru
+      ? 'Данные целы — они в <code>.autopilot/state.json</code>. Скажи агенту «почини дашборд»: он перезапишет блок состояния из этого файла. Сборку это не затрагивает.'
+      : 'The data is intact in <code>.autopilot/state.json</code>. Ask the agent to rebuild the dashboard from it; the build itself is unaffected.') +
+    '</div></div>';
+}
+
+if (typeof STATE === 'undefined' || !STATE || typeof STATE !== 'object') {
+  bootFail((navigator.language || '').startsWith('ru')
+    ? 'Блок <code>const STATE</code> не разобрался — обычно это второй объект состояния, дописанный рядом со старым, или JSON, развёрнутый на много строк.'
+    : 'The <code>const STATE</code> block failed to parse — usually a second state object written beside the first, or JSON spread over many lines.');
+} else {
+  try {
+    render(I18N[savedLang] ? savedLang : 'ru');
+  } catch (e) {
+    bootFail(String(e && e.message || e));
+  }
+}
 
 // Секундная стрелка для всех незакрытых интервалов и для «обновлено N назад».
 setInterval(tick, 1000);

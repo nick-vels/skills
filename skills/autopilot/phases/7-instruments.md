@@ -18,7 +18,9 @@ Raising the instruments is mechanical. Do exactly this and read no further — t
    cp <skill-dir>/phases/dashboard-template.html .autopilot/dashboard.html
    ```
 2. **Write `.autopilot/state.json`** with `slug`, `title`, `mode`, `depth`, `briefFile`, `memoryFile`, `startedAt`, `updatedAt`, `finishedAt: null`, all eight `stages` (`preflight` `active`, the rest `pending`), an empty `tickets` array and `requirements` at zero. The shape is below, under *state.json*.
-3. **Mirror it** — replace the single line beginning `const STATE =` in `dashboard.html` with the same JSON. **On one line, minified — never pretty-printed.** The whole update protocol is «find that one line and swap it»; the moment the object spans seventy lines there is no such line to find, the next update writes a second object beside the first, and the leftover half of the old one is a syntax error that blanks the entire page. A dashboard that will not open is almost always this.
+3. **Mirror it** — in `dashboard.html`, replace **everything between `/*autopilot:state:start*/` and `/*autopilot:state:end*/`** with `const STATE = ` + the same JSON + `;`, on one minified line.
+
+   The markers are the anchor, and they are what makes the replace safe: they stay findable no matter what the previous write looked like, so an update can never end up appending a second state object beside the first. That failure — two objects, the tail of the old one left dangling — is a syntax error, and it used to blank the whole page. Keeping the JSON on one line is still the rule, because it keeps the edit small; it is no longer the thing standing between the user and a white screen.
 4. **Open it once.** Inside the user's own window if the harness has one, otherwise hand it to the OS. A failure is one printed path, not an error; under `$SSH_CONNECTION` or `$CI`, skip opening entirely.
 5. **Learn the update ritual — it is the same three moves for the rest of the run**, and it is here rather than further down because you will need it long after this file has left your context:
 
@@ -205,15 +207,17 @@ Every timer on the dashboard is computed from these fields — total elapsed, pe
 At every stage transition, and after every ticket:
 
 1. Edit the affected rows of `state.json` — the stage object, the ticket object, the `requirements` counts, `updatedAt`. Change the rows that changed; do not rewrite the file.
-2. In `dashboard.html`, replace the single line beginning `const STATE =` with `const STATE = ` + the new JSON + `;` — **one line, minified**, exactly as in Phase 0.
+2. In `dashboard.html`, replace everything between `/*autopilot:state:start*/` and `/*autopilot:state:end*/` with `const STATE = ` + the new JSON + `;`, one minified line — exactly as in Phase 0.
 
-   The file is only ever edited this way, and that is worth one cheap check after the first write of a run:
+   One cheap check is worth running after the first write of a run:
 
    ```bash
-   grep -c '^const STATE = ' .autopilot/dashboard.html   # ровно 1
+   grep -c 'autopilot:state:start' .autopilot/dashboard.html   # ровно 1
    ```
 
-   Anything other than `1` means the page is already broken: `0` — the object was pretty-printed and the anchor line no longer exists; `2` — a previous update appended a second object instead of replacing the first. Both blank the page completely, because one syntax error stops the whole script and `#app` is filled by that script. Repair by rewriting the block from `state.json`, which is the source of truth, rather than by patching the JSON in place.
+   If it is not `1`, the dashboard came from a template old enough to have no markers, or something wrote over them. Repair by rewriting that whole block from `state.json` — that file is the source of truth and is never the thing that broke. Patching the JSON in place is what produces two objects in one file.
+
+   A dashboard that opens to a panel saying «не смог прочитать состояние» is telling you exactly this, and it is not a lost run: the state is intact, only its copy inside the page is not.
 
 That is roughly thirty tokens per update. **Never rewrite the dashboard**, and never hand-maintain a progress table in prose: a rewritten table grows quadratically in cost and invites tidying up history that should not be tidied.
 
