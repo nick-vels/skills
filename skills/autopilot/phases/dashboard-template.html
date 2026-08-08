@@ -286,7 +286,7 @@ const I18N = {
     skipped:"пропущен",notStarted:"не начат",allDone:"всё пройдено",
     noTicketsTier:"без разбивки",notCut:"таски ещё не нарезаны",
     t0note:(n)=>`Ярус T0 — собрано за один заход, без разбивки на таски.${n?' '+n:''}`,
-    t0files:n=>`Файлов: ${n}.`,noEta:"ярус T0 — оценка не нужна",
+    t0files:n=>`Файлов: ${n}.`,noEta:"ярус T0 — оценка не нужна",wrapUp:"таски готовы, идёт приёмка",
     auto:"Автообновление",autoOn:"Автообновление включено",autoOff:"Автообновление выключено",
     agoSec:s=>`${s} сек назад`,agoMin:m=>`${m} мин назад`,agoHr:(h,m)=>`${h} ч ${m} мин назад`,
     debt:"Долг",debtSub:(a,b,c)=>`заглушки ${a} · допущения ${b} · переменные ${c}`,
@@ -322,7 +322,7 @@ const I18N = {
     skipped:"skipped",notStarted:"not started",allDone:"all passed",
     noTicketsTier:"no split",notCut:"tickets not cut yet",
     t0note:(n)=>`Tier T0 — built in a single pass, no tickets.${n?' '+n:''}`,
-    t0files:n=>`Files: ${n}.`,noEta:"tier T0 — no estimate needed",
+    t0files:n=>`Files: ${n}.`,noEta:"tier T0 — no estimate needed",wrapUp:"tickets done, acceptance running",
     auto:"Auto-refresh",autoOn:"Auto-refresh on",autoOff:"Auto-refresh off",
     agoSec:s=>`${s}s ago`,agoMin:m=>`${m} min ago`,agoHr:(h,m)=>`${h}h ${m}m ago`,
     debt:"Debt",debtSub:(a,b,c)=>`placeholders ${a} · assumptions ${b} · env vars ${c}`,
@@ -443,7 +443,33 @@ function render(lang){
     return memo[id] = d;
   }
   const cp = Math.max(0, ...T.map(t => depth(t.id, new Set())));
-  const eta = (median && cp) ? [Math.round(median*cp*0.75), Math.round(median*cp*1.4)] : null;
+
+  // Оценка считается в минутах по цепочке, а не «медиана × длина цепочки»: иначе
+  // таск, который идёт двадцать седьмую минуту, стоит в оценке как не начатый,
+  // и на последнем почти доделанном таске экран пишет «21 … 39 мин».
+  const memoMin = {};
+  const leftFor = t => {
+    if (!t || t.status === 'done') return 0;
+    const full = median || 10;
+    if (t.status === 'in-progress' && t.startedAt) {
+      const elapsed = (spanMs(t.startedAt, null) || 0) / 60000;
+      return Math.max(1, full - elapsed);          // уже идёт — осталось меньше
+    }
+    return full;
+  };
+  function chainMin(id, seen){
+    const t = byId[id];
+    if (!t || t.status === 'done') return 0;
+    if (memoMin[id] != null) return memoMin[id];
+    if (seen.has(id)) return leftFor(t);
+    seen.add(id);
+    const d = leftFor(t) + Math.max(0, ...(t.blockedBy || []).map(b => chainMin(b, seen)));
+    seen.delete(id);
+    return memoMin[id] = d;
+  }
+  const cpMin = Math.max(0, ...T.map(t => chainMin(t.id, new Set())));
+  const eta = (median && cpMin > 0)
+    ? [Math.max(1, Math.round(cpMin*0.75)), Math.max(2, Math.round(cpMin*1.4))] : null;
 
   // Этапы: канонический порядок, поверх него — то, что прислал state.json.
   const given = Array.isArray(S.stages) ? S.stages.filter(Boolean) : [];
@@ -631,7 +657,8 @@ function render(lang){
     </div>
     <div class="card"><div class="k">${L.left}</div>
       <div class="v">${eta ? fmtDur(eta[0]) : '—'}${eta ? `<small> … ${fmtDur(eta[1])}</small>` : ''}</div>
-      <div class="sub">${eta ? L.critpath(cp) : (t0 ? L.noEta : L.needTwo)}</div>
+      <div class="sub">${eta ? L.critpath(cp)
+        : (t0 ? L.noEta : (T.length && done.length === T.length ? L.wrapUp : L.needTwo))}</div>
     </div>
   </div>
 
