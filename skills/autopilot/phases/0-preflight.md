@@ -57,7 +57,7 @@ open .autopilot/dashboard.html 2>/dev/null \
   || echo "открой вручную: .autopilot/dashboard.html"
 ```
 
-The two paths differ afterwards: a page in the system browser refreshes itself, a page in an in-app pane does not and you re-point the pane at the two moments that matter. Read **only** the *Phase 0 needs four lines of this file* block at the top of `phases/7-instruments.md` — the rest of that file is for the stage transitions still to come.
+The two paths differ afterwards: a page in the system browser refreshes itself, a page in an in-app pane never does and you re-point it at the file on every state write. Read **only** the *Phase 0 needs five lines of this file* block at the top of `phases/7-instruments.md` — its fifth line is the update ritual you will use for the rest of the run, so do not skip it.
 
 Skip opening entirely in a remote session (`$SSH_CONNECTION`, `$CI`) and treat a failure as nothing: print the path in one line and carry on. Never open a second window later.
 

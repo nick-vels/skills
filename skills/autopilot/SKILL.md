@@ -227,6 +227,7 @@ Every line here means something the user asked for is at risk. Phase mechanics �
 - A requirement left the manifest without a status, or was marked `dropped` without a quote of the user saying so.
 - Past gate G3: a ticket that traces to no requirement, or a requirement that traces to no ticket.
 - Spec or tickets that exist only in the dialogue — nothing written under `.autopilot/`.
+- Instruments that disagree with the chat: a stage still `active` after you moved on, a ticket running while the dashboard calls it `pending`, a ticket carrying the run's `startedAt` instead of its own, timestamps filled in afterwards from memory. The user believes the screen over your sentences, which is the whole reason it exists.
 - The announced depth and the actual spec diverge: a bare restatement of the brief at normal or deep, or an invented capability — any `A##` — at strict.
 - Final acceptance measured against the spec instead of blind against the brief.
 - The blind checker or the memory subagent handed `spec.md` or the tickets. Independence is the entire mechanism; without it both of them confirm the plan instead of the code.

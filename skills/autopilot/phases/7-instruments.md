@@ -9,9 +9,9 @@ Two files, and the split matters:
 
 They are separate because on resume you need the state in twenty lines, not buried in two hundred lines of markup. They cannot drift because they are written together, in that order, every time.
 
-## Phase 0 needs four lines of this file
+## Phase 0 needs five lines of this file
 
-Raising the instruments is mechanical. Do exactly this and read no further — the rest of this file is for the stage transitions, the ticket updates and the end of the run, and it is read when those happen.
+Raising the instruments is mechanical. Do exactly this and read no further — the rest of this file explains the reasoning and answers questions you do not have yet.
 
 1. **Copy the template.** Never regenerate it, never read it into context:
    ```bash
@@ -20,8 +20,19 @@ Raising the instruments is mechanical. Do exactly this and read no further — t
 2. **Write `.autopilot/state.json`** with `slug`, `title`, `mode`, `depth`, `briefFile`, `memoryFile`, `startedAt`, `updatedAt`, `finishedAt: null`, all eight `stages` (`preflight` `active`, the rest `pending`), an empty `tickets` array and `requirements` at zero. The shape is below, under *state.json*.
 3. **Mirror it** — replace the single line beginning `const STATE =` in `dashboard.html` with the same JSON.
 4. **Open it once.** Inside the user's own window if the harness has one, otherwise hand it to the OS. A failure is one printed path, not an error; under `$SSH_CONNECTION` or `$CI`, skip opening entirely.
+5. **Learn the update ritual — it is the same three moves for the rest of the run**, and it is here rather than further down because you will need it long after this file has left your context:
 
-That is the whole of Phase 0's business here. Everything below answers a question you do not have yet.
+   | When | What |
+   |---|---|
+   | entering a phase | that stage → `active` + `startedAt`; the one you left → `done` + `finishedAt` |
+   | launching a ticket (or a whole wave) | those tickets → `in-progress` + `startedAt` **before** the subagent goes out |
+   | a ticket returns | that ticket → `done` + `finishedAt` + tests + commit |
+
+   Every one of them: move `updatedAt`, replace the `const STATE =` line in `dashboard.html`, and **re-point an in-app pane at the file** — such a pane never re-reads it on its own, so a state write nobody re-points is a write the user cannot see.
+
+   **`startedAt` on a ticket is that ticket's own launch time** — not the run's, not the build stage's. Copying the run's `startedAt` into a ticket is the one mistake that looks harmless and makes every per-ticket duration on the dashboard wrong from the first row.
+
+That is the whole of Phase 0's business here. Everything below is reasoning and reference.
 
 ## Opening it — once, by you, at the start
 
@@ -39,10 +50,14 @@ In Claude Desktop that is the browser/preview pane: open it at the dashboard's `
 
 So the pane shows the numbers as of the moment it was opened, with the clocks running on top of them. **That is not a lie the user can walk into**: the footer says «обновлено N назад» about exactly the data on screen, and turns warning-coloured after five silent minutes.
 
-Do **not** re-point the pane after every state write — that is a tool call per ticket for a picture nobody is looking at most of the time. Refresh it at two moments only:
+**So re-point the pane every time you write the state.** Stage transitions and ticket starts and finishes are exactly the events a watcher is waiting for, and there are not many of them — a T2 build writes state maybe fifteen times in an hour. One tool call each is the whole price of a dashboard that is true whenever the user glances at it, and a dashboard that is true only when asked is a dashboard the user learns to distrust.
 
-- **when the user asks where things stand** — «как там?», «покажи прогресс». Refresh first, answer second, so the screen and your sentence agree;
-- **once when the run ends**, together with `finishedAt`, so the final numbers are what stays on the screen.
+Two refinements, not exceptions:
+
+- **Refresh before you answer.** «Как там?», «покажи прогресс» — re-point first, then speak, so the screen and your sentence agree.
+- **The last refresh is the one that stays.** At the end of the run, re-point once more together with `finishedAt`; those are the numbers the user is left looking at.
+
+What still does not happen: a refresh per file edit inside a ticket, or a refresh when nothing in the state changed. The trigger is the state write, not the passage of time.
 
 ### Path B — the system browser
 
@@ -61,7 +76,7 @@ An IDE is Path B, not Path A. `code file.html` opens the *source* in an editor t
 
 ### Rules for both paths
 
-- **Opened exactly once.** Path A is refreshed in place at the two moments named above; Path B refreshes itself. Neither ever opens a second window or tab.
+- **Opened exactly once.** Path A is re-pointed in place on every state write; Path B refreshes itself. Neither ever opens a second window or tab.
 - **Never on resume into a window that is already open.** On a resume, open it again only if the previous session ended (`finishedAt` was set).
 - **A failure is not an error.** Headless machine, no default browser, no pane — print the path in one line and carry on. Do not retry, do not install anything, do not try a second launcher.
 - **Do not open it in a remote session.** If `$SSH_CONNECTION` or `$CI` is set, skip opening entirely and print the path — a browser window on someone else's machine helps nobody.
@@ -193,7 +208,7 @@ At every stage transition, and after every ticket:
 
 That is roughly thirty tokens per update. **Never rewrite the dashboard**, and never hand-maintain a progress table in prose: a rewritten table grows quadratically in cost and invites tidying up history that should not be tidied.
 
-Nothing else is needed here. In the system browser the page refreshes itself every ten seconds until `finishedAt` is set, with a toggle in the header to stop it; in an in-app pane it waits for one of the two moments above.
+Then re-point the pane, if that is where the dashboard lives. In the system browser the page refreshes itself every ten seconds until `finishedAt` is set, with a toggle in the header to stop it, and nothing further is needed.
 
 ## Tier T0 — the dashboard still has to say something
 

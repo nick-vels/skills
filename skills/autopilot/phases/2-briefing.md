@@ -28,10 +28,14 @@ In priority order:
 
 - **Every blocking unknown is asked, always.** Payment, hosting, accounts, where the data lives, an existing system to fit into. No count and no mode makes one of these skippable — an unasked blocking question costs the project far more than an extra question ever costs the user.
 - **A fork only the user can settle is asked** when the two branches lead to visibly different products.
-- **Everything else you decide yourself** and record it. Error wording, retry policy, sane defaults — that is craft, and Phase 3 is where it belongs.
+- **Everything else you decide yourself** and record it. Error wording, retry policy, sane defaults, naming, layout — that is craft, and Phase 3 is where it belongs.
+
+  «Everything else» is narrower than it sounds, and getting the line wrong in this direction is the expensive mistake. A decision belongs back in the interview, not in your hands, if it **costs the user money or ties them to a vendor**, if it **changes what they see or what they can do**, if **undoing it later means rebuilding rather than editing**, or if it **encodes a rule about their business** — prices, deadlines, who may do what, what happens to someone's data. None of those are craft, however obvious the answer looks from here. When you cannot tell which side a decision falls on, that uncertainty *is* the signal: ask.
 - **Nothing left open? Say so and go.** «Вопросов нет — в задаче всё однозначно, пишу спецификацию.» Mark the `briefing` stage `skipped` in `state.json` with the note «вопросов не потребовалось», so the user sees a decision rather than a step that quietly did not happen.
 
-Most briefs land somewhere between two and eight questions. That is an observation about briefs, not a target for you. In **manual** the same rules hold with more patience: keep going while genuine forks remain.
+Most briefs land somewhere between two and eight questions. That is an observation about briefs, not a target for you — **and there is no ceiling any more than there is a floor.** A three-line brief for a marketplace, a project that has to fit into someone's existing system, a business with rules you cannot guess: fifteen questions there is not an interrogation, it is the cheapest part of the whole build. Ask them, and say once why there are so many — «задача большая и многое не определено, вопросов будет больше обычного». What makes a long interview bad is padding, never length.
+
+In **manual** the same rules hold with more patience: keep going while genuine forks remain.
 
 ## What to ask about
 
