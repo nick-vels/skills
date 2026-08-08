@@ -14,15 +14,17 @@ This is the mistake to avoid, and it is not the obvious one. Cutting too fine fe
 
 ## The tier budget
 
-Decide the tier from the spec, then cut to it. State the tier and the count in one line to the user.
+Decide the tier from **what has to be built**, then cut to it. State the tier and the count in one line to the user.
 
-| Tier | When | Tickets |
+| Tier | The product looks like | Tickets |
 |---|---|---|
-| **T0** | spec ≤ ~800 words, ≤ 3 files, one layer, no external service | **none — build straight from the spec in one context** |
-| **T1** | spec ≤ ~2000 words, one coherent feature | 2–3 |
-| **T2** | spec ≤ ~5000 words, several features or several layers | 4–8 |
-| **T3** | ≥ 3 genuinely independent subsystems, or waves that can truly run in parallel | 9–16 |
+| **T0** | one surface, one layer, no external service — a page, a form, a script, a single endpoint | **none — build straight from the spec in one context** |
+| **T1** | one coherent feature: a few surfaces over one data shape, at most one external service | 2–3 |
+| **T2** | several features, or one feature reaching across several layers — store, logic, interface, integration | 4–8 |
+| **T3** | ≥ 3 genuinely independent subsystems, each with its own data and its own reason to change | 9–16 |
 | **>16** | — | **not allowed.** Either justify it in a line in the spec, or split the work into two Autopilot runs |
+
+**The tier is read from the product, never from the length of `spec.md`.** Depth decides how thoroughly each requirement is written up; it has nothing to say about how much there is to build. A `deep` spec for a landing page is a long document about one page — still T0, still one context, still no tickets. Sizing by word count quietly turns the depth dial into a ticket multiplier, which is the opposite of what it is for.
 
 **T0 is real and it is common.** A landing page, a form, a script, a single endpoint — cut nothing, build it in one pass, review once, done. Skipping tickets here is not a shortcut; creating them would be the waste. Say so plainly: «Задача небольшая — собираю сразу, без разбивки».
 
@@ -56,6 +58,40 @@ After the draft, before writing any files, go through the list once more and mer
 
 Then re-check the tier. A draft that lands at 14 and merges to 7 was a T2 job pretending to be T3 — normal, and the reason this pass exists.
 
+## Waves — what may fly together
+
+Blocking edges say what cannot start yet. **Waves say what may start at the same time**, and computing them is not optional: without waves the crew flies one ticket at a time, and a plan whose tickets are genuinely independent takes two or three times longer than it needs to — for no reason anybody chose.
+
+Work them out once, right after the merge pass, from two things you already have:
+
+1. **`wave = 1 + max(wave of its blockers)`** — everything with no blockers is wave 1.
+2. **Then split each wave by zones.** Two tickets in one wave that would write the same files cannot run together: move the later one into the next wave. Same files → serialise, always. Two subagents editing one file overwrite each other and the loss is silent.
+
+Step 2 needs to know what each ticket owns, so every ticket names its zone:
+
+**Зона:** `src/bot/` · `migrations/`
+
+Directories and modules — a boundary of ownership, not a file list. This is the one exception to "avoid paths": here the path *is* the decision being made, and it goes stale only if the ticket itself is re-cut.
+
+A wave of one is a normal answer. Ticket 01 — the shell, the schema, the shared primitives — is a wave of its own by definition.
+
+**Do not manufacture parallelism.** Splitting a ticket in two so a wave looks wider spends two contexts to save one, and the merge pass exists to undo exactly that. Waves are *discovered* in the dependency graph, never designed into it. If everything genuinely depends on everything, the answer is N waves of one — say so and fly it.
+
+Write `wave` into every ticket file and into `state.json`. The dashboard groups the build by waves and marks the parallel ones («Волна 3 — 2 таска параллельно»); Phase 5 launches each wave in one go.
+
+## Publishing the plan to the instruments
+
+The moment the ticket files exist, **every ticket goes into `state.json` and into the dashboard** — not when the first one starts, not after the first one lands:
+
+```json
+{ "id": "04", "title": "Панель мастера: очередь заявок", "requirements": ["R04", "R04.1"],
+  "blockedBy": ["02"], "wave": 3, "zone": ["src/admin/"], "status": "pending", "retries": 0 }
+```
+
+`status: "pending"`, no timestamps yet — they come when the ticket launches. This is one edit, and it is what turns the dashboard from «таски ещё не нарезаны» into the whole plan with its waves, visible before a line of code is written.
+
+**A build running while the dashboard still says the tickets were never cut is broken instruments**, and it breaks them at the exact moment the user is most likely to look. The count, the waves, the «ход сборки» block and the honest progress bar all read from this array — nothing on the dashboard can show what was never written. See `phases/7-instruments.md`.
+
 ## Density — the other half of the rule
 
 Cutting fewer tickets only helps if each one carries what its subagent needs. The failure mode is a ticket so thin that the executor fills the gaps by guessing.
@@ -67,6 +103,8 @@ Every ticket file:
 
 **Требования:** R01, R01.1, A01
 **Blocked by:** 01, 02
+**Зона:** `src/bot/`
+**Волна:** 2
 **Status:** ready
 
 ## Что должно заработать
@@ -101,13 +139,17 @@ Avoid file paths and code snippets: they go stale faster than the ticket does. T
 
 **Forward:** every `in-spec` requirement appears in at least one ticket's Требования line. A requirement in no ticket does not get built.
 
-**Backward:** every ticket names at least one requirement. **A ticket tracing to nothing is work nobody ordered** — cut it, or attach it to what it actually serves. This direction catches the invented subsystem that would otherwise consume three contexts and confuse the acceptance run.
+**Backward:** every ticket names at least one requirement, or a spec decision that itself traces to one. **A ticket tracing to nothing is work nobody ordered** — cut it, or attach it to what it actually serves. This direction catches the invented subsystem that would otherwise consume three contexts and confuse the acceptance run.
 
-Then update the manifest: `in-spec` → `in-ticket`, with the ticket number.
+**Complete:** every ticket has a zone and a wave, and no two tickets in one wave share a zone. A missing wave means Phase 5 has to guess the order, and it will guess "one at a time".
+
+Then update the manifest: `in-spec` → `in-ticket`, with the ticket number, and publish the tickets to the instruments (above).
 
 ## Showing the plan
 
 Write the files first. **A ticket that exists only in the dialogue is not a ticket** — what the user sees is a summary of files already on disk.
+
+**Parallelism gets one line, and only if it is true**: «Часть тасков пойдёт параллельно — 6 тасков в 4 волны». It is the one piece of process the user actually feels, because it changes how long they wait. Never claim it for a plan that is one long chain.
 
 **semi** — one screen, plain language, no technical detail, one line per ticket saying what the user will be able to do when it lands. Then: «Показываю план и начинаю. Скажи "стоп", если что-то не так». Then start. Do not wait for approval — waiting is the failure mode this skill exists to remove. **Never promise a countdown:** you cannot hold a pause, so a stated delay is a promise you will break. The user's window to object is their own reaction, and saying so plainly is the honest version of it.
 

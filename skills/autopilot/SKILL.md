@@ -1,6 +1,6 @@
 ---
 name: autopilot
-description: Use when the user dictates an app, site, bot, or feature to build end-to-end and expects a finished result without reviewing specs, tickets, or code — vibecoding sessions, non-technical users, "собери под ключ", "build it for me", "не задавай лишних вопросов" requests. Also use when the user explicitly invokes /autopilot, optionally with a mode — full ("полный автомат", no questions at all), semi (default, questions only), manual ("ручной режим", approve spec and tickets by hand) — and optionally a depth — strict ("строго по брифу", nothing beyond what was asked) or deep ("проработай глубоко", full elaboration of every requirement).
+description: Use when the user dictates an app, site, bot, or feature to build end-to-end and expects a finished result without reviewing specs, tickets, or code — vibecoding sessions, non-technical users, "собери под ключ", "build it for me", "не задавай лишних вопросов" requests. Also use when the user invokes /autopilot, or asks for a build in a named mode or depth — «полный автомат», «ручной режим», «строго по брифу», «проработай глубоко».
 argument-hint: "[full|semi|manual] [strict|deep] что нужно построить"
 ---
 
@@ -141,6 +141,8 @@ The rules for each level live in `phases/3-spec.md`.
 
 A failed gate is not a warning. It sends the phase back to be redone — see `phases/1-manifest.md`.
 
+**The plan may be corrected; the brief may not.** When the build proves the plan wrong — a data model that does not hold, an assumed interface that cannot exist — the spec is amended and a `D##` row records what the code demonstrated and when. That is the one thing allowed into the manifest after the briefing, it never retires a requirement, and it is never a route for an idea you had. Rules in `phases/5-subagents.md`.
+
 ## Secrets
 
 Credentials are the user's to hold, not the agent's to handle. This section binds every phase; the phases do not restate it.
@@ -161,6 +163,7 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 │   ├── spec.md          the specification
 │   ├── interfaces.md    what finished tickets built, for the tickets that follow
 │   └── tickets/NN-<slug>.md
+├── README.md            how to read this folder — for the human, written once in Phase 0
 ├── state.json           machine-readable run state: stages, tickets, timings, debt
 └── dashboard.html       the human view — opened automatically in Phase 0, refreshes itself
 
@@ -173,7 +176,24 @@ The brief is dated in its filename because a slug directory outlives one sitting
 
 `.autopilot/` is committed, not ignored — it is the user's record of what was promised and what was delivered. A run that leaves nothing under `.autopilot/` did not happen.
 
-## Rationalizations — STOP
+## Judgement
+
+This skill describes a process, not the product. Its numbers — tiers, question counts, story counts, wave widths — are **calibration for a first guess, never targets to hit.** A spec written to reach a story count, or a plan cut to land inside a tier, has optimised for the rule instead of for the person who asked.
+
+The rules below are the same kind of thing. Each one is here because it was paid for, and each is an argument — arguments can lose. Where following one would make the result worse for the user, break it deliberately, say so in one line, and carry on. That is a decision, and decisions get recorded. What is never acceptable is breaking one quietly, or keeping one because it is written down.
+
+**Four rules are not calibration and do not lose.** They hold in every mode, at every depth, at every tier:
+
+1. **A requirement is removed only by the user**, in their own words, quoted into the manifest.
+2. **A secret is never requested, echoed, or written** — not into a file, a prompt, a commit, or a report.
+3. **A fact about the user is never invented.** Prices, texts, addresses, accounts stay visible placeholders until they supply them.
+4. **An irreversible or outward-facing action is a question** — deploy, publish, pay, message a third party, delete data, rewrite history.
+
+Everything else is argument.
+
+## Rationalizations — the ones that cost the user the product
+
+Phase-specific mechanics are not here; they live in the phase that owns them. What follows is the short list of excuses that end with the user getting something other than what they asked for.
 
 | Excuse | Reality |
 |--------|---------|
@@ -185,72 +205,41 @@ The brief is dated in its filename because a slug directory outlives one sitting
 | «Сделаю заглушку, уточнит потом» | Блокирующие неизвестные (оплата, хостинг, аккаунты) решаются в брифинге — в полном автомате в self-briefing, — но всегда до билда. |
 | «Пусть пришлёт ключ, я вставлю в код» | Ключи вставляет пользователь и только в `.env`. Ты работаешь с именем переменной. |
 | «Ключ уже в контексте, значит, можно записать» | Наоборот: значит, надо отредактировать и предупредить. Контекст — не разрешение. |
-| «И так понятно, что делать» | Понятно тебе — не зафиксировано. Манифест и спецификация — единственные точки сверки. |
 | «Быстрее всё сделать в одном контексте» | Быстрее в первый час. Дальше модель ходит кругами и ломает работавшее. |
-| «Задача маленькая, но таски положено делать» | Не положено. Ярус T0 — ноль тасков. Граница таска стоит дороже мелкой работы внутри неё. |
-| «Нарежу помельче, так надёжнее» | Каждая лишняя граница — ещё один свежий контекст, который заново въезжает в проект. Дробление покупает не надёжность, а расход. |
 | «Бриф краткий — значит, и спецификация краткая» | Бриф — силуэт: пользователь описал happy path и не описал ни пустых состояний, ни ошибок, ни обрывов. На нормальной и максимальной глубине продумать их — твоя работа. |
-| «Это и так очевидно, писать не буду» | Очевидное, не записанное в спецификацию, каждый субагент додумает по-своему. Три исполнителя — три разные «очевидности». |
+| «Это и так очевидно, писать не буду» | Очевидное тебе — не зафиксировано, и каждый субагент додумает его по-своему: три исполнителя — три разные «очевидности». Манифест и спецификация — единственные точки сверки. |
 | «Придумал полезную фичу, добавлю» | Углубление заказанного (`R##.n`) — да. Новая возможность (`A`) — только с родительским требованием, в пределах пропорции и в отчёт. На `strict` — нельзя вообще. |
-| «Глубина strict — значит, можно не обрабатывать ошибки» | `strict` убирает лишнее, а не обязательное. Падение на неверном вводе не выполняет требование, ради которого писалось. |
-| «Глубина deep — можно строить что хочу» | `deep` покупает тщательность, а не другой проект. Родитель и пропорция действуют на всех уровнях. |
 | «Полный автомат — значит можно и задеплоить» | Автомат снимает вопросы о продукте, а не право на необратимое. Деплой, оплата, рассылка, удаление — гейт во всех режимах. |
 | «В полном автомате можно додумать за пользователя всё» | Решения — да, и все в ASSUMPTIONS. Факты о пользователе (цены, тексты, аккаунты) — нет: заглушка и строка в отчёте. |
 | «Напишу "запускаю через 60 секунд"» | Ты не умеешь ждать — обещанной паузы не будет. Честная формулировка: «начинаю, скажи стоп». |
 | «В ручном режиме тоже начну и подожду возражений» | В ручном согласование — это явное «ок». Молчание им не является, начатая работа тем более. |
-| «Режим не назвали — спрошу, какой» | Не назвали — полуавтомат. Вопрос о режиме сам по себе лишний вопрос. |
 | «Сверю результат со спецификацией, этого хватит» | Спецификация может уже потерять требование. Финальная сверка идёт с брифом и без спецификации — иначе она подтвердит собственную ошибку. |
 | «Таски и спецификация видны в чате — зачем файлы» | Файл в `.autopilot/` и есть артефакт; чат — только его пересказ. Диалог умрёт, файлы останутся. |
-| «Перепишу дашборд целиком, так проще» | Дашборд обновляется заменой одной строки состояния. Перезапись — расход на пустом месте и потеря истории. |
-| «Панель сама перезагрузит страницу, как браузер» | Не перезагрузит: внутри встроенной панели `file://` не перечитывается вообще. Поэтому её переоткрывают в двух местах — когда пользователь спросил про прогресс и когда прогон закончился. Не после каждой записи. |
-| «Подниму сервер, чтобы дашборд жил в панели» | Дашборд — один статический файл, в этом половина его ценности. Фоновый процесс ради обновления, которое стоит один вызов инструмента, — плохая сделка. |
-| «Скажу, где лежит дашборд, — сам откроет» | Не откроет. Файл в скрытой папке, который надо найти, — это не приборная панель. Открывается он один раз, командой, в самом начале. |
-| «Проект маленький, тасков не было — заполнять нечего» | Этапы, требования, тесты, коммит и заглушки есть всегда. Дашборд с одним тикающим таймером — это не «нечего показать», это несделанная работа. |
-| «Отмечу этапы в конце, разом» | Этапы нужны, пока сборка идёт: «где мы сейчас» на готовом проекте никому не нужно. Метка ставится на входе в фазу, а не по памяти после. |
-| «Проставлю время, когда закончу» | Таймер считается из `startedAt`. Не проставил на старте — пользователь смотрел на замерший ноль ровно тогда, когда шла работа. |
-| «CLAUDE.md — это уже детали, спрошу пользователя, какой файл создать» | Имя служебного файла — процессное решение, как и всё в Phase 0. Детект отвечает сам, вслух, одной строкой. Слот брифинга стоит вопроса про оплату, а не про расширение файла. |
-| «Опишу проект в CLAUDE.md по спецификации — так быстрее» | Спецификация — это план. Память проекта, написанная по плану, врёт ровно там, где сборка отклонилась, и следующая сессия ей верит. Описание пишется по коду. |
-| «Допишу в CLAUDE.md заодно пару полезных советов» | Общие советы про тесты и имена переменных верны везде и бесполезны нигде. В файл идёт только то, что выяснилось здесь и стоило времени. |
-| «Перепишу CLAUDE.md целиком, там уже каша» | То, что вне маркеров, написал человек. Переписывать это ты не вправе — как и требование из манифеста. |
 | «Пользователь не спрашивал про режимы — не буду грузить» | Он и не спросит: в чате нет `--help`. Пять строк в начале — единственное место, где он вообще узнаёт, что у сборки есть ручки. |
+| «Проект собран, тесты зелёные — значит, работает» | Тесты писал тот же процесс, что и код. Пока проект никто не запустил, «работает» — это гипотеза, а первым его запустит пользователь. |
 
 ## Red Flags — start the phase over
 
+Every line here means something the user asked for is at risk. Phase mechanics — instruments, timestamps, wave bookkeeping, memory-file detection — are checked in the phase files that own them, not here.
+
 - Writing code before the spec exists.
-- The brief was never written to `brief.md` — the run is anchored to nothing.
+- The brief was never written to its file — the run is anchored to nothing.
 - A requirement left the manifest without a status, or was marked `dropped` without a quote of the user saying so.
-- A ticket that traces to no requirement, or a requirement that traces to no ticket, past gate G3.
-- At normal or deep: a spec that restates the brief without deepening it — no empty states, no failures, roughly one story per requirement.
-- At strict: an invented capability the brief never asked for, or an `A##` story of any kind.
-- The announced depth and the actual spec diverge — every dimension exhaustively covered on strict, or a bare restatement on deep.
-- Final acceptance run with the spec in hand instead of blind against the brief.
-- Spec or tickets exist only in the dialogue — nothing written under `.autopilot/`.
-- `state.json` missing, or stale against what has actually been built.
-- The dashboard was never opened — the user was handed a path instead of a window.
-- An in-app pane left un-refreshed when the user asked how things stand, or at the end of the run.
-- A pane re-opened after every state write — a tool call per ticket for a screen nobody is watching.
-- A server started to serve the dashboard.
-- A stage list that never moved: everything `pending` while the build is halfway, or `active` on a run that ended.
-- A finished run at tier T0 whose dashboard shows only a clock — no stages, no requirement counts, no `singlePass`.
-- A ticket running with no `startedAt`, or timestamps written in bulk at the end.
-- The run started without the mode-and-depth hint — the user cannot ask for a dial nobody named.
-- The run ended without a project memory file, or with one still holding only the Phase 0 skeleton.
-- The memory subagent was handed `spec.md` or the tickets — it now documents the plan instead of the code.
-- A command or a path in the memory file that was never checked against the repository.
-- Text outside the `autopilot` markers edited, moved, or dropped.
-- Which memory file to create was asked as a question — in any mode.
-- Phase 0 questions leaked to the user (which tracker, which labels, which doc file) — Autopilot answers those itself.
-- The announced mode and the actual behaviour diverge: questions in full, a start-and-see instead of «ок» in manual, skipped questions in semi.
+- Past gate G3: a ticket that traces to no requirement, or a requirement that traces to no ticket.
+- Spec or tickets that exist only in the dialogue — nothing written under `.autopilot/`.
+- The announced depth and the actual spec diverge: a bare restatement of the brief at normal or deep, or an invented capability — any `A##` — at strict.
+- Final acceptance measured against the spec instead of blind against the brief.
+- The blind checker or the memory subagent handed `spec.md` or the tickets. Independence is the entire mechanism; without it both of them confirm the plan instead of the code.
+- The finished project was never actually run — accepted on green tests and a reading of the code.
+- Starting without announcing mode and depth, or announcing one and behaving as another: questions in full, a start-and-see instead of «ок» in manual, skipped questions in semi.
 - Promising the user a wait — a countdown, «через минуту», «если не ответишь за N секунд» — that you have no way to honour.
-- Starting without announcing the mode at all.
 - In full: an invented fact about the user standing where an ASSUMPTION, a stub, or a PLACEHOLDER belongs.
-- Asking the user to review tickets, granularity, or code (outside manual, where spec and tickets are gates by design).
-- Ticket count crossing a tier boundary with no justification line in the spec.
-- Two tickets in one subagent context.
-- Parallel subagents editing the same files.
+- Asking the user a process question — which tracker, which doc file, which memory file, ticket granularity, code review — outside manual, where spec and tickets are gates by design.
+- A requirement quietly narrowed to whatever happened to work, or the spec amended mid-build with no `D##` row recording why.
+- Two tickets in one subagent context, or two tickets in one commit.
+- Parallel subagents editing the same files — or the mirror failure, independent tickets flown one at a time with the plan's parallelism thrown away in the delivery.
 - A subagent launched without `interfaces.md`, or finishing without returning the contract block.
 - Payment, hosting, or accounts first mentioned at the finish line.
 - A secret value asked for, repeated back, or written into any file, prompt, commit, or report.
 - Installing a package or fetching remote code without the user asking for it.
-
-**Violating the letter of these rules is violating their spirit.**
+- Text outside the `autopilot` markers edited, moved or dropped, or the run ending with no project memory file at all.

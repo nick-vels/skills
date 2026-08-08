@@ -9,15 +9,19 @@ Two files, and the split matters:
 
 They are separate because on resume you need the state in twenty lines, not buried in two hundred lines of markup. They cannot drift because they are written together, in that order, every time.
 
-## Raising the instruments (Phase 0)
+## Phase 0 needs four lines of this file
 
-Copy the template — do not regenerate it, do not read it into context:
+Raising the instruments is mechanical. Do exactly this and read no further — the rest of this file is for the stage transitions, the ticket updates and the end of the run, and it is read when those happen.
 
-```bash
-cp <skill-dir>/phases/dashboard-template.html .autopilot/dashboard.html
-```
+1. **Copy the template.** Never regenerate it, never read it into context:
+   ```bash
+   cp <skill-dir>/phases/dashboard-template.html .autopilot/dashboard.html
+   ```
+2. **Write `.autopilot/state.json`** with `slug`, `title`, `mode`, `depth`, `briefFile`, `memoryFile`, `startedAt`, `updatedAt`, `finishedAt: null`, all eight `stages` (`preflight` `active`, the rest `pending`), an empty `tickets` array and `requirements` at zero. The shape is below, under *state.json*.
+3. **Mirror it** — replace the single line beginning `const STATE =` in `dashboard.html` with the same JSON.
+4. **Open it once.** Inside the user's own window if the harness has one, otherwise hand it to the OS. A failure is one printed path, not an error; under `$SSH_CONNECTION` or `$CI`, skip opening entirely.
 
-Then write `state.json` and mirror it into the dashboard.
+That is the whole of Phase 0's business here. Everything below answers a question you do not have yet.
 
 ## Opening it — once, by you, at the start
 
@@ -102,6 +106,7 @@ Say it in one line, once:
       "requirements": ["R01", "R01.1", "A01"],
       "blockedBy": ["01", "02"],
       "wave": 2,
+      "zone": ["src/bot/"],
       "status": "done",
       "startedAt": "2026-08-07T14:35:00+03:00",
       "finishedAt": "2026-08-07T14:53:00+03:00",
@@ -125,6 +130,7 @@ Say it in one line, once:
 ```
 
 Ticket `status`: `pending` · `in-progress` · `done` · `failed`.
+`wave` and `zone` come from Phase 4 — the wave decides what flies together, the zone is why it may.
 `tests` is the last **full** suite run; `blind` stays `null` until the final phase.
 `memoryFile` is the project memory chosen in Phase 0 — `CLAUDE.md` or `AGENTS.md`, see `phases/9-memory.md`. A resume reads that file first.
 
@@ -145,6 +151,30 @@ Eight ids, fixed, in this order: `preflight` · `manifest` · `briefing` · `spe
 - **`note` is one short human phrase**, not a log line: «6 вопросов», «ярус T0 — без разбивки на таски», «полный автомат — самобрифинг», «проверено 3 из 5».
 - **`build` and `review` may both be `active`.** Reviews run per ticket inside the build, and pretending otherwise would make the timings lie.
 - **`skipped` is normal and must be visible.** Briefing in full mode, `plan` at tier T0 — a stage silently left `pending` forever reads as «сборка застряла».
+
+## Tickets appear when they are cut, not when they start
+
+**The whole ticket array is written at the end of Phase 4**, every ticket `pending`, with its `blockedBy`, `wave` and `zone`. Everything the dashboard says about the build reads from that array, and an array that is still empty makes the dashboard state three things that are all false at once:
+
+- «таски ещё не нарезаны» on the Таски card, with no count — while the tickets are on disk and the build is running;
+- no «Ход сборки» block at all — the block only exists when there are tickets, so the one screen that answers «на каком этапе разработка» is missing exactly during the build;
+- a progress bar that cannot move with the work, because the share of finished tickets is `0 / 0`.
+
+None of that is a template bug — the dashboard shows what it was given. Publish the tickets when they are cut, then edit their rows as they run: `in-progress` + `startedAt` before the launch, `done` + `finishedAt` + tests + commit when the ticket returns.
+
+## What «ход сборки» needs to be honest
+
+The build block earns its place only if the rows are true at a glance, which takes three fields and no more:
+
+- **`status`** — a filled bar is a ticket that has started, coloured by status: green done, amber running (and pulsing), red failed, dashed outline for what has not begun. A ticket left `pending` while its subagent is flying shows as «не начат» and makes the screen a lie.
+- **`startedAt` at launch, `finishedAt` at return** — that is where every per-ticket duration comes from, live for the running ones. The header line («Сейчас: 04 …») is built from the same marks.
+- **`wave`** — rows group by wave, and a wave with more than one ticket is labelled «2 таска параллельно». This is the user's only view of parallelism actually happening.
+
+## Progress bar — how the percentage is built
+
+The bar at the top is not «tickets done»: it is the whole run, weighted by how long stages actually take (`build` counts for six, `spec` and `review` for two, the rest one each), and inside the build it moves with the share of finished tickets. So it advances with every ticket instead of standing still for hours and jumping at the end.
+
+Two consequences worth knowing: it is not the same number as «покрытие брифа» — one measures the road travelled, the other measures value delivered, and they diverge on purpose — and it can only move forward, which is why a stalled bar means a stage that was never marked, not a build that is stuck.
 
 ## Timestamps are the clock
 
@@ -191,6 +221,7 @@ The template computes all of this from `STATE`. You supply the facts; it does th
 
 | Metric | Why it earns its place |
 |---|---|
+| **Прогресс проекта, %** | the one number for «сколько осталось до конца» — stages by weight, the build by finished tickets. Answers the question a ticket count cannot: how far along is the *project* |
 | **Покрытие брифа, %** | *The* completion number. Ticket progress measures effort; brief coverage measures value. They diverge, and when they do, this one is right |
 | **Этап сейчас, N из 8** | where the run is in the cycle, and how long it has been there. The first thing a person looks for and the last thing a ticket count answers |
 | **Лента этапов** | the whole cycle at once — what is done, what was skipped and why, what has not started. Works when there are no tickets at all |
@@ -200,6 +231,8 @@ The template computes all of this from `STATE`. You supply the facts; it does th
 | **Долг: заглушки · допущения · пустые переменные** | decides whether the result is *usable*. 100% of tickets with eight placeholders is not a finished project, and this is the number that says so |
 | Тесты и их дельта по таскам | catches a regression at ticket 3 instead of at the end |
 | Повторы | a ticket that needed a retry is a signal the cut was wrong, not that luck was bad |
+| **Сейчас в работе: какой таск, сколько уже идёт** | during the build this is the question, and «3 из 8 готово» does not answer it. Two names with two running clocks also make parallel work visible as it happens |
+| **Волны и их ширина** | what is flying together and what is waiting on it — the plan's parallelism, checkable against reality |
 | **Время на каждый таск и каждый этап** | over-cutting made visible: a ticket that took forty minutes of context to produce forty lines should not have existed |
 | Пересечения по файлам | validates parallel waves — an overlap is visible before it becomes a conflict |
 | Расхождения слепой приёмки | at the end: what the manifest calls done and an independent check does not |

@@ -42,6 +42,8 @@ Against the spec sections the ticket named:
 - **Extra** — behaviour in the diff that no one asked for. Scope creep is not a bonus; it is untested surface with no requirement behind it and nobody to maintain it.
 - **Wrong** — implemented, but not the way the spec decided. Especially: a second version of something `interfaces.md` already provides.
 
+A diff that departs from the spec because the spec turned out to be wrong is **not** a finding on this axis — but it is only legitimate once the spec has been amended and a `D##` row exists. An undocumented departure is `Wrong`, however good the reason: see `phases/5-subagents.md`.
+
 Quote the spec line for every finding.
 
 ## Axis 3 — Craft

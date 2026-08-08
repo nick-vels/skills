@@ -20,7 +20,7 @@ The manifest already exists. Every question here exists to move a row in it.
 
 **Never answer for the user.** No silent assumptions, no invented content. Forced past an unknown → mark the row `placeholder` and move on. In **full** mode decisions do get made for the user — labelled, never silent. See below.
 
-**Cap: 5–8 questions in semi.** In **manual** the cap is lifted: keep going until nothing blocking is left. In both, stop the moment the remaining unknowns are cosmetic — an extra question is not free, it is the user's attention.
+**Usually five to eight questions in semi** — that is what an interview costs, not a quota to fill or a wall to stop at. Stop the moment the remaining unknowns are cosmetic, even at three; an extra question is not free, it is the user's attention. And if a brief genuinely carries more blocking unknowns than eight — several external services, an existing system to fit into — ask them and say why in one line. An unasked blocking question costs the project more than an extra question ever costs the user. In **manual** there is no cap at all.
 
 ## What to ask about
 
@@ -41,7 +41,7 @@ After each answer, update the manifest row immediately — not at the end of the
 
 - Answer resolves a requirement → note the decision in Основание.
 - Answer **cancels** a requirement → `dropped`, with the user's own words quoted. This is the only path to `dropped`, and it is why the answers are recorded verbatim (after redaction).
-- Answer raises something new → **a new row**, `G##`, quoting the user's phrasing. The manifest grows during briefing; it never grows after.
+- Answer raises something new → **a new row**, `G##`, quoting the user's phrasing. This is the only phase where the manifest grows on the user's words. Afterwards it grows for exactly one reason — a `D##` row for something the build proved, per `phases/5-subagents.md` — and never for an idea of yours.
 - Answer is «не знаю» → `placeholder`, and the build gets a stub with a visible label.
 
 ## Full mode — the self-briefing

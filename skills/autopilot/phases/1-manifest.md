@@ -98,6 +98,12 @@ Mark with a trailing `i` (`R06i`) anything the brief clearly *implies* but never
 
 These are the most dangerous items in the whole flight: too obvious to state, too big to skip. Route them to the briefing as questions rather than inventing or ignoring them. In **full** mode they become explicit `ASSUMPTION` decisions and appear in the report.
 
+### Discovered constraints
+
+Mark with `D` (`D01`, `D02`) anything the **build** proved that the plan did not know — a data model that does not hold, an assumed interface that cannot exist, two requirements that collide in practice. Its Основание is the finding itself, and it names the requirement it serves.
+
+A `D##` row is the only thing allowed to enter the manifest after the briefing, and only from `phases/5-subagents.md`. It is not a requirement the user made and it never replaces one: a requirement the code proves impossible is a question for the user, not a `D##` that quietly retires it. An idea you had while building is not a discovery either — that is an `A##`, and it lives in the spec under the usual parent-and-proportion rules.
+
 ### How fine to cut
 
 One requirement = one thing that can be independently true or false.
@@ -127,7 +133,7 @@ Recorded here because they all read this file. A failed gate is not a warning �
 
 ## Keeping it current
 
-The manifest is updated at exactly four moments, never continuously:
+The manifest is updated at exactly five moments, never continuously:
 
 | When | What changes |
 |---|---|
@@ -135,5 +141,6 @@ The manifest is updated at exactly four moments, never continuously:
 | after the spec is written | `open` → `in-spec` / `deferred`, section noted |
 | after tickets are cut | `in-spec` → `in-ticket`, ticket number noted |
 | after each ticket lands | `in-ticket` → `done` / `placeholder`, commit noted |
+| when the build contradicts the plan | a new `D##` row, and the affected rows re-pointed at the amended spec section |
 
 Each update is an edit of the affected rows, never a rewrite of the table. The table is short-lived context and long-lived truth; treat it as data, not prose.

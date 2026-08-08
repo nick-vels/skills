@@ -21,8 +21,16 @@ Its brief:
 > Прочитай приложенный файл брифа — это задача, которую поставил заказчик. Затем изучи
 > репозиторий и определи, что из этого действительно реализовано.
 >
+> **Запусти проект** — команды в приложенном описании — и пройди основной сценарий так,
+> как прошёл бы его заказчик. Чтение кода показывает намерение, запуск показывает результат.
+> Если проект не поднимается или сценарий обрывается — это и есть главная находка
+> проверки, поставь её первым пунктом. Если запустить нельзя вообще (нужен аккаунт,
+> ключ, внешний сервис) — скажи прямо, что именно помешало, и не выдавай чтение кода
+> за проверку работоспособности.
+>
 > По каждому требованию из брифа: реализовано / частично / нет — и одна строка,
-> где именно это видно в коде (или почему ты решил, что этого нет).
+> где именно это видно (что ты увидел при запуске, или где это в коде,
+> или почему ты решил, что этого нет).
 >
 > Не оценивай качество кода. Не предлагай улучшений. Не ищи оправданий
 > отсутствию — просто зафиксируй факт. Если требование выполнено формально,
@@ -42,6 +50,8 @@ Its brief:
 Every 🔴 goes in the report **and** in `state.json` under `blind`. A drift found here is not a failure of the run — it is the run working. Hiding it is the failure.
 
 If there are no tickets (tier T0), this check still runs. Small builds drift too, and it is one subagent.
+
+**A build that was never run is a build nobody has seen work.** The tests were written by the same process that wrote the code, so they agree with it by construction; the first time this project meets a user must not be the first time it is launched. If it genuinely cannot be run here — no credentials, a service that needs an account, a platform this machine is not — that goes in the report as an open item under «что нужно от тебя», not silently into the accepted column.
 
 ## 2. The project memory — written from the code
 
@@ -96,6 +106,16 @@ npm install && npm run dev
 | Что добавил | Ради чего |
 |---|---|
 | Номер заявки в подтверждении | чтобы клиент мог на неё сослаться — R01 |
+
+## Что пошло не по плану
+
+<Каждая строка `D##` из манифеста — обычным языком: что задумывалось,
+что этому помешало и как сделано вместо. Раздел опускается, только если
+`D##` не было. Требование при этом то же — меняется способ, а не заказ.>
+
+| Что не сработало | Как сделано |
+|---|---|
+| Одна заявка на один адрес — у половины клиентов адресов два | Адреса вынесены в список, форма принимает несколько |
 
 ## Открытые вопросы
 

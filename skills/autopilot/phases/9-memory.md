@@ -12,6 +12,15 @@ Three files describe this project and they are not interchangeable. Confusing th
 
 The last one is what this file is about. Everything in it must be true of the repository *as it stands* — not of the plan, not of the run that produced it.
 
+## Phase 0 needs two things from this file
+
+Read this block and stop; nothing else here applies until the build is over.
+
+1. **Pick the file** — the detection table immediately below, first match wins. An existing file always beats detection, the choice is recorded in `state.json` as `memoryFile`, and it is never a question for the user in any mode.
+2. **Write the skeleton** — the block under *Moment 1*, between the markers, with only what is already known. An invented command is worse than a missing one.
+
+What may be appended during the build (*Moment 2*) and the full description written from the finished code (*Moment 3*) are read when they happen — the second inside Phase 5, the third in Phase 8.
+
 ## Which file
 
 Decided by detection, in this order. Stop at the first match.

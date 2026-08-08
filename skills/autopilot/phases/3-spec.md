@@ -1,6 +1,8 @@
 # Phase 3 — Flightplan
 
-Turn the manifest and the briefing answers into a specification. **No new questions to the user** — anything still unresolved is a `placeholder`, not an interview.
+Turn the manifest and the briefing answers into a specification. **This phase does not reopen the interview** — what is still unresolved becomes a `placeholder` row, not another round of questions.
+
+One exception, and it is narrow: a genuine fork the briefing missed, where the two branches are different projects and a placeholder would only defer the same question to the build. Ask it, once, in one line, with a recommended answer. In **full** mode there is no exception — decide it and record the `ASSUMPTION`.
 
 Write to `.autopilot/<slug>/spec.md`. What the user sees in the dialogue is a two-line summary; the file is the spec.
 
@@ -12,11 +14,11 @@ Working them out is the most valuable thing this phase can do. A spec that merel
 
 **How far to take it is the user's setting, not yours.** Read it from the announced depth:
 
-| Depth | The depth pass below | `A##` new capabilities | Typical stories per requirement |
-|---|---|---|---|
-| **strict** | not run. Only *Wrong input* and *Failure*, and only where the requirement plainly breaks without them | **forbidden** — cut them, do not write them | 1–2 |
-| **normal** *(default)* | run by judgement — the dimensions that plainly matter for that requirement, skipping the ones that do not | allowed, with parent and proportion | 3–5 |
-| **deep** | run in full — every dimension, every requirement, or an explicit «не применимо» | encouraged, same parent and proportion | 5–8 |
+| Depth | The depth pass below | `A##` new capabilities |
+|---|---|---|
+| **strict** | not run. Only *Wrong input* and *Failure*, and only where the requirement plainly breaks without them | **forbidden** — cut them, do not write them |
+| **normal** *(default)* | run by judgement — the dimensions that plainly matter for that requirement, skipping the ones that do not | allowed, with parent and proportion |
+| **deep** | run in full — every dimension, every requirement, or an explicit «не применимо» | encouraged, same parent and proportion |
 
 At **strict**, an idea you had that the brief did not ask for does not become a spec section and does not become a note. It is simply not written. The user chose this setting to get exactly what they asked for, and a spec that argues with that choice has ignored an instruction.
 
@@ -41,7 +43,9 @@ At **deep**, skipping a dimension because a requirement «и так понятн
 | **Boundaries** | who may do this, and what happens to someone who may not? |
 | **Aftermath** | where does the result go, who learns about it, can it be undone? |
 
-Each answer becomes an `R##.n` story with its own acceptance line. `R##.n` never counts against any limit — it is the requirement the user actually made, worked out properly. At **deep**, twelve requirements producing sixty stories is the spec doing its job; twelve stories would be a spec that copied the brief.
+Each answer becomes an `R##.n` story with its own acceptance line. `R##.n` never counts against any limit — it is the requirement the user actually made, worked out properly.
+
+**The number of stories is an output, not a target.** A requirement that genuinely has seven dimensions gets seven stories; one that has two gets two, and padding it to look thorough is the same defect as skipping it. What is always wrong is twelve requirements producing twelve stories — that is the brief copied out rather than worked through.
 
 ### Two roads for depth
 
@@ -61,6 +65,7 @@ The one failure mode worth guarding: depth that **floats free of the brief** —
 | `R##.n` | **deepening** a brief requirement | uncapped — this is the main work of the phase |
 | `G##` | decided in the briefing | the user confirmed it |
 | `A##` | a **new capability** the brief never implied | must name a parent `R##` |
+| `D##` | a constraint the **build** proved, added mid-flight | only from `phases/5-subagents.md`, never from an idea |
 
 Note the line between the last two, because it is the one that gets blurred: elaborating «принимает заявки» into retry, resume and validation is `R01.n` — the same requirement, understood properly. Adding a loyalty programme is `A`. Depth is not scope creep, and treating it as if it were is how specs end up thin.
 

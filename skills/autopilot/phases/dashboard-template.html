@@ -26,8 +26,9 @@
   body{margin:0;background:var(--bg);color:var(--ink);
     font:15px/1.5 ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
     -webkit-font-smoothing:antialiased;padding:34px 20px 60px}
-  .wrap{max-width:1040px;margin:0 auto}
-  .top{display:flex;align-items:flex-start;gap:16px;margin-bottom:8px}
+  .wrap{max-width:1040px;margin:0 auto;min-width:0}
+  /* wrap на .top: в узкой панели переключатели уходят на вторую строку, а не за край */
+  .top{display:flex;align-items:flex-start;gap:16px;margin-bottom:8px;flex-wrap:wrap}
   .logo{height:clamp(44px,7vw,72px);width:auto;max-width:64vw}
   .logo.l{display:var(--logo-light)} .logo.d{display:var(--logo-dark)}
   .segs{margin-left:auto;display:flex;gap:8px;flex:0 0 auto}
@@ -81,29 +82,56 @@
   :root[data-theme="dark"] .b-tier-2{--bbg:#2f2917;--bd:#4e4227;--fg:#e2cd97}
   :root[data-theme="dark"] .b-tier-3{--bbg:#352d16;--bd:#58492a;--fg:#edd79c}
   :root[data-theme="dark"] .b-done{--bbg:#16281f;--bd:#26432f;--fg:#4bbd84}
-  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:14px}
+  /* minmax(min(Npx,100%)): в колонке уже 200px карточка сжимается, а не вылезает за край */
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));margin-bottom:14px}
   /* ряды показателей: четыре карточки в строку держатся дольше, чем списки долга */
-  .grid.m{grid-template-columns:repeat(auto-fit,minmax(168px,1fr))}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+  .grid.m{grid-template-columns:repeat(auto-fit,minmax(min(168px,100%),1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;min-width:0}
   .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
-  .v{font-size:30px;font-weight:650;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
+  /* длинное значение («1 ч 05 мин … 2 ч 10 мин», «Спецификация») переносится, а не режется */
+  .v{font-size:30px;font-weight:650;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums;
+    overflow-wrap:anywhere}
+  .v.stage{font-size:clamp(17px,4.4vw,22px)}
   .v small{font-size:14px;font-weight:500;color:var(--dim);letter-spacing:0}
-  .sub{font-size:12.5px;color:var(--dim);margin-top:6px}
-  .hero{display:flex;gap:18px;align-items:center}
+  .sub{font-size:12.5px;color:var(--dim);margin-top:6px;overflow-wrap:anywhere}
+  .hero{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .hero>div{min-width:0}
   .ring{flex:0 0 84px}
   .bar{height:6px;background:var(--ghost);border-radius:99px;overflow:hidden;margin-top:10px}
-  .bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s ease}
+  .bar.lg{height:10px;margin-top:12px}
+  /* общий прогресс: этапы по весам, внутри разработки — доля готовых тасков */
+  .overall{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 18px;margin-bottom:14px}
+  .overall-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+  .overall-head b{font-size:24px;font-weight:650;letter-spacing:-.02em;text-transform:none;
+    color:var(--ink);font-variant-numeric:tabular-nums}
+  .overall-head b small{font-size:14px;font-weight:500;color:var(--dim)}
   h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);
     margin:26px 0 12px;font-weight:600}
   .tl{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+  /* сводка по таскам — ответ на «где разработка» до того, как всматриваешься в полосы */
+  .tlsum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{font-size:11.5px;letter-spacing:.03em;border:1px solid var(--line);border-radius:999px;
+    padding:3px 10px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .chip.ok{border-color:var(--ok);color:var(--ok)}
+  .chip.run{border-color:var(--warn);color:var(--warn)}
+  .chip.bad{border-color:var(--bad);color:var(--bad)}
+  .tlnow{font-size:13px;margin:-4px 0 12px;overflow-wrap:anywhere}
+  .tlnow .lbl{color:var(--dim)}
+  .tlnow b{font-weight:650;font-variant-numeric:tabular-nums}
+  .tlnow .nowclock{color:var(--warn);font-variant-numeric:tabular-nums}
   .wave{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:14px 0 8px}
   .wave:first-child{margin-top:0}
   .row{display:grid;grid-template-columns:26px 1fr 56px;gap:10px;align-items:center;margin-bottom:6px;font-size:13px}
   .row b{font-weight:600;font-variant-numeric:tabular-nums;color:var(--dim)}
-  .track{background:var(--ghost);border-radius:6px;height:22px;position:relative;overflow:hidden}
+  .row.now b{color:var(--ink)}
+  .track{background:var(--ghost);border-radius:6px;height:22px;position:relative;overflow:hidden;min-width:0}
   .fill{position:absolute;inset:0 auto 0 0;border-radius:6px;display:flex;align-items:center;
     padding:0 8px;white-space:nowrap;font-size:12px;color:#fff;overflow:hidden}
   .fill.pend{background:transparent;border:1px dashed var(--line);color:var(--dim)}
+  .fill.active{animation:pulse 1.8s ease-in-out infinite}
   .mins{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim);font-size:12px}
   /* этапы — вертикальная лента с рельсом */
   .stages{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:4px 18px}
@@ -120,7 +148,8 @@
   .st.active .rail i{background:var(--warn);border-color:var(--warn);animation:pulse 1.6s ease-in-out infinite}
   .st.failed .rail i{background:var(--bad);border-color:var(--bad)}
   .st.skipped .rail i{border-style:dashed;background:var(--panel)}
-  .st .nm{font-size:13.5px}
+  .st>div{min-width:0}
+  .st .nm{font-size:13.5px;overflow-wrap:anywhere}
   .st.active .nm{font-weight:650}
   .st.done .nm,.st.skipped .nm{color:var(--dim)}
   .st .mins{padding-top:1px}
@@ -142,7 +171,28 @@
   ul.debt li{margin-bottom:4px;font-size:13px}
   .empty{color:var(--dim);font-size:13px}
   footer{margin-top:24px;font-size:12px;color:var(--dim);display:flex;gap:14px;flex-wrap:wrap}
+  footer code{overflow-wrap:anywhere}
   .scroll{overflow-x:auto}
+  /* таблица тасков скроллится внутри своей рамки, а не сминает семь колонок в кашу */
+  .scroll table{min-width:560px}
+  /* узкая раскладка: встроенная панель IDE, боковая колонка, телефон */
+  @media (max-width:460px){
+    body{padding:20px 12px 44px}
+    .top{gap:10px}
+    header{gap:8px;margin-bottom:16px}
+    h1{font-size:15px}
+    h2{margin:20px 0 10px}
+    .card,.overall,.tl,.note{padding:13px 14px}
+    .stages{padding:2px 14px}
+    .v{font-size:25px}
+    .overall-head b{font-size:21px}
+    .ring{flex:0 0 68px;width:68px;height:68px}
+    .hero{gap:12px}
+    .row{grid-template-columns:24px 1fr 48px;gap:8px}
+    .st{grid-template-columns:18px 1fr auto;gap:9px}
+    .badges{margin-left:0}
+    .segs{margin-left:0}
+  }
 </style>
 </head>
 <body>
@@ -193,6 +243,8 @@ const plural = (n, one, few, many) => {
 
 const I18N = {
   ru:{lang:"ru",coverage:"Покрытие брифа",ofReq:(a,b)=>`${a} из ${b} требований`,
+    overall:"Прогресс проекта",overallStages:(a,b)=>`${a} из ${b} этапов пройдено`,
+    overallTickets:(a,b)=>`${a} из ${b} тасков`,
     tickets:"Таски",ticketsDone:p=>`${p}% готово`,retries:n=>` · ${n} повтор.`,
     elapsed:"Прошло времени",median:m=>`медиана на таск — ${m} мин`,tooEarly:"рано считать",
     left:"Осталось (оценка)",needTwo:"нужно 2+ готовых таска",
@@ -210,7 +262,11 @@ const I18N = {
     tests:"Тесты",testsSub:"после последнего таска",testsSubOne:"последний полный прогон",failed:n=>`${n} упало`,
     buildTook:d=>`разработка заняла ${d}`,
     reqs:"Требования",reqsSub:(d,f,p)=>`снято ${d} · отложено ${f} · заглушки ${p}`,
-    progress:"Ход сборки",wave:n=>`Волна ${n}`,noTickets:"Тасков пока нет — идёт подготовка.",
+    progress:"Ход сборки",
+    wave:(n,c)=>c>1?`Волна ${n} — ${c} ${plural(c,'таск','таска','тасков')} параллельно`:`Волна ${n}`,
+    chipDone:n=>`готово ${n}`,chipRun:n=>`в работе ${n}`,chipWait:n=>`ждут ${n}`,chipFailed:n=>`упало ${n}`,
+    nowLbl:"Сейчас:",nowIdle:"Ни один таск не запущен.",
+    noTickets:"Тасков пока нет — идёт подготовка.",
     tblTickets:"Таски",thN:"#",thTitle:"Таск",thReq:"Требования",thTime:"Время",thRetry:"Повт.",
     thTests:"Тесты",thCommit:"Коммит",tblEmpty:"пока пусто",
     toClose:"Что осталось закрыть",placeholders:"Заглушки — нужны твои данные",
@@ -224,6 +280,8 @@ const I18N = {
     tier:t=>`ярус ${t}`,finished:"завершено",min:"мин",hr:"ч",m:"м",
     langLabel:"Язык",themeLabel:"Тема",themeLight:"Светлая тема",themeDark:"Тёмная тема"},
   en:{lang:"en",coverage:"Brief coverage",ofReq:(a,b)=>`${a} of ${b} requirements`,
+    overall:"Project progress",overallStages:(a,b)=>`${a} of ${b} stages done`,
+    overallTickets:(a,b)=>`${a} of ${b} tickets`,
     tickets:"Tickets",ticketsDone:p=>`${p}% done`,retries:n=>` · ${n} retries`,
     elapsed:"Elapsed",median:m=>`median per ticket — ${m} min`,tooEarly:"too early to tell",
     left:"Remaining (estimate)",critpath:n=>`critical path: ${n} tickets deep`,needTwo:"needs 2+ finished tickets",
@@ -240,7 +298,11 @@ const I18N = {
     tests:"Tests",testsSub:"after the last ticket",testsSubOne:"last full run",failed:n=>`${n} failed`,
     buildTook:d=>`development took ${d}`,
     reqs:"Requirements",reqsSub:(d,f,p)=>`dropped ${d} · deferred ${f} · placeholders ${p}`,
-    progress:"Build progress",wave:n=>`Wave ${n}`,noTickets:"No tickets yet — still preparing.",
+    progress:"Build progress",
+    wave:(n,c)=>c>1?`Wave ${n} — ${c} tickets in parallel`:`Wave ${n}`,
+    chipDone:n=>`${n} done`,chipRun:n=>`${n} running`,chipWait:n=>`${n} waiting`,chipFailed:n=>`${n} failed`,
+    nowLbl:"Now:",nowIdle:"No ticket is running.",
+    noTickets:"No tickets yet — still preparing.",
     tblTickets:"Tickets",thN:"#",thTitle:"Ticket",thReq:"Requirements",thTime:"Time",thRetry:"Retry",
     thTests:"Tests",thCommit:"Commit",tblEmpty:"empty so far",
     toClose:"Still to close",placeholders:"Placeholders — your data needed",
@@ -325,6 +387,9 @@ function render(lang){
   const S = STATE, T = S.tickets || [], R = S.requirements || {};
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const done = T.filter(t => t.status === 'done');
+  const running = T.filter(t => t.status === 'in-progress');
+  const failedT = T.filter(t => t.status === 'failed');
+  const waiting = T.length - done.length - running.length - failedT.length;
   const live = Math.max(0, (R.total || 0) - (R.dropped || 0));
 
   const mins = t => (t.startedAt && t.finishedAt)
@@ -362,6 +427,21 @@ function render(lang){
   const buildMs = buildStage && buildStage.startedAt && buildStage.finishedAt
     ? spanMs(buildStage.startedAt, buildStage.finishedAt) : null;
 
+  // Прогресс проекта целиком. Веса — это доли времени, а не «этап = 1/8»: разработка идёт
+  // часами, подготовка минуты. Внутри разработки шкала дробится по готовым таскам, поэтому
+  // она ползёт с каждым таском, а не стоит на месте полдня и потом прыгает.
+  const STAGE_WEIGHT = {preflight:1, manifest:1, briefing:1, spec:2, plan:1, build:6, review:2, final:1};
+  const stageFrac = s => {
+    if (s.status === 'done' || s.status === 'skipped') return 1;
+    if (s.status !== 'active') return 0;                      // pending и failed — ноль
+    if (s.id === 'build' && T.length) return Math.max(0.05, done.length / T.length);
+    return 0.5;
+  };
+  const totalW = stages.reduce((a,s) => a + (STAGE_WEIGHT[s.id] ?? 1), 0);
+  const overallPct = totalW
+    ? Math.round(stages.reduce((a,s) => a + (STAGE_WEIGHT[s.id] ?? 1) * stageFrac(s), 0) / totalW * 100) : 0;
+  const stagesDone = stages.filter(s => s.status === 'done' || s.status === 'skipped').length;
+
   const coverage = live ? Math.round((R.done||0)/live*100) : 0;
   const ticketPct = T.length ? Math.round(done.length/T.length*100) : 0;
   const retries = T.reduce((s,t) => s + (t.retries||0), 0);
@@ -383,18 +463,33 @@ function render(lang){
 
   const maxMin = Math.max(median || 10, ...durations, 1);
   const waves = [...new Set(T.map(t => t.wave ?? 1))].sort((a,b) => a-b);
+  // Полоса залита у всего, что уже стартовало — цветом своего статуса; идущий таск ещё и пульсирует.
+  // Пунктир остаётся только за тем, что не начиналось: так видно, где разработка стоит прямо сейчас.
   const timeline = T.length ? waves.map(w => {
-    const rows = T.filter(t => (t.wave ?? 1) === w).map(t => {
-      const m = mins(t), isDone = t.status === 'done';
+    const inWave = T.filter(t => (t.wave ?? 1) === w);
+    const rows = inWave.map(t => {
+      const m = mins(t), started = !!t.startedAt, active = t.status === 'in-progress';
       const width = Math.max(6, Math.round(((m || median || 10)/maxMin)*100));
       const clock = t.startedAt ? timerHTML(t.startedAt, t.finishedAt) : '—';
-      return `<div class="row"><b>${esc(t.id)}</b>
-        <div class="track"><div class="fill${isDone?'':' pend'}"
-          style="width:${width}%${isDone?';background:'+statusColor(t.status):''}">${esc(t.title)}</div></div>
+      return `<div class="row${active?' now':''}"><b>${esc(t.id)}</b>
+        <div class="track"><div class="fill${started?'':' pend'}${active?' active':''}"
+          style="width:${width}%${started?';background:'+statusColor(t.status):''}">${esc(t.title)}</div></div>
         <div class="mins">${clock}</div></div>`;
     }).join('');
-    return `<div class="wave">${L.wave(w)}</div>${rows}`;
+    return `<div class="wave">${L.wave(w, inWave.length)}</div>${rows}`;
   }).join('') : `<div class="empty">${L.noTickets}</div>`;
+
+  const tlSum = T.length ? `<div class="tlsum">
+      <span class="chip ok">${L.chipDone(done.length)}</span>
+      <span class="chip run">${L.chipRun(running.length)}</span>
+      <span class="chip">${L.chipWait(Math.max(0, waiting))}</span>
+      ${failedT.length ? `<span class="chip bad">${L.chipFailed(failedT.length)}</span>` : ''}
+    </div>` : '';
+  const tlNow = !T.length ? '' : running.length
+    ? `<div class="tlnow"><span class="lbl">${L.nowLbl}</span> ` + running.map(t =>
+        `<b>${esc(t.id)}</b> ${esc(t.title)} <span class="nowclock">${
+          t.startedAt ? timerHTML(t.startedAt, null) : '—'}</span>`).join(' · ') + '</div>'
+    : (S.finishedAt || done.length === T.length ? '' : `<div class="tlnow lbl">${L.nowIdle}</div>`);
 
   // Лента этапов — она же ответ на «где мы сейчас», когда тасков нет вовсе.
   const stageRows = stages.map(s => {
@@ -431,7 +526,7 @@ function render(lang){
       ${sp?.commit ? `${L.thCommit}: <code>${esc(sp.commit).slice(0,7)}</code>` : ''}
     </div></div>`;
   const worklog = T.length
-    ? `<h2>${L.progress}</h2><div class="tl">${timeline}</div>
+    ? `<h2>${L.progress}</h2><div class="tl">${tlSum}${tlNow}${timeline}</div>
        <h2>${L.tblTickets}</h2>
        <div class="scroll"><table>
          <thead><tr><th>${L.thN}</th><th>${L.thTitle}</th><th>${L.thReq}</th><th>${L.thTime}</th>
@@ -478,6 +573,13 @@ function render(lang){
     </div>
   </header>
 
+  <div class="overall">
+    <div class="overall-head"><span>${L.overall}</span><b>${overallPct}<small>%</small></b></div>
+    <div class="bar lg"><i style="width:${overallPct}%"></i></div>
+    <div class="sub">${L.overallStages(stagesDone, stages.length)}${
+      T.length ? ' · ' + L.overallTickets(done.length, T.length) : ''}</div>
+  </div>
+
   <div class="grid m">
     <div class="card"><div class="k">${L.coverage}</div>
       <div class="hero">${ring(coverage)}
@@ -485,7 +587,7 @@ function render(lang){
         <div class="sub">${L.ofReq(R.done||0, live)}</div></div></div>
     </div>
     <div class="card"><div class="k">${L.stage}</div>
-      <div class="v" style="font-size:22px">${esc(curStage ? stName(curStage) : L.allDone)}</div>
+      <div class="v stage">${esc(curStage ? stName(curStage) : L.allDone)}</div>
       <div class="sub">${L.stageOf(stageNo, stages.length)}${
         activeStage?.startedAt ? ' · ' + timerHTML(activeStage.startedAt, null) : ''}</div>
     </div>
@@ -504,7 +606,8 @@ function render(lang){
       <div class="v">${T.length ? `${done.length}<small> / ${T.length}</small>`
         : t0 ? `<span style="font-size:22px">${L.noTicketsTier}</span>` : '—'}</div>
       ${T.length ? `<div class="bar"><i style="width:${ticketPct}%"></i></div>
-      <div class="sub">${L.ticketsDone(ticketPct)}${retries ? L.retries(retries) : ''}</div>`
+      <div class="sub">${L.ticketsDone(ticketPct)}${running.length ? ' · ' + L.chipRun(running.length) : ''}${
+        retries ? L.retries(retries) : ''}</div>`
         : `<div class="sub">${t0 ? L.tier(esc(S.tier)) : L.notCut}</div>`}
     </div>
     <div class="card"><div class="k">${L.debt}</div>
