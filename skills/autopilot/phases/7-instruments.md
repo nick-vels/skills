@@ -31,13 +31,14 @@ If your harness gives you a way to show a local page in the window the user is a
 
 In Claude Desktop that is the browser/preview pane: open it at the dashboard's `file://` path.
 
-**A page opened this way does not refresh itself. You refresh it.** Measured, not assumed: inside the pane a `file://` page runs its JavaScript and its clocks tick, but it never re-reads the file — two minutes with a ten-second timer produced zero reloads, and an explicit `location.reload()` was ignored. Re-pointing the pane at the same path, however, does load the new content.
+**A page opened this way does not refresh itself.** Measured, not assumed: inside the pane a `file://` page runs its JavaScript and its clocks tick, but it never re-reads the file — two minutes with a ten-second timer produced zero reloads, and an explicit `location.reload()` was ignored. Re-pointing the pane at the same path does load the new content.
 
-So the rule is one extra call, at a moment you are already writing files:
+So the pane shows the numbers as of the moment it was opened, with the clocks running on top of them. **That is not a lie the user can walk into**: the footer says «обновлено N назад» about exactly the data on screen, and turns warning-coloured after five silent minutes.
 
-> **Whenever you rewrite the `const STATE =` line, re-point the pane at the dashboard.** Same path, no new tab.
+Do **not** re-point the pane after every state write — that is a tool call per ticket for a picture nobody is looking at most of the time. Refresh it at two moments only:
 
-That is roughly thirty tokens per update, and it makes the pane *more* accurate than polling: it refreshes exactly when there is something new, and the clocks keep ticking on their own in between.
+- **when the user asks where things stand** — «как там?», «покажи прогресс». Refresh first, answer second, so the screen and your sentence agree;
+- **once when the run ends**, together with `finishedAt`, so the final numbers are what stays on the screen.
 
 ### Path B — the system browser
 
@@ -56,7 +57,7 @@ An IDE is Path B, not Path A. `code file.html` opens the *source* in an editor t
 
 ### Rules for both paths
 
-- **Opened exactly once.** Path A is then refreshed in place; Path B refreshes itself. Neither ever opens a second window or tab.
+- **Opened exactly once.** Path A is refreshed in place at the two moments named above; Path B refreshes itself. Neither ever opens a second window or tab.
 - **Never on resume into a window that is already open.** On a resume, open it again only if the previous session ended (`finishedAt` was set).
 - **A failure is not an error.** Headless machine, no default browser, no pane — print the path in one line and carry on. Do not retry, do not install anything, do not try a second launcher.
 - **Do not open it in a remote session.** If `$SSH_CONNECTION` or `$CI` is set, skip opening entirely and print the path — a browser window on someone else's machine helps nobody.
@@ -159,11 +160,10 @@ At every stage transition, and after every ticket:
 
 1. Edit the affected rows of `state.json` — the stage object, the ticket object, the `requirements` counts, `updatedAt`. Change the rows that changed; do not rewrite the file.
 2. In `dashboard.html`, replace the single line beginning `const STATE =` with `const STATE = ` + the new JSON + `;`.
-3. **If the dashboard lives in an in-app pane (Path A), re-point the pane at it.** It cannot refresh itself there. In the system browser (Path B) skip this — the page does it.
 
 That is roughly thirty tokens per update. **Never rewrite the dashboard**, and never hand-maintain a progress table in prose: a rewritten table grows quadratically in cost and invites tidying up history that should not be tidied.
 
-The user never reloads anything by hand. In the system browser the page refreshes itself every ten seconds until `finishedAt` is set, with a toggle in the header to stop it; in an in-app pane you refresh it, on the same beat.
+Nothing else is needed here. In the system browser the page refreshes itself every ten seconds until `finishedAt` is set, with a toggle in the header to stop it; in an in-app pane it waits for one of the two moments above.
 
 ## Tier T0 — the dashboard still has to say something
 

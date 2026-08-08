@@ -93,7 +93,7 @@ In this order, every time:
 4. **Run the Phase 6 checklist** over the diff (`phases/6-review.md`).
 5. **Run the full test suite**, not just the ticket's own tests. A regression introduced now costs minutes; found eight tickets later it costs the evening. Red → fix before moving on.
 6. **Commit** — one commit per ticket, the ticket number in the subject. These are the user's rollback points.
-7. **Update the instruments** (`phases/7-instruments.md`) — one line of state, one line of the dashboard, and a refresh of the pane if the dashboard lives in one: the ticket's `finishedAt`, tests and commit, the `requirements` counts, the `build` and `review` stage notes («3 из 5 тасков готовы»), `updatedAt`.
+7. **Update the instruments** (`phases/7-instruments.md`) — one line of state, one line of the dashboard: the ticket's `finishedAt`, tests and commit, the `requirements` counts, the `build` and `review` stage notes («3 из 5 тасков готовы»), `updatedAt`.
 8. **Top up the project memory — only if something was discovered.** The real test command, a gotcha that cost time, a new variable in `.env.example`. One line appended between the markers, never a rewrite; the architecture is written once, at the end. Most tickets add nothing, and that is the correct rate. Rules in `phases/9-memory.md`.
 9. **Tell the user one plain-language line**: «Бот принимает заявки — 3 из 8 готово». No diffs, no jargon, no file lists.
 

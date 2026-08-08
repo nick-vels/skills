@@ -125,4 +125,6 @@ npm install && npm run dev
 
 The memory file goes in with the final commit, before this. Then: set `finishedAt`, write the `blind` block, refresh the counts in `state.json`, close every stage — `final` to `done`, and anything still `active` or `pending` to `done`, `skipped` (with a note) or `failed`, whichever is true — then mirror into `dashboard.html`. A run whose dashboard says «в работе» a day after it landed is lying to the person who trusted it.
 
+If the dashboard lives in an in-app pane, re-point the pane at it once here — this is the picture the user is left with.
+
 `finishedAt` also stops the clocks and the ten-second self-refresh: the page freezes on the final numbers instead of counting time nobody is spending. Leave it `null` on a finished run and the user's total keeps growing overnight.
