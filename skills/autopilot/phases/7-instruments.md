@@ -18,7 +18,7 @@ Raising the instruments is mechanical. Do exactly this and read no further — t
    cp <skill-dir>/phases/dashboard-template.html .autopilot/dashboard.html
    ```
 2. **Write `.autopilot/state.json`** with `slug`, `title`, `mode`, `depth`, `briefFile`, `memoryFile`, `startedAt`, `updatedAt`, `finishedAt: null`, all eight `stages` (`preflight` `active`, the rest `pending`), an empty `tickets` array and `requirements` at zero. The shape is below, under *state.json*.
-3. **Mirror it** — replace the single line beginning `const STATE =` in `dashboard.html` with the same JSON.
+3. **Mirror it** — replace the single line beginning `const STATE =` in `dashboard.html` with the same JSON. **On one line, minified — never pretty-printed.** The whole update protocol is «find that one line and swap it»; the moment the object spans seventy lines there is no such line to find, the next update writes a second object beside the first, and the leftover half of the old one is a syntax error that blanks the entire page. A dashboard that will not open is almost always this.
 4. **Open it once.** Inside the user's own window if the harness has one, otherwise hand it to the OS. A failure is one printed path, not an error; under `$SSH_CONNECTION` or `$CI`, skip opening entirely.
 5. **Learn the update ritual — it is the same three moves for the rest of the run**, and it is here rather than further down because you will need it long after this file has left your context:
 
@@ -205,7 +205,15 @@ Every timer on the dashboard is computed from these fields — total elapsed, pe
 At every stage transition, and after every ticket:
 
 1. Edit the affected rows of `state.json` — the stage object, the ticket object, the `requirements` counts, `updatedAt`. Change the rows that changed; do not rewrite the file.
-2. In `dashboard.html`, replace the single line beginning `const STATE =` with `const STATE = ` + the new JSON + `;`.
+2. In `dashboard.html`, replace the single line beginning `const STATE =` with `const STATE = ` + the new JSON + `;` — **one line, minified**, exactly as in Phase 0.
+
+   The file is only ever edited this way, and that is worth one cheap check after the first write of a run:
+
+   ```bash
+   grep -c '^const STATE = ' .autopilot/dashboard.html   # ровно 1
+   ```
+
+   Anything other than `1` means the page is already broken: `0` — the object was pretty-printed and the anchor line no longer exists; `2` — a previous update appended a second object instead of replacing the first. Both blank the page completely, because one syntax error stops the whole script and `#app` is filled by that script. Repair by rewriting the block from `state.json`, which is the source of truth, rather than by patching the JSON in place.
 
 That is roughly thirty tokens per update. **Never rewrite the dashboard**, and never hand-maintain a progress table in prose: a rewritten table grows quadratically in cost and invites tidying up history that should not be tidied.
 
