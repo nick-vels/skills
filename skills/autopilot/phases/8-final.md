@@ -53,19 +53,48 @@ If there are no tickets (tier T0), this check still runs. Small builds drift too
 
 **A build that was never run is a build nobody has seen work.** The tests were written by the same process that wrote the code, so they agree with it by construction; the first time this project meets a user must not be the first time it is launched. If it genuinely cannot be run here — no credentials, a service that needs an account, a platform this machine is not — that goes in the report as an open item under «что нужно от тебя», not silently into the accepted column.
 
-## 2. The project memory — written from the code
+## 2. What outlives the run — memory and decisions
 
-**Launch this at the same time as the blind acceptance.** Two subagents, the same finished repository, no contact between them: one asks «что из брифа сделано», the other asks «как этим пользоваться завтра». Running them in parallel costs one wall-clock slot instead of two.
+**Launch these at the same time as the blind acceptance.** Up to three subagents in one slot, no contact between them, each answering a different question:
+
+| Agent | Question | Receives | Never receives |
+|---|---|---|---|
+| blind checker | что из брифа сделано | the brief, the repo | `spec.md`, `manifest.md`, tickets |
+| memory | как этим пользоваться завтра | the repo, `interfaces.md`, the memory file, the tier | `spec.md`, tickets |
+| ADR *(tier T2+)* | почему сделано именно так | `spec.md`, `manifest.md` | the repo — it documents decisions, not code |
 
 The memory agent writes the full description of the project into `CLAUDE.md` or `AGENTS.md` — architecture, key files, conventions, environment, tests, gotchas — scaled to the tier, folding in what `interfaces.md` accumulated. Like the blind checker, **it does not receive `spec.md` or the tickets**: a memory written from the plan documents intentions, and the next session has no way to tell the difference.
 
-Everything about it — which file, the markers, the sections per tier, what must never go in, and the verification pass over the commands — is in `phases/9-memory.md`. Read it before spawning.
+The ADR agent is the mirror image and that is why it cannot be the same one. **`spec.md` dies with the run**, and with it every «почему так» in it — the reason for the data model, what the build proved wrong at ticket four, which word the project uses for which thing. Six months later the next session reads working code and no reason for any of it, and re-opens decisions that were settled here. At tier T2+ that is worth three files in `docs/adr/`; below it, the memory file carries what little there is.
+
+Everything about all of this — which memory file, the markers, the sections per tier, what an ADR contains, and the verification pass over the commands — is in `phases/9-memory.md`. Read it before spawning.
 
 This is the artifact that decides what the *next* run costs. A project whose second session begins by re-reading the whole codebase paid for that in the first session and got nothing.
 
 ## 3. The final report
 
 Run the full test suite once more first, and wait for both subagents. Then write in the user's language, plain, no jargon.
+
+### Where every line of it comes from
+
+**Re-read the files. Do not write this from memory.**
+
+By the time you reach this phase your context is the most polluted it has been all run — the brief, the manifest, the briefing, the spec, every phase file, and the returns of every subagent, most of it compacted at least once. The report is the one artifact the user actually reads, and writing it from that is how a `deferred` requirement gets reported as done, a placeholder disappears, and an `A##` nobody ordered turns up in the summary as if they had asked for it.
+
+So build each section from its source, opened now:
+
+| Section | Read from |
+|---|---|
+| Решения, принятые за вас | `manifest.md` — every `ASSUMPTION` in Основание |
+| Готово | the blind checker's return, not the manifest's `done` rows |
+| Что нужно от тебя | `manifest.md` `placeholder` rows + `state.json` → `debt` |
+| Что не вошло | `manifest.md` `deferred` and `dropped` rows, with their quotes |
+| Что я добавил сверх заказанного | `state.json` → `additions`, cross-checked against `A##` in the spec |
+| Что пошло не по плану | every `D##` row in `manifest.md` |
+| Открытые вопросы | `state.json` → `blind`, plus anything in `coverage` that ended up not built |
+| Запустить / Где что лежит | `state.json` → `memoryFile`, `briefFile`, and the commands the memory agent verified |
+
+Two of these are worth naming, because memory gets them wrong in a specific direction. **«Готово» comes from the blind checker, not from your own bookkeeping** — the manifest says what you believe was delivered, and the whole point of the previous section is that those two can disagree. And **«Что не вошло» comes from the rows, not from recollection**: a requirement dropped in the first ten minutes of a three-hour run is exactly the one you will not remember, and it is quoted in the file.
 
 Order matters — the user reads the top and skims the rest.
 
@@ -122,11 +151,16 @@ npm install && npm run dev
 <Расхождения слепой приёмки, если есть. Прямо, без смягчения:
 «Требование "клиент видит статус" я считал готовым, независимая проверка
 показала, что статус сохраняется, но нигде не отображается. Исправлено /
-требует отдельного таска.»>
+требует отдельного таска.»
+
+Сюда же — то, что нашла сверка покрытия на спецификации и что в итоге
+НЕ построено. Найденное и построенное здесь не упоминается: гейт
+отработал, пользователю нечего с этим делать.>
 
 ## Где что лежит
 
 - Описание проекта для следующего раза — `AGENTS.md` в корне
+- Почему сделано именно так — `docs/adr/` (если проект крупный)
 - Прогресс и цифры — `.autopilot/dashboard.html`
 - Твоя изначальная задача — `.autopilot/<slug>/<дата>-brief.md`
 - Требования и их судьба — `.autopilot/<slug>/manifest.md`

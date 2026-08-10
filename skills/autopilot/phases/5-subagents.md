@@ -1,8 +1,8 @@
 # Phase 5 — Crew
 
-Where the code gets written. **Identical in all three modes — this phase is always hands-free.** Manual mode buys the user control over *what* gets built, not over each edit; once the tickets are agreed, the crew flies to the end without further approvals.
+Where the code gets written. **Identical in all four modes — this phase is always hands-free.** Manual mode buys the user control over *what* gets built, not over each edit; once the tickets are agreed, the crew flies to the end without further approvals.
 
-At tier T0 there are no tickets: you are the crew, working straight from the spec in the current context. Everything below about contracts and returns still applies to you — write `interfaces.md`, run the Phase 6 checklist, commit once.
+At tier T0 there are no tickets: you are the crew, working straight from the spec in the current context. Everything below about contracts and returns still applies to you — top up `interfaces.md` with what you actually built, run the Phase 6 checklist, commit once.
 
 **T0 does not excuse empty instruments.** Mark the `build` stage `active` before you start and `done` when you finish, record the pass in `state.json` under `singlePass` (files, tests, commit, both timestamps), and update the `requirements` counts exactly as a ticket would. A run that finished the whole project and left the user a dashboard showing nothing but a running clock has failed at the one job the dashboard has. See `phases/7-instruments.md`.
 
@@ -16,23 +16,58 @@ The corollary is that a subagent knows **nothing** except what you hand it. Hand
 
 | | |
 |---|---|
-| `interfaces.md` | what previous tickets actually built — read in full, first |
+| `interfaces.md` | the boundaries from the spec, plus what previous tickets built — read in full, first |
 | its ticket file path and body | including the verbatim brief quotes |
 | the spec sections its ticket names | not the whole spec |
 | the test command and how to run one file | so it does not have to derive them |
+| **the testing contract**, verbatim | the block below — it is what makes the tests worth having |
 | the working directory and stack constraints | including what it must not touch |
 | variable **names** for any credential | never a value, ever |
+| the return contract | the block below, as a requirement, not a suggestion |
+
+**A rule that lives only in this file does not exist.** These phase files are read by the orchestrator; the code is written by someone who never sees them. Anything the executor must do has to travel in its prompt — and the testing contract is the one that gets left behind most often, because it reads like guidance rather than an input.
+
+## The testing contract — goes into the prompt, word for word
+
+```
+Тесты пиши только на швах, названных в приложенных разделах спецификации.
+Не тестируй всё подряд и не тестируй внутренности.
+
+Порядок: один тест — реализация — следующий тест. Не пиши тесты пачкой заранее:
+написанные впрок, они проверяют воображаемое поведение и перестают реагировать
+на реальные изменения.
+
+Тест утверждает через публичный интерфейс и остаётся зелёным после рефакторинга.
+Если он ломается, когда внутренности переехали, а поведение то же — он проверяет
+не то.
+
+Ожидаемое значение бери откуда угодно, кроме кода под тестом: известная величина,
+разобранный вручную пример, строка из спецификации. Утверждение, которое считает
+ответ тем же способом, что и код, не может с ним не согласиться — и не находит
+ошибок никогда.
+
+Пустой catch, захардкоженный happy path и тест, подтверждающий сам себя, —
+это невыполненный критерий приёмки, а не выполненный.
+```
+
+At tier T0 you are the executor, so this block applies to you directly.
 
 ## interfaces.md — the shared contract
 
 The file that keeps eight independent contexts building one coherent project instead of eight incompatible halves. Without it, ticket 06 invents a second version of what ticket 03 already built, and nobody notices until the end.
 
-Created empty in Phase 0. **You** — the orchestrator — append to it after each ticket returns, from that ticket's contract block. Subagents never write to it: parallel writers would collide, and a subagent cannot know what the others produced.
+Created in Phase 0, **seeded in Phase 4 from the spec's boundaries** — so the first subagent already reads the module map instead of inventing it. **You** — the orchestrator — append to it after each ticket returns, from that ticket's contract block. Subagents never write to it: parallel writers would collide, and a subagent cannot know what the others produced.
 
 ```markdown
 # Что уже построено
 
 Читается каждым исполнителем до начала работы. Не изобретай заново то, что здесь есть.
+
+## Границы, решённые в спецификации
+
+- `intake` — владеет заявками. `createRequest({phone, address, problem}) -> {id, createdAt}`
+- `notify` — владеет отправкой. `send(channel, template, payload) -> {ok}`
+- Швы для тестов: `intake` и `notify`, только через эти сигнатуры
 
 ## Общие правила проекта
 
@@ -139,8 +174,14 @@ Two things this is not:
 - **Not a way to drop a requirement.** A requirement the code proves impossible is a question for the user — in full mode, an ASSUMPTION plus a placeholder — never a `D##` that quietly retires it.
 - **Not a route for good ideas.** A discovery is something the code demonstrated, not something you thought of while writing it. Ideas are still `A##`, still need a parent and the proportion limit, and at `strict` are still forbidden.
 
-## Testing
+## Testing — what you check when it comes back
 
-Test at the seams the spec named, not everywhere. Write the test before the code that satisfies it, one behaviour at a time — test, implementation, next. Tests written in bulk up front verify imagined behaviour and go numb to real changes.
+The rules themselves went out in the prompt (above). What stays here is the part the executor cannot do for itself: **a green suite is evidence only if the tests could have been red.**
 
-A test asserts through the public interface and stays green through a refactor. If it breaks when the internals move but the behaviour did not, it is testing the wrong thing. And an expected value must come from somewhere other than the code under test — a known-good literal, a worked example, the spec. An assertion that recomputes the answer the way the code does can never disagree with it.
+So on every return, before the commit, read the new tests — not their names, their assertions:
+
+- **Is it at a named seam?** A test reaching into internals will break on the next ticket and teach whoever hits it that the suite is noise.
+- **Where did the expected value come from?** If it was computed the same way the code computes it, the test asserts that the code equals itself. This is the single most common way a subagent produces a green suite that verifies nothing, and it is invisible in the pass count.
+- **Does it cover the failure the ticket named,** or only the happy path in its acceptance criteria?
+
+Anything wrong here is a Craft finding of kind *silent narrowing* (`phases/6-review.md`), and it is fixed in this ticket. A bad test is worse than a missing one: the missing one is visible.

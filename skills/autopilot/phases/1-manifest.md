@@ -122,7 +122,12 @@ Recorded here because they all read this file. A failed gate is not a warning �
 
 **G1 — after the briefing.** Every requirement has a status. Anything still `open` must have a recorded reason (unreachable user, question deferred). In **full** mode nothing may be `open`: the self-briefing answers everything or marks it `placeholder`.
 
-**G2 — after the spec.** Zero `open`. Every live requirement is `in-spec`, `deferred`, or `dropped`, with its spec section noted. **An `open` row means the spec is incomplete** — rewrite the spec, do not proceed. This is the gate that would have caught every drift you have ever seen.
+**G2 — after the spec.** Two halves, both mandatory, per `phases/3-spec.md`.
+
+- *Your own pass* — zero `open`. Every live requirement is `in-spec`, `deferred`, or `dropped`, with its spec section noted. **An `open` row means the spec is incomplete** — rewrite the spec, do not proceed.
+- *The independent pass* — a subagent given the brief and the spec, and **not** this file, reports what the spec fails to cover. You wrote the spec, so you cannot see what you did not write; this file makes the loss findable, not you the one who finds it.
+
+This is the gate that would have caught every drift you have ever seen, and the second half is why.
 
 **G3 — after the plan.** Two directions, both mandatory:
 

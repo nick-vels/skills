@@ -83,6 +83,18 @@ If a wave genuinely has to change, that is a re-cut and it follows the rules for
 
 Write `wave` into every ticket file and into `state.json`. The dashboard groups the build by waves and marks the parallel ones («Волна 3 — 2 таска параллельно»); Phase 5 launches each wave in one go.
 
+## Seeding interfaces.md — before any ticket flies
+
+Phase 3 decided the boundaries: what each unit owns, what it exposes, what it hides. **Copy that section into `interfaces.md` now**, under «Границы, решённые в спецификации», together with the project rules a subagent cannot derive — stack and versions, the run and test commands, what must not be touched, and the rule that a missing dependency comes back as `BLOCKED` rather than an install.
+
+This is a copy, not a design exercise. If it turns into one, Phase 3 left the boundaries undecided and the right move is to go back and decide them — not to invent them here, where the plan is already cut around them.
+
+Why it cannot wait for ticket 01 to return: the first subagent reads this file before it writes anything, and what it reads is the only thing standing between it and inventing its own version of every boundary. A file that says nothing until the first ticket has finished means the first ticket *is* the design, chosen by whoever saw one eighth of the задача.
+
+Zones follow from the same section. A ticket's **Зона** is the part of the boundary map it owns — which is why two tickets in one wave with disjoint zones can be trusted not to collide: they were separated in the spec, not guessed at here.
+
+At tier T0 there is one context and no wave, so the file gets the project rules and the seams, and nothing more. It is still written: Phase 5 checks its own work against those seams, and Phase 9 folds it into the memory file.
+
 ## Publishing the plan to the instruments
 
 The moment the ticket files exist, **every ticket goes into `state.json` and into the dashboard** — not when the first one starts, not after the first one lands:
@@ -145,7 +157,7 @@ Avoid file paths and code snippets: they go stale faster than the ticket does. T
 
 **Backward:** every ticket names at least one requirement, or a spec decision that itself traces to one. **A ticket tracing to nothing is work nobody ordered** — cut it, or attach it to what it actually serves. This direction catches the invented subsystem that would otherwise consume three contexts and confuse the acceptance run.
 
-**Complete:** every ticket has a zone and a wave, and no two tickets in one wave share a zone. A missing wave means Phase 5 has to guess the order, and it will guess "one at a time".
+**Complete:** every ticket has a zone and a wave, no two tickets in one wave share a zone, and **`interfaces.md` already carries the boundaries from the spec**. A missing wave means Phase 5 has to guess the order, and it will guess "one at a time"; an empty `interfaces.md` means the first subagent guesses the architecture.
 
 Then update the manifest: `in-spec` → `in-ticket`, with the ticket number, and publish the tickets to the instruments (above).
 
@@ -155,7 +167,9 @@ Write the files first. **A ticket that exists only in the dialogue is not a tick
 
 **Parallelism gets one line, and only if it is true**: «Часть тасков пойдёт параллельно — 6 тасков в 4 волны». It is the one piece of process the user actually feels, because it changes how long they wait. Never claim it for a plan that is one long chain.
 
-**semi** — one screen, plain language, no technical detail, one line per ticket saying what the user will be able to do when it lands. Then: «Показываю план и начинаю. Скажи "стоп", если что-то не так». Then start. Do not wait for approval — waiting is the failure mode this skill exists to remove. **Never promise a countdown:** you cannot hold a pause, so a stated delay is a promise you will break. The user's window to object is their own reaction, and saying so plainly is the honest version of it.
+**semi and interview** — one screen, plain language, no technical detail, one line per ticket saying what the user will be able to do when it lands. Then: «Показываю план и начинаю. Скажи "стоп", если что-то не так». Then start. Do not wait for approval — waiting is the failure mode this skill exists to remove. **Never promise a countdown:** you cannot hold a pause, so a stated delay is a promise you will break. The user's window to object is their own reaction, and saying so plainly is the honest version of it.
+
+`interview` is `semi` here, and deliberately: the questions were the point of that mode, the ticket list was not. A user who wants to argue about granularity said «ручной режим», which is a different word.
 
 **full** — the same screen as a notification. No pause.
 

@@ -142,13 +142,16 @@ Say it in one line, once:
     "emptyEnv": ["TELEGRAM_BOT_TOKEN", "GOOGLE_SHEETS_ID"]
   },
   "additions": ["Номер заявки в подтверждении — ради R01"],
+  "coverage": { "found": 2, "fixed": 2, "deferred": 0 },
   "blind": null
 }
 ```
 
 Ticket `status`: `pending` · `in-progress` · `done` · `failed`.
+`mode`: `full` · `semi` · `interview` · `manual`. `depth`: `strict` · `normal` · `deep`.
 `wave` and `zone` come from Phase 4 — the wave decides what flies together, the zone is why it may.
 `tests` is the last **full** suite run; `blind` stays `null` until the final phase.
+`coverage` is the independent check at gate G2 (`phases/3-spec.md`) — written once, when the spec is done, and read again by the Phase 8 report. `null` means the check has not run yet, **not** that it found nothing: a run that reaches the build with `coverage: null` skipped a gate.
 `memoryFile` is the project memory chosen in Phase 0 — `CLAUDE.md` or `AGENTS.md`, see `phases/9-memory.md`. A resume reads that file first.
 
 **Never put a secret value in here.** `emptyEnv` holds names only — the whole point of the list.

@@ -12,6 +12,17 @@ Three axes, because a change can pass one and fail another:
 
 Report them **separately**. Merging or ranking findings across axes lets one mask another — clean code implementing the wrong thing looks fine until you read the axes apart.
 
+## Which axis a finding belongs to
+
+One question decides it: **could the executor have known?**
+
+It saw its ticket, the spec sections that ticket named, and `interfaces.md`. Nothing else.
+
+- **Yes, it could have known** → axis Spec or Craft. This is a defect of the code, and it is fixed in this ticket.
+- **No, it could not have known** → axis Manifest. The requirement was lost on the way down, and the defect is in the spec or in the cut — **not in the executor**. It still gets fixed, but do not re-run the subagent against words it was never given: repair the ticket first, or the spec, then run it.
+
+This is the same line the whole framework runs on, seen from close up. Between the gates everything measures against the spec, because the spec is the contract the crew actually received; only at G2 and G4 does anything measure against the brief, and there the subject is the plan, not the code. **The manifest is what lets axis 1 exist at all** — without it the brief is prose and cannot be checked one ticket at a time.
+
 ## Scale to the ticket
 
 Cheap on small diffs, thorough on large ones. A review that costs more than the ticket is its own kind of waste.

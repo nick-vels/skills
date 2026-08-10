@@ -2,15 +2,16 @@
 
 The file the **next** session reads. Not a phase in sequence — started in Phase 0, topped up during the build, finished in Phase 8.
 
-Three files describe this project and they are not interchangeable. Confusing them is how documentation rots.
+Four files describe this project and they are not interchangeable. Confusing them is how documentation rots.
 
 | File | Question it answers | Lifetime |
 |---|---|---|
 | `.autopilot/<slug>/` | what was promised and what was delivered **in this run** | forever, but it is history |
 | `.autopilot/<slug>/interfaces.md` | what the previous tickets built, for the tickets still to come | **dies with the run** |
 | `CLAUDE.md` / `AGENTS.md` | what an agent needs to work in this repo **tomorrow** | forever, and it is the present tense |
+| `docs/adr/` | **why** it is the way it is, and what was considered instead | forever, and it is past tense on purpose |
 
-The last one is what this file is about. Everything in it must be true of the repository *as it stands* — not of the plan, not of the run that produced it.
+The last two are what this file is about. Everything in the memory file must be true of the repository *as it stands* — not of the plan, not of the run that produced it. Everything in an ADR is true of the moment it was decided, and stays written even when it is later reversed; that is what makes it a record rather than a second, staler copy of the memory file.
 
 ## Phase 0 needs two things from this file
 
@@ -19,7 +20,7 @@ Read this block and stop; nothing else here applies until the build is over.
 1. **Pick the file** — the detection table immediately below, first match wins. An existing file always beats detection, the choice is recorded in `state.json` as `memoryFile`, and it is never a question for the user in any mode.
 2. **Write the skeleton** — the block under *Moment 1*, between the markers, with only what is already known. An invented command is worse than a missing one.
 
-What may be appended during the build (*Moment 2*) and the full description written from the finished code (*Moment 3*) are read when they happen — the second inside Phase 5, the third in Phase 8.
+What may be appended during the build (*Moment 2*), the full description written from the finished code (*Moment 3*) and the ADRs (*Moment 4*) are read when they happen — the second inside Phase 5, the last two in Phase 8.
 
 ## Which file
 
@@ -172,6 +173,57 @@ Currency is the criterion this file fails first and most quietly. So, before the
 
 Then write the block between the markers, commit it with the final commit, and note the chosen file in the Phase 8 report under «Где что лежит».
 
+## Moment 4 — the ADRs (Phase 8, tier T2+)
+
+**Runs at tier T2 and above.** Below that there is not enough decided to be worth a folder, and what little there is goes in the memory file's Подводные камни.
+
+The memory file answers «как этим пользоваться». It deliberately does not answer «почему так» — a file that tries to be both grows past the length at which anyone reads it, and the reasoning is what gets skimmed. But the reasoning is exactly what the next session needs in order not to undo this one: code shows what was chosen and is silent about what was rejected and why, so an agent reading only the code will cheerfully re-open a settled question and pick the option that was already tried.
+
+`spec.md` holds all of it right now and is worthless the day the work ships. So this is the routing step: **what deserves to survive comes out of the spec and into `docs/adr/`, and the spec stays throwaway.**
+
+### What earns an ADR
+
+Three sources, and nothing else:
+
+| Source | Why it qualifies |
+|---|---|
+| every `D##` row | the build proved the plan wrong. This is the highest-value kind: it records a road already walked and found closed |
+| load-bearing entries from **Решения по реализации** | the data model, the module boundaries, an external service, a schema — anything whose reversal means rebuilding rather than editing |
+| a term the project uses in its own way | one ADR for the vocabulary, if the spec introduced any. This is what makes the next spec speak the same language instead of inventing synonyms |
+
+What does **not** earn one: a decision with no alternative (there was one library and you used it), anything a linter or the framework decided, and anything that is simply the obvious default. An ADR asserting that you chose the standard option for the standard reason teaches nothing and dilutes the ones that do.
+
+Three to six files on a T2 build, five to twelve on T3. More than that means the filter was not applied.
+
+### Spawn it in parallel with the other two
+
+It receives **`spec.md` and `manifest.md`, and not the repository** — it documents decisions, not code, and giving it the repo turns it into a second memory agent writing a worse version of the same file.
+
+> По приложенным спецификации и манифесту напиши по одному ADR на каждое решение,
+> которое дорого отменять, и на каждую строку `D##`.
+>
+> Формат — `docs/adr/NNNN-<краткое-название>.md`, нумерация с `0001`, по файлу
+> на решение. Внутри четыре раздела и больше ничего:
+>
+> **Контекст** — что было известно на момент решения. Одна-две строки.
+> **Решение** — что решили, в настоящем времени: «Заявки хранятся в SQLite».
+> **Почему** — и, главное, что рассмотрели и отвергли. Отвергнутый вариант
+> без причины бесполезен: пиши, чем именно он не подошёл.
+> **Последствия** — с чем теперь придётся жить, включая неприятное.
+>
+> Для `D##` контекст — это то, что план предполагал, а решение — то, что
+> код доказал. Такой ADR ценнее остальных: он закрывает дорогу, по которой
+> кто-то иначе пойдёт заново.
+>
+> Не пиши ADR на решение, у которого не было альтернативы. Не пересказывай
+> спецификацию. Не описывай код — ты его не видел, и это не твоя работа.
+
+If `docs/adr/` already exists, **continue its numbering and its format** — an existing convention in the repo beats this one, exactly as `CONTEXT.md` beats invented vocabulary in Phase 3. Never renumber what is already there.
+
+The ADRs go in with the final commit, alongside the memory file, and get one line in the report under «Где что лежит».
+
 ## On resume
 
 The memory file is the **first** thing to read on resume, before `state.json` — it is the cheapest possible re-entry into a project. If it is missing or plainly stale against the code, that is a defect of the previous run: fix it as part of the current one, do not work around it.
+
+`docs/adr/` is **not** read on resume — it is for the session after this one, and reading a folder of past reasoning is exactly the kind of re-orientation the memory file exists to make unnecessary. Read one only when a decision is about to be reversed.

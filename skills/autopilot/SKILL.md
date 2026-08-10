@@ -1,7 +1,7 @@
 ---
 name: autopilot
-description: Use when the user dictates an app, site, bot, or feature to build end-to-end and expects a finished result without reviewing specs, tickets, or code — vibecoding sessions, non-technical users, "собери под ключ", "build it for me", "не задавай лишних вопросов" requests. Also use when the user invokes /autopilot, or asks for a build in a named mode or depth — «полный автомат», «ручной режим», «строго по брифу», «проработай глубоко».
-argument-hint: "[full|semi|manual] [strict|deep] что нужно построить или путь к brief.md"
+description: Use when the user dictates an app, site, bot, or feature to build end-to-end and expects a finished result without reviewing specs, tickets, or code — vibecoding sessions, non-technical users, "собери под ключ", "build it for me", "не задавай лишних вопросов" requests. Also use when the user invokes /autopilot, or asks for a build in a named mode or depth — «полный автомат», «режим интервью», «погриль меня», «ручной режим», «строго по брифу», «проработай глубоко».
+argument-hint: "[full|semi|interview|manual] [strict|deep] что нужно построить или путь к brief.md"
 ---
 
 # Autopilot
@@ -30,12 +30,12 @@ This file is the orchestrator: modes, phase order, gates. The rules for each pha
 | 1 Manifest | `phases/1-manifest.md` | `brief.md`, `manifest.md` |
 | 2 Briefing | `phases/2-briefing.md` | answers recorded into the manifest |
 | 3 Spec | `phases/3-spec.md` | `spec.md` |
-| 4 Plan | `phases/4-plan.md` | `tickets/NN-*.md` (or none — see tiers) |
-| 5 Subagents | `phases/5-subagents.md` | code, commits, `interfaces.md` |
+| 4 Plan | `phases/4-plan.md` | `tickets/NN-*.md` (or none — see tiers), `interfaces.md` seeded |
+| 5 Subagents | `phases/5-subagents.md` | code, commits, `interfaces.md` grown |
 | 6 Review | `phases/6-review.md` | per-ticket review |
 | 7 Instruments | `phases/7-instruments.md` | `state.json`, `dashboard.html` (opened for the user) |
 | 8 Final | `phases/8-final.md` | blind acceptance, final report |
-| 9 Memory | `phases/9-memory.md` | `CLAUDE.md` / `AGENTS.md` — the project as the next session will find it |
+| 9 Memory | `phases/9-memory.md` | `CLAUDE.md` / `AGENTS.md`, `docs/adr/` — the project as the next session will find it |
 
 ## The words the user sees
 
@@ -61,15 +61,18 @@ Phases 7 and 9 are not sequential. The instruments are written and opened in Pha
 
 ## Modes
 
-Everything typed after `/autopilot` splits into three parts: **the mode** (optional bare word — `full`, `semi`, `manual`), **the depth** (optional bare word — `strict`, `deep`), and **the brief** (everything else). No dashes on either parameter. Text that is not a recognised parameter is always brief.
+Everything typed after `/autopilot` splits into three parts: **the mode** (optional bare word — `full`, `semi`, `interview`, `manual`), **the depth** (optional bare word — `strict`, `deep`), and **the brief** (everything else). No dashes on either parameter. Text that is not a recognised parameter is always brief.
 
 `/autopilot full deep интернет-магазин керамики` — full mode, deep elaboration. Order does not matter; both parameters are optional and independent.
 
 | Mode | Triggers | Human gates |
 |---|---|---|
 | **full** — полный автомат | `/autopilot full`, «полный автомат», «полностью сам», «ничего не спрашивай», "fully automatic", "don't ask me anything" | none |
-| **semi** — полуавтомат **(default)** | `/autopilot semi`, «полуавтомат», nothing specified | questions only |
-| **manual** — ручной | `/autopilot manual`, «ручной режим», «согласовывай каждый шаг», "ask me everything", "approve every step" | questions + spec + tickets |
+| **semi** — полуавтомат **(default)** | `/autopilot semi`, «полуавтомат», nothing specified | questions, on genuine forks only |
+| **interview** — режим интервью | `/autopilot interview`, «режим интервью», «погриль меня», «допроси», «задай все вопросы», «разбери задачу со мной», "grill me", "interview me", "ask me everything" | questions, all of them |
+| **manual** — ручной | `/autopilot manual`, «ручной режим», «согласовывай каждый шаг», "approve every step" | the same questions + spec + tickets |
+
+**Why four and not three.** A mode decides two separate things: how much the user is asked about the *product*, and how much of the *process* they approve. Those are different kinds of their time — answering questions is the work, approving artifacts is control over how the work runs — and wanting one without the other is the ordinary case, not an exotic one. `interview` is that case: take the задачу apart with me question by question, then build the rest yourself. `manual` is `interview` plus the two artifact gates, and nothing else.
 
 - **Announce the resolved mode and offer the others, once, before Phase 1.** The user must never discover the mode by noticing questions that did or did not arrive — and they cannot ask for a mode they do not know exists. In a chat client there is no `--help` to read: this block is the only place the dials are ever named, so it is not optional.
 
@@ -80,7 +83,8 @@ Everything typed after `/autopilot` splits into three parts: **the mode** (optio
 
   Можно переключить в любой момент, просто скажи:
   • «полный автомат» — не спрашиваю вообще ничего
-  • «ручной режим» — согласуешь со мной спецификацию и список тасков
+  • «погриль меня» — разберу задачу вопросами до конца, дальше соберу сам
+  • «ручной режим» — то же плюс согласуешь спецификацию и список тасков
   • «строго по брифу» / «проработай глубоко» — меньше или больше проработки сверх сказанного
   ```
 
@@ -88,7 +92,7 @@ Everything typed after `/autopilot` splits into three parts: **the mode** (optio
 - **Ambiguity resolves to semi.** A mode word contradicting the rest of the sentence («ручной режим, но не спрашивай») → the explicit mode word wins; two mode words → ask which one, in one line.
 - **The mode can be switched mid-run** («переключись в ручной») — it applies from the next phase onward. Phases already passed are not replayed.
 - **Extra instructions in the brief** (stack, language, budget, «без базы данных», deadline) are manifest requirements like any other. They constrain the build; they never replace a phase.
-- **No mode removes the manifest gates or the safety gates.** Irreversible or outward-facing actions — deploy, publish, pay, send messages to third parties, delete data, rewrite git history — stay a question in **all three** modes, including full.
+- **No mode removes the manifest gates or the safety gates.** Irreversible or outward-facing actions — deploy, publish, pay, send messages to third parties, delete data, rewrite git history — stay a question in **all four** modes, including full.
 
 ## Depth
 
@@ -103,6 +107,7 @@ How far past the brief's own words the spec is allowed to go. The mode decides *
 - **Default is normal, and normal means permitted.** The agent elaborates where elaboration obviously helps and does not chase every edge of every requirement. This is the setting most briefs should run on.
 - **`strict` does not mean careless.** Errors and empty states are still handled — a build that crashes on bad input does not satisfy the requirement it was written for. What `strict` removes is anything the user did not ask for: no extra capabilities, no anticipating needs, no "пока я тут, добавлю".
 - **`deep` does not lift the attachment rules.** Every `A##` still names its parent requirement; the proportion limit still holds. `deep` buys thoroughness, never a different project.
+- **`deep` also turns on the adversarial pass** — the premortem over the brief in `phases/2-briefing.md`, which asks where the idea itself comes apart rather than where a requirement is underspecified. It runs at `deep` in **every** mode, and in `interview` and `manual` at every depth, because taking the задачу apart is what those modes are for. The mode then decides what happens to what it finds: a question, or an `ASSUMPTION` decided for the user.
 - **Depth is announced with the mode**, in the same opening block: «Режим: полуавтомат · глубина: максимальная».
 - **Depth can be changed mid-run** («поменьше отсебятины», «продумай глубже») — applies from the next phase. Already-written spec sections are not retroactively trimmed unless the user asks.
 
@@ -113,31 +118,36 @@ The rules for each level live in `phases/3-spec.md`.
 - User dictates what to build and expects the finished thing, not a collaboration on process.
 - User is non-technical: will not read specs, judge ticket granularity, or review code.
 - "Собери под ключ", "just build it", "не задавай лишних вопросов".
+- User wants the idea taken apart with them question by question, and the build done without them — that is **interview** mode, still Autopilot.
 - User wants to approve the spec and the tickets but not to run the pipeline by hand — that is **manual** mode, still Autopilot.
 
 **When NOT to use:** the user wants to co-author the code itself line by line (work with them directly); the task is a small single-file change (just do it); the idea is bigger than one project and its destination is unclear (settle the destination first, then return here).
 
 ## The flight
 
-| Phase | full | semi (default) | manual |
-|---|---|---|---|
-| 0 Preflight | auto | auto | auto |
-| 1 Manifest | auto | auto | auto |
-| 2 Briefing | skipped → self-briefing | only what the brief leaves open — sometimes none | the same, with more patience |
-| 3 Spec | auto | auto | show → wait for explicit «ок» |
-| 4 Plan | auto, notify only | auto, stoppable | discuss → wait for explicit «ок» |
-| 5 Subagents | auto | auto | auto |
-| 6 Review | auto | auto | auto |
-| 8 Final | report + Assumptions | report | report |
+| Phase | full | semi (default) | interview | manual |
+|---|---|---|---|---|
+| 0 Preflight | auto | auto | auto | auto |
+| 1 Manifest | auto | auto | auto | auto |
+| 2 Briefing | skipped → self-briefing | only what the brief leaves open — sometimes none | the adversarial pass, then every fork it opens | the same |
+| 3 Spec | auto | auto | auto | show → wait for explicit «ок» |
+| 4 Plan | auto, notify only | auto, stoppable | auto, stoppable | discuss → wait for explicit «ок» |
+| 5 Subagents | auto | auto | auto | auto |
+| 6 Review | auto | auto | auto | auto |
+| 8 Final | report + Assumptions | report | report | report |
+
+**`interview` and `manual` differ in exactly two cells** — the spec gate and the plan gate. If you find yourself treating them differently anywhere else, one of them is wrong.
 
 **The manifest gates run in every mode.** They are checks against the user's own words, not requests for the user's time — no mode buys the right to skip them.
 
 | Gate | After phase | Condition to pass |
 |---|---|---|
 | **G1** | 2 Briefing | every requirement has a status; none left `open` without a reason recorded |
-| **G2** | 3 Spec | every live requirement is `in-spec`, `deferred`, or `dropped`. Zero `open` |
+| **G2** | 3 Spec | every live requirement is `in-spec`, `deferred`, or `dropped`, zero `open` — **and an independent reader given only the brief and the spec finds nothing missing** |
 | **G3** | 4 Plan | every `in-spec` maps to ≥1 ticket, **and every ticket traces back to ≥1 requirement** |
-| **G4** | 8 Final | blind acceptance run; every disagreement with the manifest reported |
+| **G4** | 8 Final | blind acceptance run against the brief, spec withheld; every disagreement with the manifest reported |
+
+**G2 and G4 are the same check at the two ends of the flight, and both are needed.** They measure the build against the user's own words, with your paraphrase of them taken away — G2 while the answer is a paragraph of spec, G4 when it is the last chance to know. Everything in between measures against the spec, because that is the contract the executors were actually given; judging a subagent by words it never saw produces findings nobody can act on.
 
 A failed gate is not a warning. It sends the phase back to be redone — see `phases/1-manifest.md`.
 
@@ -161,18 +171,21 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 │   ├── <YYYY-MM-DD>-brief.md   the user's original words, redacted, never edited again
 │   ├── manifest.md      R01…Rnn — requirements and their status
 │   ├── spec.md          the specification
-│   ├── interfaces.md    what finished tickets built, for the tickets that follow
+│   ├── interfaces.md    the boundaries from the spec, then what finished tickets built
 │   └── tickets/NN-<slug>.md
 ├── README.md            how to read this folder — for the human, written once in Phase 0
 ├── state.json           machine-readable run state: stages, tickets, timings, debt
 └── dashboard.html       the human view — opened automatically in Phase 0, refreshes itself
 
 CLAUDE.md | AGENTS.md   the project memory — what the next session reads first
+docs/adr/               decisions worth outliving the run — written in Phase 9, tier T2+
 ```
 
 The brief is dated in its filename because a slug directory outlives one sitting. The dashboard is opened for the user, not described to them: it shows the eight stages of the cycle, where the run is now, and a live clock on the run, the current stage and the current ticket.
 
-`.autopilot/` is the record of **this** run; the memory file at the root is the project as it stands, for whoever opens the repo next. Autopilot's content there lives between `<!-- autopilot:start -->` markers — everything the user wrote outside them is untouchable. See `phases/9-memory.md`.
+`.autopilot/` is the record of **this** run; the memory file at the root is the project as it stands, for whoever opens the repo next; `docs/adr/` is why it stands that way. Autopilot's content in the memory file lives between `<!-- autopilot:start -->` markers — everything the user wrote outside them is untouchable. See `phases/9-memory.md`.
+
+The three are not interchangeable, and the split is what keeps the spec throwaway. `spec.md` is worth nothing the day the work ships; the reasoning inside it — why this data model, what the build proved wrong, which word means which thing — is worth something for years, and it dies with `.autopilot/` unless something routes it out. That is what the ADRs are for.
 
 `.autopilot/` is committed, not ignored — it is the user's record of what was promised and what was delivered. A run that leaves nothing under `.autopilot/` did not happen.
 
@@ -214,6 +227,12 @@ Phase-specific mechanics are not here; they live in the phase that owns them. Wh
 | «Напишу "запускаю через 60 секунд"» | Ты не умеешь ждать — обещанной паузы не будет. Честная формулировка: «начинаю, скажи стоп». |
 | «В ручном режиме тоже начну и подожду возражений» | В ручном согласование — это явное «ок». Молчание им не является, начатая работа тем более. |
 | «Сверю результат со спецификацией, этого хватит» | Спецификация может уже потерять требование. Финальная сверка идёт с брифом и без спецификации — иначе она подтвердит собственную ошибку. |
+| «Покрытие проверю сам — я же только что писал спецификацию» | Тот, кто писал, не видит, чего не написал. На G2 бриф и спецификацию читает субагент, которому не дают ни манифеста, ни разговора. |
+| «Правило про тесты записано в фазе — значит, оно действует» | Действует только то, что доехало в промпт исполнителя. Фазовый файл читает оркестратор, а код пишет не он. |
+| «Интерфейсы устаканятся по ходу — первый таск задаст» | Тогда их задаст тот, кто видел одну восьмую задачи. Границы модулей решаются до нарезки, иначе восемь контекстов договариваются задним числом. |
+| «Отчёт напишу по памяти — я же всё это и делал» | К восьмой фазе твой контекст самый загрязнённый за весь прогон. Отчёт собирается из `manifest.md` и `state.json`, перечитанных с диска. |
+| «Обоснования решений останутся в спецификации» | Спецификация умирает вместе с прогоном. То, что должно пережить его, уходит в ADR — иначе следующая сессия переоткроет те же решения. |
+| «Пользователь сказал "погриль меня" — покажу и спецификацию» | Режим интервью покупает вопросы, а не гейты. Гейты — это «ручной режим», и это отдельное слово, которое он не сказал. |
 | «Таски и спецификация видны в чате — зачем файлы» | Файл в `.autopilot/` и есть артефакт; чат — только его пересказ. Диалог умрёт, файлы останутся. |
 | «Пользователь не спрашивал про режимы — не буду грузить» | Он и не спросит: в чате нет `--help`. Пять строк в начале — единственное место, где он вообще узнаёт, что у сборки есть ручки. |
 | «Проект собран, тесты зелёные — значит, работает» | Тесты писал тот же процесс, что и код. Пока проект никто не запустил, «работает» — это гипотеза, а первым его запустит пользователь. |
@@ -229,11 +248,15 @@ Every line here means something the user asked for is at risk. Phase mechanics �
 - Spec or tickets that exist only in the dialogue — nothing written under `.autopilot/`.
 - Instruments that disagree with the chat: a stage still `active` after you moved on, a ticket running while the dashboard calls it `pending`, a ticket carrying the run's `startedAt` instead of its own, timestamps filled in afterwards from memory. The user believes the screen over your sentences, which is the whole reason it exists.
 - The announced depth and the actual spec diverge: a bare restatement of the brief at normal or deep, or an invented capability — any `A##` — at strict.
+- Gate G2 passed on your own reading of your own spec — the independent coverage check skipped, or its checker handed the manifest.
 - Final acceptance measured against the spec instead of blind against the brief.
-- The blind checker or the memory subagent handed `spec.md` or the tickets. Independence is the entire mechanism; without it both of them confirm the plan instead of the code.
+- The blind checker, the coverage checker or the memory subagent handed `spec.md`, the manifest or the tickets — whichever of those it was supposed to be blind to. Independence is the entire mechanism; without it each of them confirms the plan instead of the thing.
+- The final report composed from memory instead of from `manifest.md`, `state.json` and the two subagents' returns, re-read from disk.
+- A T2+ run that ended with no ADR: every `D##` and every load-bearing implementation decision left to die with `.autopilot/`.
 - The finished project was never actually run — accepted on green tests and a reading of the code.
-- Starting without announcing mode and depth, or announcing one and behaving as another: questions in full, a start-and-see instead of «ок» in manual.
-- A blocking unknown — payment, hosting, an account, where the data lives — left unasked in semi or manual because the brief «выглядел понятным». Asking nothing is legitimate only when nothing is open; a manufactured question and a skipped blocking one are both defects, in opposite directions.
+- Starting without announcing mode and depth, or announcing one and behaving as another: questions in full, a spec put up for approval in interview, a start-and-see instead of «ок» in manual.
+- The adversarial pass skipped in `interview` because the brief «выглядел продуманным» — or used to argue the user out of a requirement instead of into a decision.
+- A blocking unknown — payment, hosting, an account, where the data lives — left unasked in semi, interview or manual because the brief «выглядел понятным». Asking nothing is legitimate only when nothing is open; a manufactured question and a skipped blocking one are both defects, in opposite directions.
 - Promising the user a wait — a countdown, «через минуту», «если не ответишь за N секунд» — that you have no way to honour.
 - In full: an invented fact about the user standing where an ASSUMPTION, a stub, or a PLACEHOLDER belongs.
 - Asking the user a process question — which tracker, which doc file, which memory file, ticket granularity, code review — outside manual, where spec and tickets are gates by design.
@@ -241,6 +264,8 @@ Every line here means something the user asked for is at risk. Phase mechanics �
 - Two tickets in one subagent context, or two tickets in one commit.
 - Parallel subagents editing the same files — or the mirror failure, independent tickets flown one at a time with the plan's parallelism thrown away in the delivery.
 - A subagent launched without `interfaces.md`, or finishing without returning the contract block.
+- The first wave launched with `interfaces.md` still empty — module boundaries left for whichever ticket happens to reach them first.
+- A subagent prompt with no testing rules in it: the discipline written in the phase file the orchestrator reads, and absent from the handoff to the one who writes the code.
 - Payment, hosting, or accounts first mentioned at the finish line.
 - A secret value asked for, repeated back, or written into any file, prompt, commit, or report.
 - Installing a package or fetching remote code without the user asking for it.

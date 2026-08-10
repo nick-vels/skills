@@ -12,6 +12,8 @@ Write to `.autopilot/<slug>/spec.md`. What the user sees in the dialogue is a tw
 
 Working them out is the most valuable thing this phase can do. A spec that merely restates the brief in tidier words has produced nothing, and it guarantees the gaps get filled during implementation by whichever subagent hits them first, differently each time.
 
+Where the adversarial pass ran in Phase 2, its craft findings land here — the ones nobody needed to be asked about. They arrive as `R##.n` stories like anything else; what makes them worth their own mention is that they are usually the ones the depth pass below would not have produced, because they came from asking where the idea breaks rather than where a requirement is thin.
+
 **How far to take it is the user's setting, not yours.** Read it from the announced depth:
 
 | Depth | The depth pass below | `A##` new capabilities |
@@ -77,6 +79,30 @@ Three rules keep additions attached. They hold at **every** depth — `deep` rel
 
 Every `A##` that survives into the build is listed in the final report under «что я добавил сверх заказанного», so the user learns about it from the report rather than from the code.
 
+## Boundaries — decided here, not by whichever ticket reaches them first
+
+Phase 5 runs several subagents in fresh contexts, each seeing one ticket and `interfaces.md`. What makes them build one project instead of several incompatible halves is that the **boundaries between modules were already decided** — the units, what each one owns, and the signatures they expose to each other.
+
+Leave that undecided and it still gets decided: by ticket 01, which has seen an eighth of the задача, in whatever shape made ticket 01 easy. Everything after it either obeys that shape or quietly builds a second version of it. Reinvention is the most expensive defect a parallel crew produces, and this is where it is actually prevented — `interfaces.md` only records the decision, it cannot make it.
+
+So this phase names, for every unit the build will have:
+
+- **What it owns** — the data, the rule, the surface. One unit, one reason to change.
+- **What it exposes** — the public signatures other units call. Names and shapes, not implementations.
+- **What it hides** — the part nobody else may reach into. If nothing is hidden, it is not a module, it is a folder.
+
+Then the **test seams**, which are a subset of the above and not a separate exercise: behaviour is checked through those same public boundaries. Prefer seams that already exist in the repo. **The fewer the better — the ideal is one.** A seam is a promise to keep something stable, and every extra one is another thing that cannot move.
+
+Three rules keep this from becoming architecture for its own sake:
+
+- **Boundaries follow the depth pass, not the requirement list.** One requirement can live inside one module; three requirements that all read the same data belong behind one boundary, not three.
+- **A boundary that no ticket crosses is not a boundary.** If the whole thing is built by one subagent, it needs no public signature — say so and move on. At tier T0 this section is two lines.
+- **Deep modules over many shallow ones.** A narrow interface hiding real work beats a wide one hiding none. Every signature written here is something eight contexts have to agree about, and the cheapest agreement is the one there is least of.
+
+In **manual** this is part of what the spec gate covers, and it is the part worth actually discussing — it is the only decision in the spec that is expensive to change later.
+
+Phase 4 seeds `interfaces.md` from this section before the first ticket flies. Write it so that is a copy, not a re-derivation.
+
 ## The template
 
 ```markdown
@@ -111,11 +137,21 @@ Every `A##` that survives into the build is listed in the final report under «�
 Исключение: если структура (схема, тип, конечный автомат) выражается
 точнее кодом, чем прозой — вставь только её, без обвязки.
 
-## Швы для тестов
+## Границы и швы
 
-Где проверяется поведение — через публичные границы, не через внутренности.
-Предпочитай существующие швы новым. Чем меньше швов, тем лучше;
-идеал — один. Назови их явно: Phase 5 тестирует только здесь.
+Единицы, из которых состоит проект. По одной строке на каждую:
+что владеет, что выставляет наружу, что прячет.
+
+| Модуль | Владеет | Выставляет | Прячет |
+|---|---|---|---|
+| `intake` | заявки клиентов | `createRequest({phone, address, problem}) -> {id, createdAt}` | нормализацию телефона, генерацию номера |
+
+Швы для тестов — подмножество этих же границ, названное явно:
+поведение проверяется через них, Phase 5 тестирует только здесь.
+Предпочитай существующие швы новым. Чем меньше швов, тем лучше; идеал — один.
+
+Это единственный раздел спецификации, который Phase 4 копирует в `interfaces.md`
+дословно. Пиши его так, чтобы копировать было нечего додумывать.
 
 ## Вне рамок
 
@@ -147,14 +183,56 @@ If `CONTEXT.md` or `docs/adr/` exist, the spec speaks the project's language —
 
 ## Gate G2 — before leaving this phase
 
+This is the single most valuable check in the whole flight. Everything downstream trusts the spec; this is the last moment the spec is still cheap to compare against the words the user actually said. It has two halves, and the second is the one that works.
+
+### 1. Your own pass — zero `open` rows
+
 Update every manifest row: `open` → `in-spec` with its section, or → `deferred` with its Out of Scope line.
 
 Then check: **zero `open` rows.** An `open` row means the spec does not cover something the user asked for. That is not a note for later — it is an incomplete spec. Go back and write the missing section.
 
-This is the single most valuable check in the whole flight. Everything downstream trusts the spec; this is the last moment the spec is still comparable to the words the user actually said.
+### 2. The independent coverage check
+
+The first half cannot catch its own blind spot. **You wrote the spec, so you cannot see what you did not write** — a requirement you misread as covered gets marked `in-spec` by the same reading that lost it, and every check from here to the end inherits that. The manifest makes the loss *findable*; it does not make you the one who can find it.
+
+So spawn a subagent. It receives **exactly two files** — `<дата>-brief.md` and `spec.md` — and nothing else.
+
+**It must not receive:** `manifest.md`, the conversation, the briefing answers, or any summary of them. The manifest is your reading of the brief; hand it over and you have asked someone to check your reading against itself.
+
+Its brief:
+
+> Прочитай два файла. Первый — задача, как её поставил заказчик своими словами.
+> Второй — спецификация, написанная по этой задаче.
+>
+> Найди всё, что заказчик просил, а спецификация не покрывает. По каждому: цитата
+> из брифа и одна строка, чего именно нет.
+>
+> Отдельно — то, что покрыто наполовину: требование названо, но описано так, что
+> по нему нельзя собрать. «Складывает в таблицу» без указания, что именно
+> складывается, — это половина.
+>
+> И отдельно — то, чего в брифе не было, а в спецификации есть.
+>
+> Не оценивай качество, не предлагай улучшений, не объясняй, почему чего-то могло
+> не быть. Только факт расхождения. Если расхождений нет — так и скажи.
+
+Then act on it, before leaving the phase:
+
+| Finding | What it means |
+|---|---|
+| missing | the spec is incomplete — **write the section**, then update the row |
+| half-covered | the executor will guess — write what was missing |
+| in the spec, not in the brief | an `A##` with no parent, or a `D##` written too early. Attach it or cut it |
+| «расхождений нет» | pass |
+
+Record the result in `state.json` under `coverage` — the count of findings and what was done with each — so the Phase 8 report can say whether this gate ever caught anything. A gate whose findings are never visible is a gate nobody will keep running.
+
+**A finding here is the gate working, not a failure of the spec phase.** It costs a paragraph now. The same finding at G4 costs the build.
 
 ## Showing it
 
-**semi and full** — two lines in the chat: what will be built, and what deliberately will not. Then move on.
+**full, semi and interview** — two lines in the chat: what will be built, and what deliberately will not. Then move on.
+
+In **interview** that is easy to get wrong, because the user has just spent twenty answers on this and it feels like they are owed the document. They are not — they chose the mode that buys questions, not gates, and stopping here to wait for approval is the pause the mode was picked to avoid. Two lines, plus one saying where it is: «Спецификация — `.autopilot/<slug>/spec.md`, если захочешь посмотреть. Начинаю.» Then start.
 
 **manual** — the spec is a gate. Show it in full, stop, wait for an explicit «ок». Rewrite on every objection and ask again. Silence is not agreement, and neither is work already started.

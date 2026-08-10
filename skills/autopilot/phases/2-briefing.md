@@ -1,8 +1,45 @@
 # Phase 2 — Briefing
 
-The only phase where the user is needed in semi mode. Its job is not to collect wishes — it is to **close the requirements that cannot be built as written**.
+The phase the user is actually needed for — the only one in `semi` and `interview`, the first of three in `manual`. Its job is not to collect wishes: it is to **close what cannot be built as written**, and, where the mode or the depth asks for it, to find out what the brief got wrong while changing it is still free.
 
 The manifest already exists. Every question here exists to move a row in it.
+
+Two dials meet in this phase and they do different jobs. **Depth decides how much gets opened up; the mode decides who closes it.** A fork found at `deep` is the same fork in every mode — in `full` you settle it yourself and label the decision, in `interview` you put it to the user. Confusing the two is how `full deep` turns into a contradiction.
+
+## The adversarial pass
+
+**Runs when:** the mode is `interview` or `manual`, at any depth · **or** the depth is `deep`, in any mode. Otherwise skip this section entirely and go straight to the interview.
+
+Everything else in this phase asks *what the brief left undefined*. This asks something different and harder: **where the idea itself comes apart.** A brief can be complete, unambiguous and internally consistent, and still describe a thing that will not work — and nothing downstream of here will ever notice, because every check after this one measures the build against what was asked for.
+
+Run it against `brief.md` and `manifest.md`, before you ask anything. Seven questions, and the answers are yours to find, not the user's to supply:
+
+| | The question you put to the задача, not to the user |
+|---|---|
+| **1. Провал** | Проект сдан, работает, и им никто не пользуется. Что произошло? |
+| **2. Столкновение** | Какие два требования не могут быть верны одновременно? Не внутри одного — между разными строками манифеста |
+| **3. Непроверенное** | Что пользователь считает решённым, а оно не решено? «Люди этим будут пользоваться», «данные откуда-то возьмутся», «у меня есть аудитория» |
+| **4. Цена** | Какое требование съест половину сборки ради малой доли ценности — и знает ли он об этом? |
+| **5. Условие** | Чего в брифе нет, но без чего результат бессмысленен? Не подразумеваемое требование (это `R##i`), а условие успеха: кто это наполнит, кто будет обслуживать, откуда первые данные |
+| **6. Вторая неделя** | Что случится, когда это перестанет быть новым: рост, дубликаты, модерация, поддержка, чужие руки |
+| **7. Второй актор** | Кто ещё будет этим пользоваться, кроме описанного? Про него в брифе обычно нет ни строчки |
+
+Five to seven findings is the normal yield. Fewer than three on a real project means the pass was run for form's sake.
+
+### What a finding may become — and what it may never become
+
+Route each one, and route it by **mode**, not by how alarming it looks:
+
+| Kind of finding | full | semi | interview / manual |
+|---|---|---|---|
+| only the user can settle it | `ASSUMPTION` in the manifest, in the report | asked **only if** the two branches give a visibly different product | **asked** |
+| craft — you can settle it | decided, into the spec | decided, into the spec | decided, into the spec |
+| it is a whole capability | `A##` under its parent, or Out of Scope | same | same, or offered as a question |
+| it is outside the задача | one line in Out of Scope | same | same |
+
+**The pass has no power to remove anything.** It produces questions, `A##` stories, Out of Scope lines and `ASSUMPTION` rows — never a `dropped` row, never a quietly narrowed requirement. A requirement the pass thinks is a bad idea is still the user's requirement: the most it earns is one question naming the cost.
+
+And it is **a grilling of the задача, not of the person.** «Заявки будут приходить — а кто их читает в субботу?» is the pass working. «Ты уверен, что это вообще кому-то нужно?» is not a finding, it is an opinion, and it buys nothing that can be built.
 
 ## The rules of the interview
 
@@ -22,33 +59,41 @@ The manifest already exists. Every question here exists to move a row in it.
 
 **Ask what the brief actually leaves open — however many that is, including none.**
 
-The count is an outcome, not a setting. A two-line brief about a marketplace can leave eight real forks; a careful brief for a landing page, with the copy already written and the stack named, can leave zero. Both are correct interviews. What is never correct is producing a question because a number implied there should be one: a manufactured question is answered badly, teaches the user that the interview is a formality, and spends the attention you will need for the one question that matters.
+The count is an outcome of the brief, not a number you were handed. The mode moves the *line* — which forks reach the user — and the brief decides how many things fall on each side of it. A two-line brief about a marketplace can leave eight real forks; a careful brief for a landing page, with the copy already written and the stack named, can leave zero even in `interview`. Both are correct interviews. What is never correct is producing a question because a mode implied there should be more: a manufactured question is answered badly, teaches the user that the interview is a formality, and spends the attention you will need for the one question that matters.
 
 In priority order:
 
 - **Every blocking unknown is asked, always.** Payment, hosting, accounts, where the data lives, an existing system to fit into. No count and no mode makes one of these skippable — an unasked blocking question costs the project far more than an extra question ever costs the user.
-- **A fork only the user can settle is asked** when the two branches lead to visibly different products.
-- **Everything else you decide yourself** and record it. Error wording, retry policy, sane defaults, naming, layout — that is craft, and Phase 3 is where it belongs.
+- **A fork only the user can settle is asked.** How many of them, and that is the whole difference between the modes:
+
+  | | Which forks reach the user |
+  |---|---|
+  | **semi** | the ones where the two branches lead to a visibly different product. The rest you settle and record |
+  | **interview** · **manual** | **all of them**, plus everything the adversarial pass opened. A fork whose branches look alike from here may not look alike from where the user sits, and in these modes that judgement is theirs |
+
+  This is not «more patience» — it is a different line in the same place. In `semi` you decide a borderline fork and note it; in `interview` you ask it.
+- **Everything else you decide yourself** and record it. Error wording, retry policy, sane defaults, naming, layout — that is craft, and Phase 3 is where it belongs. This line does **not** move with the mode: `interview` buys the user every decision that is genuinely theirs, not the right to be asked which HTTP status to return.
 
   «Everything else» is narrower than it sounds, and getting the line wrong in this direction is the expensive mistake. A decision belongs back in the interview, not in your hands, if it **costs the user money or ties them to a vendor**, if it **changes what they see or what they can do**, if **undoing it later means rebuilding rather than editing**, or if it **encodes a rule about their business** — prices, deadlines, who may do what, what happens to someone's data. None of those are craft, however obvious the answer looks from here. When you cannot tell which side a decision falls on, that uncertainty *is* the signal: ask.
 - **Nothing left open? Say so and go.** «Вопросов нет — в задаче всё однозначно, пишу спецификацию.» Mark the `briefing` stage `skipped` in `state.json` with the note «вопросов не потребовалось», so the user sees a decision rather than a step that quietly did not happen.
 
-Most briefs land somewhere between two and eight questions. That is an observation about briefs, not a target for you — **and there is no ceiling any more than there is a floor.** A three-line brief for a marketplace, a project that has to fit into someone's existing system, a business with rules you cannot guess: fifteen questions there is not an interrogation, it is the cheapest part of the whole build. Ask them, and say once why there are so many — «задача большая и многое не определено, вопросов будет больше обычного». What makes a long interview bad is padding, never length.
+In **semi**, most briefs land somewhere between two and eight questions. That is an observation about briefs, not a target for you — **and there is no ceiling any more than there is a floor.** A three-line brief for a marketplace, a project that has to fit into someone's existing system, a business with rules you cannot guess: fifteen questions there is not an interrogation, it is the cheapest part of the whole build. Ask them, and say once why there are so many — «задача большая и многое не определено, вопросов будет больше обычного». What makes a long interview bad is padding, never length.
 
-In **manual** the same rules hold with more patience: keep going while genuine forks remain.
+In **interview** and **manual** the range is simply higher, for the same reason: the user asked for the задача to be taken apart, so the forks that `semi` would have settled quietly all reach them. Ten to twenty-five on a real project is ordinary. Say once at the start what they are in for — «разбираю задачу подробно, вопросов будет много; каждый закрывает что-то, что иначе я решу за тебя» — and then just work. **Do not apologise for the count as you go**: a mode the user chose does not need excusing, and «извини, ещё один вопрос» every third turn teaches them that they picked wrong.
 
 ## What to ask about
 
 In priority order. Ask only what is actually unresolved for *this* brief; skip anything the brief already settled.
 
 1. **Blocking externals** — payment, hosting, domain, third-party accounts, existing data to import.
-2. **Implicit requirements** (`R##i` rows) — the things the brief assumed. «Заявки будут падать в таблицу — тебе нужен ещё экран, чтобы их смотреть, или таблицы хватит?» These are the rows most likely to sink the project silently.
-3. **Depth the user alone can settle.** The brief describes the happy path; the interesting decisions live under it. Some of those are craft and you decide them yourself in Phase 3 — error wording, retry policy, defaults. Others are genuinely the user's preference, and those are among the best questions you can spend a slot on: «Клиент отменил заявку через час — деньги возвращаем сами или мастер решает?» A question like this buys a whole branch of the spec that would otherwise be guessed.
+2. **What the adversarial pass found**, where it ran. These come second and never last, because they are the only questions in the list capable of changing what gets built rather than how. Each is asked the same way as any other — one at a time, with a recommended answer, naming its cost: «Заявки будут приходить круглосуточно, а мастер один. Ставим очередь и обещаем ответ в рабочие часы, или принимаем только с 9 до 18? Я бы взял первое — клиент не упирается в закрытую дверь.»
+3. **Implicit requirements** (`R##i` rows) — the things the brief assumed. «Заявки будут падать в таблицу — тебе нужен ещё экран, чтобы их смотреть, или таблицы хватит?» These are the rows most likely to sink the project silently.
+4. **Depth the user alone can settle.** The brief describes the happy path; the interesting decisions live under it. Some of those are craft and you decide them yourself in Phase 3 — error wording, retry policy, defaults. Others are genuinely the user's preference, and those are among the best questions you can spend a slot on: «Клиент отменил заявку через час — деньги возвращаем сами или мастер решает?» A question like this buys a whole branch of the spec that would otherwise be guessed.
 
-   At **deep** depth these questions come first, right after the blocking externals. At **strict** they narrow to clarifying what the user already said — never to offering them something extra.
-4. **Untestable requirements** — «красиво», «удобно», «быстро». Turn one into something checkable, or accept it as a matter of taste and record that. Do not spend three questions here.
-5. **Contradictions inside the brief** — quote both halves and ask which wins.
-6. **Scope edges** — what is explicitly *not* needed. Answers here become `dropped` rows and save whole tickets.
+   At **strict** these narrow to clarifying what the user already said — never to offering them something extra.
+5. **Untestable requirements** — «красиво», «удобно», «быстро». Turn one into something checkable, or accept it as a matter of taste and record that. Do not spend three questions here.
+6. **Contradictions inside the brief** — quote both halves and ask which wins.
+7. **Scope edges** — what is explicitly *not* needed. Answers here become `dropped` rows and save whole tickets.
 
 ## Recording answers
 
@@ -63,7 +108,9 @@ After each answer, update the manifest row immediately — not at the end of the
 
 **No interview happens.** The `briefing` stage in `state.json` is marked `skipped` with the note «полный автомат — самобрифинг», not left `pending`: the user has to see that the step was a decision, not a stall.
 
-Run the same checklist against yourself and write the answers into the manifest, each labelled by kind. The line between the two kinds is the whole discipline of this mode:
+Run the same checklist against yourself and write the answers into the manifest, each labelled by kind. At **`full deep`** the adversarial pass runs too, and every finding it produces that only the user could have settled becomes an `ASSUMPTION` — that is what «полный автомат» means here, not that the question was never worth asking. Each of them is a line in the Phase 8 report, and on a `deep` run that section is the longest one in it.
+
+The line between the two kinds is the whole discipline of this mode:
 
 **Decisions are yours to make.** Stack, structure, provider, data model, layout. Pick the option that runs on the user's own machine **without a third-party account and without money**, and record it as `ASSUMPTION — принято за пользователя: …` in the manifest's Основание column. Every one of these is a required line in the Phase 8 report — the user never asked for them and has the right to see all of them in one place.
 
@@ -71,9 +118,11 @@ Run the same checklist against yourself and write the answers into the manifest,
 
 **A paid or account-bound service becomes an adapter, not a guess.** One interface, a local stub behind it, the real credential an empty variable name in `.env.example`. The user swaps the stub for the real thing when they have the account — the build does not wait for it and does not pretend to have it.
 
-## Manual mode
+## Interview and manual
 
-Same rules, no cap. Keep asking until nothing blocking remains, then say so plainly: «Вопросов больше нет, пишу спецификацию».
+Identical here — the two modes part company only at the spec and the plan, two phases later. Same rules as `semi`, no cap, and the wider line on which forks reach the user. Keep going while genuine forks remain, then say so plainly: «Вопросов больше нет, пишу спецификацию».
+
+The thing to guard against in these two is not length, it is **drift into process**. «Какой стек берём?», «нарезать на таски помельче?», «показать спецификацию?» are not interview questions — they are the questions Autopilot exists to answer itself, and asking them is how a mode the user chose for its thoroughness turns into the meeting they were avoiding. Every question still names its manifest row.
 
 ## Closing
 

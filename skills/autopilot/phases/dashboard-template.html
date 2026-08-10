@@ -47,8 +47,9 @@
     color:var(--fg,var(--dim));background:var(--bbg,transparent)}
   /* режим — синяя семья, насыщенность растёт с автономией */
   .b-mode-1{--bbg:#eff4fb;--bd:#cfdcef;--fg:#4a6d9e}
-  .b-mode-2{--bbg:#e3ecf9;--bd:#b6cce8;--fg:#2f5688}
-  .b-mode-3{--bbg:#d6e3f6;--bd:#9dbbe0;--fg:#1f4374}
+  .b-mode-2{--bbg:#e9f0fa;--bd:#c3d4eb;--fg:#3d6293}
+  .b-mode-3{--bbg:#e3ecf9;--bd:#b6cce8;--fg:#2f5688}
+  .b-mode-4{--bbg:#d6e3f6;--bd:#9dbbe0;--fg:#1f4374}
   /* глубина — фиолетовая семья */
   .b-depth-1{--bbg:#f4f0fa;--bd:#ddd2ee;--fg:#6b559b}
   .b-depth-2{--bbg:#ece5f7;--bd:#cbbbe6;--fg:#573f8b}
@@ -61,8 +62,9 @@
   .b-done{--bbg:#e8f3ec;--bd:#b6d9c4;--fg:#1f7a4d}
   @media (prefers-color-scheme:dark){
     :root:not([data-theme]) .b-mode-1{--bbg:#1a2333;--bd:#2a3a52;--fg:#9cbbe6}
-    :root:not([data-theme]) .b-mode-2{--bbg:#1c2942;--bd:#31466a;--fg:#aecbf2}
-    :root:not([data-theme]) .b-mode-3{--bbg:#1f2f4f;--bd:#3a5482;--fg:#c0d8fb}
+    :root:not([data-theme]) .b-mode-2{--bbg:#1b263a;--bd:#2e405e;--fg:#a5c3ec}
+    :root:not([data-theme]) .b-mode-3{--bbg:#1c2942;--bd:#31466a;--fg:#aecbf2}
+    :root:not([data-theme]) .b-mode-4{--bbg:#1f2f4f;--bd:#3a5482;--fg:#c0d8fb}
     :root:not([data-theme]) .b-depth-1{--bbg:#221d32;--bd:#372e4f;--fg:#b8a6e0}
     :root:not([data-theme]) .b-depth-2{--bbg:#26203b;--bd:#40345c;--fg:#c5b3ec}
     :root:not([data-theme]) .b-depth-3{--bbg:#2b2346;--bd:#4b3b6c;--fg:#d3c2f7}
@@ -73,8 +75,9 @@
     :root:not([data-theme]) .b-done{--bbg:#16281f;--bd:#26432f;--fg:#4bbd84}
   }
   :root[data-theme="dark"] .b-mode-1{--bbg:#1a2333;--bd:#2a3a52;--fg:#9cbbe6}
-  :root[data-theme="dark"] .b-mode-2{--bbg:#1c2942;--bd:#31466a;--fg:#aecbf2}
-  :root[data-theme="dark"] .b-mode-3{--bbg:#1f2f4f;--bd:#3a5482;--fg:#c0d8fb}
+  :root[data-theme="dark"] .b-mode-2{--bbg:#1b263a;--bd:#2e405e;--fg:#a5c3ec}
+  :root[data-theme="dark"] .b-mode-3{--bbg:#1c2942;--bd:#31466a;--fg:#aecbf2}
+  :root[data-theme="dark"] .b-mode-4{--bbg:#1f2f4f;--bd:#3a5482;--fg:#c0d8fb}
   :root[data-theme="dark"] .b-depth-1{--bbg:#221d32;--bd:#372e4f;--fg:#b8a6e0}
   :root[data-theme="dark"] .b-depth-2{--bbg:#26203b;--bd:#40345c;--fg:#c5b3ec}
   :root[data-theme="dark"] .b-depth-3{--bbg:#2b2346;--bd:#4b3b6c;--fg:#d3c2f7}
@@ -231,12 +234,12 @@
 
 <script>
 /*autopilot:state:start*/
-const STATE = {"slug":"","title":"—","mode":"semi","depth":"normal","tier":"—","briefFile":null,"startedAt":null,"updatedAt":null,"finishedAt":null,"stages":[{"id":"preflight","status":"active","startedAt":null},{"id":"manifest","status":"pending"},{"id":"briefing","status":"pending"},{"id":"spec","status":"pending"},{"id":"plan","status":"pending"},{"id":"build","status":"pending"},{"id":"review","status":"pending"},{"id":"final","status":"pending"}],"requirements":{"total":0,"done":0,"inTicket":0,"inSpec":0,"placeholder":0,"deferred":0,"dropped":0},"tickets":[],"singlePass":null,"tests":null,"debt":{"placeholders":[],"assumptions":[],"emptyEnv":[]},"additions":[],"blind":null};
+const STATE = {"slug":"","title":"—","mode":"semi","depth":"normal","tier":"—","briefFile":null,"startedAt":null,"updatedAt":null,"finishedAt":null,"stages":[{"id":"preflight","status":"active","startedAt":null},{"id":"manifest","status":"pending"},{"id":"briefing","status":"pending"},{"id":"spec","status":"pending"},{"id":"plan","status":"pending"},{"id":"build","status":"pending"},{"id":"review","status":"pending"},{"id":"final","status":"pending"}],"requirements":{"total":0,"done":0,"inTicket":0,"inSpec":0,"placeholder":0,"deferred":0,"dropped":0},"tickets":[],"singlePass":null,"tests":null,"debt":{"placeholders":[],"assumptions":[],"emptyEnv":[]},"additions":[],"coverage":null,"blind":null};
 /*autopilot:state:end*/
 </script>
 
 <script>
-const MODE_CLS  = {manual:'b-mode-1', semi:'b-mode-2', full:'b-mode-3'};
+const MODE_CLS  = {manual:'b-mode-1', interview:'b-mode-2', semi:'b-mode-3', full:'b-mode-4'};
 const DEPTH_CLS = {strict:'b-depth-1', normal:'b-depth-2', deep:'b-depth-3'};
 const TIER_CLS  = {T0:'b-tier-0', T1:'b-tier-1', T2:'b-tier-2', T3:'b-tier-3'};
 
@@ -308,7 +311,7 @@ const I18N = {
     blind:"Слепая приёмка",blindOk:"Расхождений нет.",blindBad:"Расхождения:",
     blindV:(m,c)=>`${m} / ${c} требований подтверждено`,
     updated:"Обновлено",filesIn:"Требования и таски — в",
-    modes:{full:"полный автомат",semi:"полуавтомат",manual:"ручной"},
+    modes:{full:"полный автомат",semi:"полуавтомат",interview:"интервью",manual:"ручной"},
     depths:{strict:"строго по брифу",normal:"обычная глубина",deep:"максимальная глубина"},
     tier:t=>`ярус ${t}`,finished:"завершено",min:"мин",hr:"ч",m:"м",
     langLabel:"Язык",themeLabel:"Тема",themeLight:"Светлая тема",themeDark:"Тёмная тема"},
@@ -344,7 +347,7 @@ const I18N = {
     blind:"Blind acceptance",blindOk:"No disagreements.",blindBad:"Disagreements:",
     blindV:(m,c)=>`${m} / ${c} requirements confirmed`,
     updated:"Updated",filesIn:"Requirements and tickets in",
-    modes:{full:"fully automatic",semi:"semi-automatic",manual:"manual"},
+    modes:{full:"fully automatic",semi:"semi-automatic",interview:"interview",manual:"manual"},
     depths:{strict:"strictly as written",normal:"normal depth",deep:"maximum depth"},
     tier:t=>`tier ${t}`,finished:"finished",min:"min",hr:"h",m:"m",
     langLabel:"Language",themeLabel:"Theme",themeLight:"Light theme",themeDark:"Dark theme"}
