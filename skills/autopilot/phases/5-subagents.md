@@ -150,10 +150,10 @@ In this order, every time:
 1. **Read the contract block.** No block → the ticket is not finished; ask the subagent for it.
 2. **Append to `interfaces.md`.**
 3. **Update the manifest** — `in-ticket` → `done` or `placeholder`, commit noted.
-4. **Send the diff to review** — the Phase 6 checklist, run by someone who did not write the code (`phases/6-review.md`). What comes back to you is a verdict and a list of findings. The diff itself does not.
+4. **Send the diff to review** — the ticket goes to `review` in `state.js` first, then the Phase 6 checklist runs, by someone who did not write the code (`phases/6-review.md`). What comes back to you is a verdict and a list of findings. The diff itself does not.
 5. **Run the full test suite**, not just the ticket's own tests — and truncate the output: `<тестовая команда> 2>&1 | tail -30`. You need two things from it, green-or-red and the names of what failed, and both survive the truncation; the other two hundred lines are pure leak. A regression introduced now costs minutes; found eight tickets later it costs the evening.
-6. **Red test, or a finding that has to be fixed → repair** (below), then re-run 4 and 5 over the repair alone. **Nothing is committed on red**, and nothing is repaired by you.
-7. **Commit** — one commit per ticket, the ticket number in the subject. These are the user's rollback points.
+6. **Red test, or a finding that has to be fixed → repair** (below): the ticket goes to `repair` and its `repairs` count goes up by one, then re-run 4 and 5 over the repair alone. **Nothing is committed on red**, and nothing is repaired by you.
+7. **Commit** — one commit per ticket, the ticket number in the subject, and only now does the ticket become `done`. These are the user's rollback points.
 8. **Update the instruments** (`phases/7-instruments.md`) — one line of state, one line of the dashboard: the ticket's `finishedAt`, tests and commit, the `requirements` counts, the `build` and `review` stage notes («3 из 5 тасков готовы»), `updatedAt`.
 9. **Top up the project memory — only if something was discovered.** The real test command, a gotcha that cost time, a new variable in `.env.example`. One line appended between the markers, never a rewrite; the architecture is written once, at the end. Most tickets add nothing, and that is the correct rate. Rules in `phases/9-memory.md`.
 10. **Tell the user one plain-language line**: «Бот принимает заявки — 3 из 8 готово». No diffs, no jargon, no file lists.

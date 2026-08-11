@@ -25,7 +25,9 @@ Raising the instruments is mechanical. Do exactly this and read no further — t
    |---|---|
    | entering a phase | that stage → `active` + `startedAt`; the one you left → `done` + `finishedAt` |
    | launching a ticket (or a whole wave) | those tickets → `in-progress` + `startedAt` **before** the subagent goes out |
-   | a ticket returns | that ticket → `done` + `finishedAt` + tests + commit |
+   | a ticket returns, review starts | that ticket → `review` |
+   | a finding goes back for repair | → `repair`, and `repairs` + 1 |
+   | committed | → `done` + `finishedAt` + tests + commit |
 
    Every one of them: edit the affected rows of `state.js` and move `updatedAt`. That is the whole ritual — no mirroring, no second file, no re-opening anything. The page picks the change up within ten seconds wherever it is open.
 
@@ -117,6 +119,7 @@ window.STATE =
       "startedAt": "2026-08-07T14:35:31+03:00",
       "finishedAt": "2026-08-07T14:53:26+03:00",
       "retries": 0,
+      "repairs": 1,
       "files": ["src/bot/intake.ts", "src/bot/validate.ts"],
       "tests": { "passed": 34, "failed": 0 },
       "commit": "a1b2c3d",
@@ -136,7 +139,13 @@ window.STATE =
 }
 ```
 
-Ticket `status`: `pending` · `in-progress` · `done` · `failed`.
+Ticket `status`: `pending` · `in-progress` · `review` · `repair` · `done` · `failed`.
+
+**Three of those are «идёт прямо сейчас», and the dashboard shows them apart.** A ticket is written, then checked, then sometimes repaired — and since review and repair run while the next ticket is already flying (`phases/5-subagents.md`), collapsing them into one state is what makes the screen answer «готово 2 из 6» while four tickets are in motion. `done` now means one thing only: reviewed, green, committed.
+
+`repairs` counts the дозапросы this ticket needed, the way `retries` counts restarts. Two is the ceiling by rule, and a ticket carrying two is a signal about the cut, not about the executor.
+
+`finishedAt` goes in at the commit, not at the subagent's return — so the ticket's clock covers everything the ticket cost, review and repair included. A ticket that «finished» in four minutes and then sat in review for twenty did not take four minutes.
 `mode`: `full` · `semi` · `interview` · `manual`. `depth`: `strict` · `normal` · `deep`.
 `wave` and `zone` come from Phase 4 — the wave decides what flies together, the zone is why it may.
 `tests` is the last **full** suite run; `blind` stays `null` until the final phase.
@@ -175,7 +184,7 @@ None of that is a template bug — the dashboard shows what it was given. Publis
 
 The build block earns its place only if the rows are true at a glance, which takes three fields and no more:
 
-- **`status`** — a filled bar is a ticket that has started, coloured by status: green done, amber running (and pulsing), red failed, dashed outline for what has not begun. A ticket left `pending` while its subagent is flying shows as «не начат» and makes the screen a lie.
+- **`status`** — a filled bar is a ticket that has started, coloured by status: green done, amber being written, blue in review, amber again in repair, red failed, dashed outline for what has not begun. Review and repair also carry the phase as a word on the bar, because colour alone cannot separate «пишется» from «чинится». A ticket left `pending` while its subagent is flying shows as «не начат» and makes the screen a lie — and a ticket left `in-progress` through its whole review does the same thing more quietly.
 - **`startedAt` at launch, `finishedAt` at return** — that is where every per-ticket duration comes from, live for the running ones. The header line («Сейчас: 04 …») is built from the same marks.
 - **`wave`** — rows group by wave, and a wave with more than one ticket is labelled «2 таска параллельно». This is the user's only view of parallelism actually happening.
 
@@ -241,7 +250,9 @@ The template computes all of this from `STATE`. You supply the facts; it does th
 | **Долг: заглушки · допущения · пустые переменные** | decides whether the result is *usable*. 100% of tickets with eight placeholders is not a finished project, and this is the number that says so |
 | Тесты и их дельта по таскам | catches a regression at ticket 3 instead of at the end |
 | Повторы | a ticket that needed a retry is a signal the cut was wrong, not that luck was bad |
-| **Сейчас в работе: какой таск, сколько уже идёт** | during the build this is the question, and «3 из 8 готово» does not answer it. Two names with two running clocks also make parallel work visible as it happens |
+| **Сейчас в работе: какой таск, в какой фазе, сколько уже идёт** | during the build this is the question, and «3 из 8 готово» does not answer it. Each running ticket says whether it is being written, reviewed or repaired — two names with two clocks also make parallel work visible as it happens |
+| **Чипы «пишутся · на ревью · в ремонте»** | the shape of the moment in one line. Review and repair appear only when there are any: zeroes teach nothing and cost a row |
+| Ремонты рядом с повторами | how many дозапросы a ticket needed. Like retries, it says the cut was wrong more often than it says the executor was |
 | **Волны и их ширина** | what is flying together and what is waiting on it — the plan's parallelism, checkable against reality |
 | **Время на каждый таск и каждый этап** | over-cutting made visible: a ticket that took forty minutes of context to produce forty lines should not have existed |
 | Пересечения по файлам | validates parallel waves — an overlap is visible before it becomes a conflict |

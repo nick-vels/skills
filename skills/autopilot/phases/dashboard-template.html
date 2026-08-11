@@ -7,20 +7,20 @@
 <style>
   :root, :root[data-theme="light"]{
     --bg:#fbfbfa; --panel:#fff; --ink:#16150f; --dim:#6b6a63; --line:#e4e3dd;
-    --accent:#111; --ok:#1f7a4d; --warn:#a8700a; --bad:#b3352b; --ghost:#eeede8;
+    --accent:#111; --ok:#1f7a4d; --warn:#a8700a; --bad:#b3352b; --ghost:#eeede8; --info:#2f6690;
     --radius:14px; --logo-light:block; --logo-dark:none; --glow:rgba(168,112,10,.38);
   }
   @media (prefers-color-scheme:dark){
     :root:not([data-theme]){
       --bg:#141412; --panel:#1c1c19; --ink:#f2f1ea; --dim:#918f86; --line:#2e2e29;
-      --accent:#f2f1ea; --ok:#4bbd84; --warn:#d9a341; --bad:#e0685c; --ghost:#262622;
+      --accent:#f2f1ea; --ok:#4bbd84; --warn:#d9a341; --bad:#e0685c; --ghost:#262622; --info:#7aa8d4;
       --glow:rgba(217,163,65,.45);
       --logo-light:none; --logo-dark:block;
     }
   }
   :root[data-theme="dark"]{
     --bg:#141412; --panel:#1c1c19; --ink:#f2f1ea; --dim:#918f86; --line:#2e2e29;
-    --accent:#f2f1ea; --ok:#4bbd84; --warn:#d9a341; --bad:#e0685c; --ghost:#262622;
+    --accent:#f2f1ea; --ok:#4bbd84; --warn:#d9a341; --bad:#e0685c; --ghost:#262622; --info:#7aa8d4;
     --logo-light:none; --logo-dark:block;
   }
   *{box-sizing:border-box}
@@ -121,7 +121,13 @@
     padding:3px 10px;color:var(--dim);font-variant-numeric:tabular-nums}
   .chip.ok{border-color:var(--ok);color:var(--ok)}
   .chip.run{border-color:var(--warn);color:var(--warn)}
+  .chip.info{border-color:var(--info);color:var(--info)}
   .chip.bad{border-color:var(--bad);color:var(--bad)}
+  /* фаза таска прямо на плашке: «ревью» и «ремонт» — состояния, которых до
+     этого не существовало, и по одному цвету их не различить */
+  .fill .nm{overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .fill .ph{margin-left:8px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+    opacity:.85;border:1px solid rgba(255,255,255,.5);border-radius:999px;padding:1px 6px;flex:none}
   .tlnow{font-size:13px;margin:-4px 0 12px;overflow-wrap:anywhere}
   .tlnow .lbl{color:var(--dim)}
   .tlnow b{font-weight:650;font-variant-numeric:tabular-nums}
@@ -299,7 +305,9 @@ const I18N = {
     reqs:"Требования",reqsSub:(d,f,p)=>`снято ${d} · отложено ${f} · заглушки ${p}`,
     progress:"Ход сборки",
     wave:(n,c)=>c>1?`Волна ${n} — ${c} ${plural(c,'таск','таска','тасков')} параллельно`:`Волна ${n}`,
-    chipDone:n=>`готово ${n}`,chipRun:n=>`в работе ${n}`,chipWait:n=>`ждут ${n}`,chipFailed:n=>`упало ${n}`,
+    chipDone:n=>`готово ${n}`,chipRun:n=>`пишутся ${n}`,chipWait:n=>`ждут ${n}`,chipFailed:n=>`упало ${n}`,
+    chipReview:n=>`на ревью ${n}`,chipRepair:n=>`в ремонте ${n}`,
+    phase:{'in-progress':"пишется",review:"ревью",repair:"ремонт"},
     nowLbl:"Сейчас:",nowIdle:"Ни один таск не запущен.",
     noTickets:"Тасков пока нет — идёт подготовка.",
     tblTickets:"Таски",thN:"#",thTitle:"Таск",thReq:"Требования",thTime:"Время",thRetry:"Повт.",
@@ -335,7 +343,9 @@ const I18N = {
     reqs:"Requirements",reqsSub:(d,f,p)=>`dropped ${d} · deferred ${f} · placeholders ${p}`,
     progress:"Build progress",
     wave:(n,c)=>c>1?`Wave ${n} — ${c} tickets in parallel`:`Wave ${n}`,
-    chipDone:n=>`${n} done`,chipRun:n=>`${n} running`,chipWait:n=>`${n} waiting`,chipFailed:n=>`${n} failed`,
+    chipDone:n=>`${n} done`,chipRun:n=>`${n} writing`,chipWait:n=>`${n} waiting`,chipFailed:n=>`${n} failed`,
+    chipReview:n=>`${n} in review`,chipRepair:n=>`${n} in repair`,
+    phase:{'in-progress':"writing",review:"review",repair:"repair"},
     nowLbl:"Now:",nowIdle:"No ticket is running.",
     noTickets:"No tickets yet — still preparing.",
     tblTickets:"Tickets",thN:"#",thTitle:"Ticket",thReq:"Requirements",thTime:"Time",thRetry:"Retry",
@@ -445,8 +455,15 @@ function render(lang){
   CUR = L;
   const S = STATE, T = S.tickets || [], R = S.requirements || {};
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  // Таск живёт в трёх активных состояниях, а не в одном: пишется — проверяется —
+  // чинится. Ревью и ремонт идут, пока летит следующий таск, поэтому «готово 2 из 8»
+  // без них — самый частый вопрос к экрану: «а с третьим-то что».
+  const ACTIVE = ['in-progress', 'review', 'repair'];
   const done = T.filter(t => t.status === 'done');
-  const running = T.filter(t => t.status === 'in-progress');
+  const writing = T.filter(t => t.status === 'in-progress');
+  const inReview = T.filter(t => t.status === 'review');
+  const inRepair = T.filter(t => t.status === 'repair');
+  const running = T.filter(t => ACTIVE.includes(t.status));
   const failedT = T.filter(t => t.status === 'failed');
   const waiting = T.length - done.length - running.length - failedT.length;
   const live = Math.max(0, (R.total || 0) - (R.dropped || 0));
@@ -479,6 +496,9 @@ function render(lang){
   const leftFor = t => {
     if (!t || t.status === 'done') return 0;
     const full = median || 10;
+    // код написан — осталась проверка и, может быть, правка по находке
+    if (t.status === 'review') return full * 0.2;
+    if (t.status === 'repair') return full * 0.5;
     if (t.status === 'in-progress' && t.startedAt) {
       const elapsed = (spanMs(t.startedAt, null) || 0) / 60000;
       return Math.max(1, full - elapsed);          // уже идёт — осталось меньше
@@ -528,7 +548,10 @@ function render(lang){
   const stagesDone = stages.filter(s => s.status === 'done' || s.status === 'skipped').length;
 
   const coverage = live ? Math.round((R.done||0)/live*100) : 0;
-  const ticketPct = T.length ? Math.round(done.length/T.length*100) : 0;
+  // Таск на ревью уже написан. Считать его нулём — врать в меньшую сторону ровно
+  // там, где до разделения статусов врали в большую, помечая код готовым до проверки.
+  const ticketPct = T.length
+    ? Math.round((done.length + 0.75*(inReview.length + inRepair.length))/T.length*100) : 0;
   const retries = T.reduce((s,t) => s + (t.retries||0), 0);
   const last = done[done.length-1];
   // Полный прогон, если он записан; иначе — тесты последнего захода: таска или T0-сборки.
@@ -544,7 +567,8 @@ function render(lang){
         transform="rotate(-90 40 40)"/></svg>`;
   };
   const statusColor = s => s === 'done' ? 'var(--ok)' : s === 'failed' ? 'var(--bad)'
-    : s === 'in-progress' ? 'var(--warn)' : 'var(--line)';
+    : s === 'review' ? 'var(--info)'
+    : (s === 'in-progress' || s === 'repair') ? 'var(--warn)' : 'var(--line)';
 
   const waves = [...new Set(T.map(t => t.wave ?? 1))].sort((a,b) => a-b);
   // Полоса показывает СОСТОЯНИЕ, а не долю. Раньше её ширина была длительностью
@@ -556,26 +580,35 @@ function render(lang){
     const inWave = T.filter(t => (t.wave ?? 1) === w)
       .sort((a,b) => String(a.id).localeCompare(String(b.id), undefined, {numeric:true}));
     const rows = inWave.map(t => {
-      const active = t.status === 'in-progress', pend = t.status === 'pending';
+      const active = ACTIVE.includes(t.status), pend = t.status === 'pending';
       // у не начатого таска часов нет: «0:00» читается как «идёт и стоит на месте»
       const clock = (t.startedAt && !pend) ? timerHTML(t.startedAt, t.finishedAt) : '—';
+      // «пишется» — базовый случай и читается по цвету; подписываем то, чего
+      // на этом экране раньше не было, иначе ремонт неотличим от разработки
+      const ph = (t.status === 'review' || t.status === 'repair') ? (L.phase||{})[t.status] : '';
       return `<div class="row${active?' now':''}${pend?' wait':''}"><b>${esc(t.id)}</b>
         <div class="track"><div class="fill${pend?' pend':''}${active?' active':''}"
-          style="width:100%${pend?'':';background:'+statusColor(t.status)}">${esc(t.title)}</div></div>
+          style="width:100%${pend?'':';background:'+statusColor(t.status)}"><span class="nm">${
+          esc(t.title)}</span>${ph ? `<em class="ph">${esc(ph)}</em>` : ''}</div></div>
         <div class="mins">${clock}</div></div>`;
     }).join('');
     return `<div class="wave">${L.wave(w, inWave.length)}</div>${rows}`;
   }).join('') : `<div class="empty">${L.noTickets}</div>`;
 
+  // Ревью и ремонт показываем, только когда они есть: шесть чипов в ряд на пятитасковом
+  // прогоне читаются хуже, чем четыре, а нули не несут ничего.
   const tlSum = T.length ? `<div class="tlsum">
       <span class="chip ok">${L.chipDone(done.length)}</span>
-      <span class="chip run">${L.chipRun(running.length)}</span>
+      <span class="chip run">${L.chipRun(writing.length)}</span>
+      ${inReview.length ? `<span class="chip info">${L.chipReview(inReview.length)}</span>` : ''}
+      ${inRepair.length ? `<span class="chip run">${L.chipRepair(inRepair.length)}</span>` : ''}
       <span class="chip">${L.chipWait(Math.max(0, waiting))}</span>
       ${failedT.length ? `<span class="chip bad">${L.chipFailed(failedT.length)}</span>` : ''}
     </div>` : '';
   const tlNow = !T.length ? '' : running.length
     ? `<div class="tlnow"><span class="lbl">${L.nowLbl}</span> ` + running.map(t =>
-        `<b>${esc(t.id)}</b> ${esc(t.title)} <span class="nowclock">${
+        `<b>${esc(t.id)}</b> ${esc(t.title)} <span class="lbl">— ${
+          esc((L.phase||{})[t.status] || '')}</span> <span class="nowclock">${
           t.startedAt ? timerHTML(t.startedAt, null) : '—'}</span>`).join(' · ') + '</div>'
     : (S.finishedAt || done.length === T.length ? '' : `<div class="tlnow lbl">${L.nowIdle}</div>`);
 
@@ -600,7 +633,8 @@ function render(lang){
       ${t.concerns?.length ? `<div class="sub">${esc(t.concerns.join('; '))}</div>` : ''}</td>
     <td>${(t.requirements||[]).map(r => `<span class="tag">${esc(r)}</span>`).join('') || '<span class="empty">—</span>'}</td>
     <td class="mins">${t.startedAt ? timerHTML(t.startedAt, t.finishedAt) : '—'}</td>
-    <td class="mins">${t.retries ? t.retries : ''}</td>
+    <td class="mins">${t.retries ? t.retries : ''}${
+      t.repairs ? `<span style="color:var(--info)"> +${t.repairs}</span>` : ''}</td>
     <td class="mins">${t.tests ? (t.tests.failed ? `<span style="color:var(--bad)">${t.tests.failed} ✗</span>` : t.tests.passed + ' ✓') : '—'}</td>
     <td class="mins">${t.commit ? `<code>${esc(t.commit).slice(0,7)}</code>` : '—'}</td>
   </tr>`).join('');
@@ -695,7 +729,9 @@ function render(lang){
       <div class="v">${T.length ? `${done.length}<small> / ${T.length}</small>`
         : t0 ? `<span style="font-size:22px">${L.noTicketsTier}</span>` : '—'}</div>
       ${T.length ? `<div class="bar"><i style="width:${ticketPct}%"></i></div>
-      <div class="sub">${L.ticketsDone(ticketPct)}${running.length ? ' · ' + L.chipRun(running.length) : ''}${
+      <div class="sub">${L.ticketsDone(ticketPct)}${writing.length ? ' · ' + L.chipRun(writing.length) : ''}${
+        inReview.length ? ' · ' + L.chipReview(inReview.length) : ''}${
+        inRepair.length ? ' · ' + L.chipRepair(inRepair.length) : ''}${
         retries ? L.retries(retries) : ''}</div>`
         : `<div class="sub">${t0 ? L.tier(esc(S.tier)) : L.notCut}</div>`}
     </div>
