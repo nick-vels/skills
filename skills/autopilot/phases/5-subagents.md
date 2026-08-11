@@ -132,7 +132,7 @@ That last sentence is the whole section. Two subagent calls sent in two messages
 
 - **Cap at three in flight.** Beyond that the orchestrator's own context fills with returns it cannot usefully hold, and the whole point of the design leaks away. A wave of five goes out as three, then two.
 - **Zones must be disjoint.** Phase 4 guarantees it within a wave; check again at launch, because a re-cut ticket may have moved into someone else's files. Overlap → the second one waits for the next slot. **Same files → serialise, no exceptions.**
-- **A wave is not a barrier.** The moment one ticket returns, process it and launch the next ticket whose blockers are all done — even while its wave-mates are still flying. Waiting for the slowest ticket of a wave gives back exactly what the wave bought.
+- **A wave is not a barrier.** The moment one ticket returns, launch the next ticket whose blockers are all done — **and only then** process the one that came back. That order matters: bookkeeping, review and repair all happen while the crew is flying, not while it waits. Waiting for the slowest ticket of a wave gives back exactly what the wave bought.
 - **Nothing parallelises with ticket 01.** The shell, the schema, the shared primitives: everything else reads what it built.
 - **When in doubt, serialise.** A wrong guess about disjoint files costs silent lost work; a serial run costs minutes.
 - **In manual mode the flight is still hands-free.** Waves change how the agreed tickets are ordered, never which tickets get built.
@@ -159,6 +159,10 @@ In this order, every time:
 10. **Tell the user one plain-language line**: «Бот принимает заявки — 3 из 8 готово». No diffs, no jargon, no file lists.
 
 Steps 4 through 6 are where the run is usually lost. Done as written, one ticket costs you a verdict, thirty lines of test output and a contract block. Done by hand — «посмотрю дифф сам, тут же немного» — the same ticket costs you the diff, the test log and every file you opened to fix it, and you pay that eight times.
+
+**Steps 4–7 hold up the commit, not the crew.** The list is the order for *this* ticket; it is not a queue the rest of the flight waits in. The moment a ticket returns, the next launchable ticket goes out — and only then do you walk the list for the one that landed. Its review runs while the next ticket is being written, and the wall-clock cost of reviewing everything drops to roughly nothing.
+
+What this does not buy is a shortcut: the ticket is still committed only after its review and a green suite. Nothing lands unreviewed because something else was in flight; the review simply stopped being the thing everyone waits for. The one ordering that stays strict is a ticket whose dependents are pending — do not launch a dependent on an unreviewed parent, because a finding there invalidates the ground the dependent is standing on.
 
 ### When two tickets return together
 

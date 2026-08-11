@@ -36,6 +36,17 @@ Cheap early, delegated once it starts costing. A review that costs more than the
 
 **Why the threshold is not diff size alone.** A hundred-line diff costs the same to read whenever it arrives; what changes is what you have left to spend it from. The orchestrator's context is the only one in the run that is never refreshed (`phases/5-subagents.md`), and inline review is how it fills — undramatically, one ticket at a time, until ticket 08 is being judged by a reader who has been awake since the brief. The concession for the first two tickets is there because a reviewer's setup cost is real and early context is cheap. It expires because neither stays true.
 
+## The reviewer outlives the ticket
+
+**Do not spawn a new reviewer per ticket.** Keep one for Manifest+Spec and one for Craft, and send each subsequent ticket to the same pair by message. The setup — `interfaces.md`, the spec sections, the manifest rows, the repo's conventions — is most of what a review costs and almost none of what it produces. Paid once per crew, it is cheap. Paid once per ticket, it is the reason reviewing everything felt unaffordable in the first place.
+
+The second gain is the one that is hard to buy any other way. A reviewer that saw ticket 02 can see that ticket 05 quietly contradicts it — a whole class of defect that no per-ticket reviewer can reach, because nothing in its inputs mentions ticket 02 at all. **This is the panoramic view the orchestrator used to have and can no longer afford**, relocated to the one context where accumulation is safe: a reviewer writes nothing, so a tired reviewer misses findings but cannot break the build, and unlike you it can be replaced.
+
+- **Refresh it at wave boundaries, or whenever its judgement starts drifting** — repeating findings, hedging, reviewing the previous ticket instead of this one. A fresh reviewer rebuilds everything it needs from `interfaces.md`; the only thing lost is the cross-ticket memory, and that is exactly what has already gone stale.
+- **Each reviewer keeps its own axes for the whole run.** Swapping which one holds Manifest halfway through gives you two reviewers with half a picture each.
+- **The Craft reviewer is the one worth keeping longest.** Reinvention and divergent change are visible only to someone who remembers what the earlier tickets built.
+- **If continuing a subagent is not available in the harness**, fall back to a fresh reviewer per ticket. It works; it just costs what this section exists to avoid, and the cross-ticket findings do not happen at all.
+
 ## What a reviewer gets
 
 A reviewer knows nothing you do not hand it — the same rule as for an executor, and it bites harder here, because **axis Manifest is built entirely out of words the subagent has never seen.** A reviewer sent off with just the diff will quietly review two axes and report three.
@@ -52,6 +63,8 @@ A reviewer knows nothing you do not hand it — the same rule as for an executor
 | what it must not do: repair nothing, refactor nothing, open no files outside the diff to «понять получше» | ✓ | ✓ |
 
 **Give each one only its own axes.** A reviewer handed material for an axis it was not asked to judge will judge it anyway, badly and without saying so — and two overlapping half-reviews are what the separation of axes exists to prevent.
+
+**That table is the first ticket only.** A reviewer you are keeping (above) already holds the standing material; from the second ticket onward it gets the diff, the ticket body, this ticket's manifest rows, and whatever `interfaces.md` has grown since — nothing else. Resending what it already has is not harmless: it reads as new material, and a reviewer re-reading yesterday's interfaces as though they arrived today is how a ticket gets judged against the wrong contract.
 
 The testing check is the line most often dropped on the way down, because a pass count looks like it already answered the question. It did not: it answers how many tests ran, not whether any of them could have failed.
 
