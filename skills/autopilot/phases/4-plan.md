@@ -28,7 +28,7 @@ Decide the tier from **what has to be built**, then cut to it. State the tier an
 
 **T0 is real and it is common.** A landing page, a form, a script, a single endpoint — cut nothing, build it in one pass, review once, done. Skipping tickets here is not a shortcut; creating them would be the waste. Say so plainly: «Задача небольшая — собираю сразу, без разбивки».
 
-At T0 the `plan` stage in `state.json` is marked `skipped` with the reason as its note — «ярус T0 — без разбивки на таски» — not left `pending`. A stage that never moves reads as a stuck build, and the whole point of the dashboard is that it does not have to be explained.
+At T0 the `plan` stage in `state.js` is marked `skipped` with the reason as its note — «ярус T0 — без разбивки на таски» — not left `pending`. A stage that never moves reads as a stuck build, and the whole point of the dashboard is that it does not have to be explained.
 
 Crossing a tier upward needs a reason written into the spec, not a feeling.
 
@@ -81,7 +81,7 @@ A wave of one is a normal answer. Ticket 01 — the shell, the schema, the share
 
 If a wave genuinely has to change, that is a re-cut and it follows the rules for a plan that moved: the reason goes in one line to the user, and if the code forced it, a `D##` row records why. Silent renumbering is the thing to avoid, not renumbering.
 
-Write `wave` into every ticket file and into `state.json`. The dashboard groups the build by waves and marks the parallel ones («Волна 3 — 2 таска параллельно»); Phase 5 launches each wave in one go.
+Write `wave` into every ticket file and into `state.js`. The dashboard groups the build by waves and marks the parallel ones («Волна 3 — 2 таска параллельно»); Phase 5 launches each wave in one go.
 
 ## Seeding interfaces.md — before any ticket flies
 
@@ -97,7 +97,7 @@ At tier T0 there is one context and no wave, so the file gets the project rules 
 
 ## Publishing the plan to the instruments
 
-The moment the ticket files exist, **every ticket goes into `state.json` and into the dashboard** — not when the first one starts, not after the first one lands:
+The moment the ticket files exist, **every ticket goes into `state.js` and into the dashboard** — not when the first one starts, not after the first one lands:
 
 ```json
 { "id": "04", "title": "Панель мастера: очередь заявок", "requirements": ["R04", "R04.1"],

@@ -10,7 +10,7 @@ So the last check does not use the spec.
 
 **Spawn a subagent that receives:**
 
-- `.autopilot/<slug>/<дата>-brief.md` — the user's own words (the path is `briefFile` in `state.json`)
+- `.autopilot/<slug>/<дата>-brief.md` — the user's own words (the path is `briefFile` in `state.js`)
 - the repository as it now stands
 - how to run the project and its tests
 
@@ -47,7 +47,7 @@ Its brief:
 | `dropped` / `deferred` | нет | expected — must appear in the report as not built |
 | — | реализовано, но не из брифа | scope that grew without a parent; report it |
 
-Every 🔴 goes in the report **and** in `state.json` under `blind`. A drift found here is not a failure of the run — it is the run working. Hiding it is the failure.
+Every 🔴 goes in the report **and** in `state.js` under `blind`. A drift found here is not a failure of the run — it is the run working. Hiding it is the failure.
 
 If there are no tickets (tier T0), this check still runs. Small builds drift too, and it is one subagent.
 
@@ -73,7 +73,7 @@ This is the artifact that decides what the *next* run costs. A project whose sec
 
 ## 3. The final report
 
-Run the full test suite once more first, and wait for both subagents. Then write in the user's language, plain, no jargon.
+Run the full test suite once more first — truncated, `2>&1 | tail -30`, for the same reason as after every ticket — and wait for both subagents. Then write in the user's language, plain, no jargon.
 
 ### Where every line of it comes from
 
@@ -87,12 +87,12 @@ So build each section from its source, opened now:
 |---|---|
 | Решения, принятые за вас | `manifest.md` — every `ASSUMPTION` in Основание |
 | Готово | the blind checker's return, not the manifest's `done` rows |
-| Что нужно от тебя | `manifest.md` `placeholder` rows + `state.json` → `debt` |
+| Что нужно от тебя | `manifest.md` `placeholder` rows + `state.js` → `debt` |
 | Что не вошло | `manifest.md` `deferred` and `dropped` rows, with their quotes |
-| Что я добавил сверх заказанного | `state.json` → `additions`, cross-checked against `A##` in the spec |
+| Что я добавил сверх заказанного | `state.js` → `additions`, cross-checked against `A##` in the spec |
 | Что пошло не по плану | every `D##` row in `manifest.md` |
-| Открытые вопросы | `state.json` → `blind`, plus anything in `coverage` that ended up not built |
-| Запустить / Где что лежит | `state.json` → `memoryFile`, `briefFile`, and the commands the memory agent verified |
+| Открытые вопросы | `state.js` → `blind`, plus anything in `coverage` that ended up not built |
+| Запустить / Где что лежит | `state.js` → `memoryFile`, `briefFile`, and the commands the memory agent verified |
 
 Two of these are worth naming, because memory gets them wrong in a specific direction. **«Готово» comes from the blind checker, not from your own bookkeeping** — the manifest says what you believe was delivered, and the whole point of the previous section is that those two can disagree. And **«Что не вошло» comes from the rows, not from recollection**: a requirement dropped in the first ten minutes of a three-hour run is exactly the one you will not remember, and it is quoted in the file.
 
@@ -177,8 +177,8 @@ npm install && npm run dev
 
 ## Closing the instruments
 
-The memory file goes in with the final commit, before this. Then: set `finishedAt`, write the `blind` block, refresh the counts in `state.json`, close every stage — `final` to `done`, and anything still `active` or `pending` to `done`, `skipped` (with a note) or `failed`, whichever is true — then mirror into `dashboard.html`. A run whose dashboard says «в работе» a day after it landed is lying to the person who trusted it.
+The memory file goes in with the final commit, before this. Then, in `state.js` and nowhere else: set `finishedAt`, write the `blind` block, refresh the counts, close every stage — `final` to `done`, and anything still `active` or `pending` to `done`, `skipped` (with a note) or `failed`, whichever is true. A run whose dashboard says «в работе» a day after it landed is lying to the person who trusted it.
 
-If the dashboard lives in an in-app pane, re-point the pane at it once here — this is the picture the user is left with.
+The open page picks this up by itself within ten seconds — this is the picture the user is left with, and it arrives without you doing anything more.
 
-`finishedAt` also stops the clocks and the ten-second self-refresh: the page freezes on the final numbers instead of counting time nobody is spending. Leave it `null` on a finished run and the user's total keeps growing overnight.
+`finishedAt` also stops the clocks and the ten-second polling: the page freezes on the final numbers instead of counting time nobody is spending. Leave it `null` on a finished run and the user's total keeps growing overnight.

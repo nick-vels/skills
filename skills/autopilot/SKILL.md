@@ -33,7 +33,7 @@ This file is the orchestrator: modes, phase order, gates. The rules for each pha
 | 4 Plan | `phases/4-plan.md` | `tickets/NN-*.md` (or none — see tiers), `interfaces.md` seeded |
 | 5 Subagents | `phases/5-subagents.md` | code, commits, `interfaces.md` grown |
 | 6 Review | `phases/6-review.md` | per-ticket review |
-| 7 Instruments | `phases/7-instruments.md` | `state.json`, `dashboard.html` (opened for the user) |
+| 7 Instruments | `phases/7-instruments.md` | `state.js`, `dashboard.html` (opened for the user) |
 | 8 Final | `phases/8-final.md` | blind acceptance, final report |
 | 9 Memory | `phases/9-memory.md` | `CLAUDE.md` / `AGENTS.md`, `docs/adr/` — the project as the next session will find it |
 
@@ -174,8 +174,8 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 │   ├── interfaces.md    the boundaries from the spec, then what finished tickets built
 │   └── tickets/NN-<slug>.md
 ├── README.md            how to read this folder — for the human, written once in Phase 0
-├── state.json           machine-readable run state: stages, tickets, timings, debt
-└── dashboard.html       the human view — opened automatically in Phase 0, refreshes itself
+├── state.js             the run state, and the only file you update: stages, tickets, timings, debt
+└── dashboard.html       the human view — copied once in Phase 0, then reads state.js by itself
 
 CLAUDE.md | AGENTS.md   the project memory — what the next session reads first
 docs/adr/               decisions worth outliving the run — written in Phase 9, tier T2+
@@ -195,12 +195,13 @@ This skill describes a process, not the product. Its numbers — tiers, question
 
 The rules below are the same kind of thing. Each one is here because it was paid for, and each is an argument — arguments can lose. Where following one would make the result worse for the user, break it deliberately, say so in one line, and carry on. That is a decision, and decisions get recorded. What is never acceptable is breaking one quietly, or keeping one because it is written down.
 
-**Four rules are not calibration and do not lose.** They hold in every mode, at every depth, at every tier:
+**Five rules are not calibration and do not lose.** They hold in every mode, at every depth, at every tier:
 
 1. **A requirement is removed only by the user**, in their own words, quoted into the manifest.
 2. **A secret is never requested, echoed, or written** — not into a file, a prompt, a commit, or a report.
 3. **A fact about the user is never invented.** Prices, texts, addresses, accounts stay visible placeholders until they supply them.
 4. **An irreversible or outward-facing action is a question** — deploy, publish, pay, message a third party, delete data, rewrite history.
+5. **The orchestrator does not write the project's code.** Its keyboard reaches `.autopilot/`, the memory file and git. Everything else — a fix worth two lines, a red test, a review finding — travels down to a subagent. Rules in `phases/5-subagents.md`.
 
 Everything else is argument.
 
@@ -219,6 +220,8 @@ Phase-specific mechanics are not here; they live in the phase that owns them. Wh
 | «Пусть пришлёт ключ, я вставлю в код» | Ключи вставляет пользователь и только в `.env`. Ты работаешь с именем переменной. |
 | «Ключ уже в контексте, значит, можно записать» | Наоборот: значит, надо отредактировать и предупредить. Контекст — не разрешение. |
 | «Быстрее всё сделать в одном контексте» | Быстрее в первый час. Дальше модель ходит кругами и ломает работавшее. |
+| «Исполнитель написал, что не смог, — доделаю сам, я же в контексте» | Ты в контексте всего прогона — поэтому и нельзя. Каждая правка твоими руками оставляет у тебя дифф до конца сборки и ухудшает каждый следующий таск. Не смог — значит, дозапрос ему или свежий контекст, но не твои руки. |
+| «Тут правки на две строки — гонять субагента дороже» | Дороже этому таску. Платят все следующие: контекст оркестратора тратится один раз и не возвращается. К восьмому таску разница — между «собрал» и «сломал работавшее». |
 | «Бриф краткий — значит, и спецификация краткая» | Бриф — силуэт: пользователь описал happy path и не описал ни пустых состояний, ни ошибок, ни обрывов. На нормальной и максимальной глубине продумать их — твоя работа. |
 | «Это и так очевидно, писать не буду» | Очевидное тебе — не зафиксировано, и каждый субагент додумает его по-своему: три исполнителя — три разные «очевидности». Манифест и спецификация — единственные точки сверки. |
 | «Придумал полезную фичу, добавлю» | Углубление заказанного (`R##.n`) — да. Новая возможность (`A`) — только с родительским требованием, в пределах пропорции и в отчёт. На `strict` — нельзя вообще. |
@@ -230,7 +233,7 @@ Phase-specific mechanics are not here; they live in the phase that owns them. Wh
 | «Покрытие проверю сам — я же только что писал спецификацию» | Тот, кто писал, не видит, чего не написал. На G2 бриф и спецификацию читает субагент, которому не дают ни манифеста, ни разговора. |
 | «Правило про тесты записано в фазе — значит, оно действует» | Действует только то, что доехало в промпт исполнителя. Фазовый файл читает оркестратор, а код пишет не он. |
 | «Интерфейсы устаканятся по ходу — первый таск задаст» | Тогда их задаст тот, кто видел одну восьмую задачи. Границы модулей решаются до нарезки, иначе восемь контекстов договариваются задним числом. |
-| «Отчёт напишу по памяти — я же всё это и делал» | К восьмой фазе твой контекст самый загрязнённый за весь прогон. Отчёт собирается из `manifest.md` и `state.json`, перечитанных с диска. |
+| «Отчёт напишу по памяти — я же всё это и делал» | К восьмой фазе твой контекст самый загрязнённый за весь прогон. Отчёт собирается из `manifest.md` и `state.js`, перечитанных с диска. |
 | «Обоснования решений останутся в спецификации» | Спецификация умирает вместе с прогоном. То, что должно пережить его, уходит в ADR — иначе следующая сессия переоткроет те же решения. |
 | «Пользователь сказал "погриль меня" — покажу и спецификацию» | Режим интервью покупает вопросы, а не гейты. Гейты — это «ручной режим», и это отдельное слово, которое он не сказал. |
 | «Таски и спецификация видны в чате — зачем файлы» | Файл в `.autopilot/` и есть артефакт; чат — только его пересказ. Диалог умрёт, файлы останутся. |
@@ -251,7 +254,7 @@ Every line here means something the user asked for is at risk. Phase mechanics �
 - Gate G2 passed on your own reading of your own spec — the independent coverage check skipped, or its checker handed the manifest.
 - Final acceptance measured against the spec instead of blind against the brief.
 - The blind checker, the coverage checker or the memory subagent handed `spec.md`, the manifest or the tickets — whichever of those it was supposed to be blind to. Independence is the entire mechanism; without it each of them confirms the plan instead of the thing.
-- The final report composed from memory instead of from `manifest.md`, `state.json` and the two subagents' returns, re-read from disk.
+- The final report composed from memory instead of from `manifest.md`, `state.js` and the two subagents' returns, re-read from disk.
 - A T2+ run that ended with no ADR: every `D##` and every load-bearing implementation decision left to die with `.autopilot/`.
 - The finished project was never actually run — accepted on green tests and a reading of the code.
 - Starting without announcing mode and depth, or announcing one and behaving as another: questions in full, a spec put up for approval in interview, a start-and-see instead of «ок» in manual.
@@ -262,6 +265,9 @@ Every line here means something the user asked for is at risk. Phase mechanics �
 - Asking the user a process question — which tracker, which doc file, which memory file, ticket granularity, code review — outside manual, where spec and tickets are gates by design.
 - A requirement quietly narrowed to whatever happened to work, or the spec amended mid-build with no `D##` row recording why.
 - Two tickets in one subagent context, or two tickets in one commit.
+- The orchestrator editing a file outside `.autopilot/`: a fix «на две строки», a red test, a review finding applied by hand instead of sent down. One such edit is the whole failure — the diff stays in its context for the rest of the run.
+- A ticket's diff, or the raw output of a full test run, read into the orchestrator's context. It needs a verdict and the names of what failed, not the material.
+- A repair started from an empty context when the ticket's own executor was still reachable — or the mirror failure, a third дозапрос into an executor that has already failed to do it twice.
 - Parallel subagents editing the same files — or the mirror failure, independent tickets flown one at a time with the plan's parallelism thrown away in the delivery.
 - A subagent launched without `interfaces.md`, or finishing without returning the contract block.
 - The first wave launched with `interfaces.md` still empty — module boundaries left for whichever ticket happens to reach them first.

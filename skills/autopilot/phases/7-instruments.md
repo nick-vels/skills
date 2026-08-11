@@ -4,25 +4,22 @@ The user's live view of the build. Not a phase in sequence — raised in Phase 0
 
 Two files, and the split matters:
 
-- **`.autopilot/state.json`** — the truth, machine-readable. You read it on resume; the user never opens it.
-- **`.autopilot/dashboard.html`** — the only human view. Self-contained, opens by double-click, no server, no build step.
+- **`.autopilot/state.js`** — the truth, and the only thing you ever write. You read it on resume; the user never opens it.
+- **`.autopilot/dashboard.html`** — the only human view. Copied from the template once and **never touched again**. Self-contained, opens by double-click, no server, no build step.
 
-They are separate because on resume you need the state in twenty lines, not buried in two hundred lines of markup. They cannot drift because they are written together, in that order, every time.
+The page loads `state.js` from beside it and re-loads that file every ten seconds on its own. So there is exactly one place where state lives, one write per update, and nothing that can drift out of sync — because there is no second copy to drift.
 
-## Phase 0 needs five lines of this file
+## Phase 0 needs four lines of this file
 
 Raising the instruments is mechanical. Do exactly this and read no further — the rest of this file explains the reasoning and answers questions you do not have yet.
 
-1. **Copy the template.** Never regenerate it, never read it into context:
+1. **Copy the template.** Never regenerate it, never read it into context, never edit it afterwards:
    ```bash
    cp <skill-dir>/phases/dashboard-template.html .autopilot/dashboard.html
    ```
-2. **Write `.autopilot/state.json`** with `slug`, `title`, `mode`, `depth`, `briefFile`, `memoryFile`, `startedAt`, `updatedAt`, `finishedAt: null`, all eight `stages` (`preflight` `active`, the rest `pending`), an empty `tickets` array and `requirements` at zero. The shape is below, under *state.json*.
-3. **Mirror it** — in `dashboard.html`, replace **everything between `/*autopilot:state:start*/` and `/*autopilot:state:end*/`** with `const STATE = ` + the same JSON + `;`, on one minified line.
-
-   The markers are the anchor, and they are what makes the replace safe: they stay findable no matter what the previous write looked like, so an update can never end up appending a second state object beside the first. That failure — two objects, the tail of the old one left dangling — is a syntax error, and it used to blank the whole page. Keeping the JSON on one line is still the rule, because it keeps the edit small; it is no longer the thing standing between the user and a white screen.
-4. **Open it once.** Inside the user's own window if the harness has one, otherwise hand it to the OS. A failure is one printed path, not an error; under `$SSH_CONNECTION` or `$CI`, skip opening entirely.
-5. **Learn the update ritual — it is the same three moves for the rest of the run**, and it is here rather than further down because you will need it long after this file has left your context:
+2. **Write `.autopilot/state.js`** — first line exactly `window.STATE =`, then the state as ordinary indented JSON. Fill in `slug`, `title`, `mode`, `depth`, `briefFile`, `memoryFile`, `startedAt`, `updatedAt`, `finishedAt: null`, all eight `stages` (`preflight` `active`, the rest `pending`), an empty `tickets` array and `requirements` at zero. The shape is below, under *state.js*.
+3. **Open it once.** Inside the user's own window if the harness has one, otherwise hand it to the OS. A failure is one printed path, not an error; under `$SSH_CONNECTION` or `$CI`, skip opening entirely.
+4. **Learn the update ritual — it is the same three moves for the rest of the run**, and it is here rather than further down because you will need it long after this file has left your context:
 
    | When | What |
    |---|---|
@@ -30,7 +27,7 @@ Raising the instruments is mechanical. Do exactly this and read no further — t
    | launching a ticket (or a whole wave) | those tickets → `in-progress` + `startedAt` **before** the subagent goes out |
    | a ticket returns | that ticket → `done` + `finishedAt` + tests + commit |
 
-   Every one of them: move `updatedAt`, replace the `const STATE =` line in `dashboard.html`, and **re-point an in-app pane at the file** — such a pane never re-reads it on its own, so a state write nobody re-points is a write the user cannot see.
+   Every one of them: edit the affected rows of `state.js` and move `updatedAt`. That is the whole ritual — no mirroring, no second file, no re-opening anything. The page picks the change up within ten seconds wherever it is open.
 
    **`startedAt` on a ticket is that ticket's own launch time** — not the run's, not the build stage's. Copying the run's `startedAt` into a ticket is the one mistake that looks harmless and makes every per-ticket duration on the dashboard wrong from the first row.
 
@@ -40,26 +37,15 @@ That is the whole of Phase 0's business here. Everything below is reasoning and 
 
 The user should not have to be told where a file is and then go find it. **Open the dashboard yourself, immediately after the first write**, before Phase 1 asks anything.
 
-Where it opens decides how it stays fresh, and the two paths are not interchangeable.
+**Wherever it opens, it keeps itself fresh** — you never have to refresh it, re-open it or re-point it. The page re-loads `state.js` every ten seconds, and the reason that works everywhere is worth knowing, because the obvious mechanism does not.
+
+In-app panes (Claude Desktop, IDE viewers) **silence navigation**. Measured, not assumed: `location.reload()` did nothing, and `<meta http-equiv="refresh">` did nothing either — eight seconds at a three-second interval, not one refresh. What those panes do *not* touch is sub-resource loading, so the page appends a fresh `<script src="state.js?t=…">` instead of reloading itself: twelve successful loads out of twelve, with the state swapped on disk mid-flight and picked up without a reload. It costs nothing, keeps scroll position and text selection intact, and works identically in a real browser.
 
 ### Path A — inside the user's own window (preferred)
 
 If your harness gives you a way to show a local page in the window the user is already looking at — a preview pane, an in-app browser, a webview — **use it**. The whole point of a dashboard is being glanceable without leaving what you are doing; a separate browser window defeats half of that.
 
-In Claude Desktop that is the browser/preview pane: open it at the dashboard's `file://` path.
-
-**A page opened this way does not refresh itself.** Measured, not assumed: inside the pane a `file://` page runs its JavaScript and its clocks tick, but it never re-reads the file — two minutes with a ten-second timer produced zero reloads, and an explicit `location.reload()` was ignored. Re-pointing the pane at the same path does load the new content.
-
-So the pane shows the numbers as of the moment it was opened, with the clocks running on top of them. **That is not a lie the user can walk into**: the footer says «обновлено N назад» about exactly the data on screen, and turns warning-coloured after five silent minutes.
-
-**So re-point the pane every time you write the state.** Stage transitions and ticket starts and finishes are exactly the events a watcher is waiting for, and there are not many of them — a T2 build writes state maybe fifteen times in an hour. One tool call each is the whole price of a dashboard that is true whenever the user glances at it, and a dashboard that is true only when asked is a dashboard the user learns to distrust.
-
-Two refinements, not exceptions:
-
-- **Refresh before you answer.** «Как там?», «покажи прогресс» — re-point first, then speak, so the screen and your sentence agree.
-- **The last refresh is the one that stays.** At the end of the run, re-point once more together with `finishedAt`; those are the numbers the user is left looking at.
-
-What still does not happen: a refresh per file edit inside a ticket, or a refresh when nothing in the state changed. The trigger is the state write, not the passage of time.
+In Claude Desktop that is the browser/preview pane: open it at the dashboard's `file://` path, once, and forget about it.
 
 ### Path B — the system browser
 
@@ -72,13 +58,13 @@ open .autopilot/dashboard.html 2>/dev/null \
   || echo "открой вручную: .autopilot/dashboard.html"
 ```
 
-Here the page **does** refresh itself every ten seconds until `finishedAt` is set, so you do nothing further. In a real browser a background tab may be throttled to about one refresh per minute — the data lags by a minute at worst, it does not freeze.
+A background tab may be throttled to about one poll per minute — the data lags by a minute at worst, it does not freeze.
 
 An IDE is Path B, not Path A. `code file.html` opens the *source* in an editor tab, and rendering it needs an extension — which this skill does not install on the user's behalf.
 
 ### Rules for both paths
 
-- **Opened exactly once.** Path A is re-pointed in place on every state write; Path B refreshes itself. Neither ever opens a second window or tab.
+- **Opened exactly once.** Both paths keep themselves current. Neither ever opens a second window or tab, and neither is ever re-pointed.
 - **Never on resume into a window that is already open.** On a resume, open it again only if the previous session ended (`finishedAt` was set).
 - **A failure is not an error.** Headless machine, no default browser, no pane — print the path in one line and carry on. Do not retry, do not install anything, do not try a second launcher.
 - **Do not open it in a remote session.** If `$SSH_CONNECTION` or `$CI` is set, skip opening entirely and print the path — a browser window on someone else's machine helps nobody.
@@ -88,9 +74,12 @@ Say it in one line, once:
 
 > Дашборд открыл — `.autopilot/dashboard.html`, обновляется сам.
 
-## state.json
+## state.js
 
-```json
+One assignment, then plain JSON. The first line is `window.STATE =` and nothing else — keeping it on its own line is what lets `tail -n +2 .autopilot/state.js | jq .` work, and what makes an edit further down a small edit. Indent the JSON normally; it is its own file now, so there is no reason to minify it.
+
+```js
+window.STATE =
 {
   "slug": "telegram-repair-bot",
   "title": "Телеграм-бот для заявок на ремонт",
@@ -205,26 +194,16 @@ Every timer on the dashboard is computed from these fields — total elapsed, pe
 - **`startedAt` goes in when the thing starts, not when it ends.** An interval with a start and no end is what makes the timer run; filling both in at the end means the user watched a frozen clock while the work was happening.
 - **`updatedAt` moves on every write.** The dashboard shows «обновлено N назад» from it and marks it in warning colour after five silent minutes — that is the user's only way to tell «идёт работа» from «агент умер».
 
-## Updating — two edits, not a rewrite
+## Updating — one edit, not a rewrite
 
-At every stage transition, and after every ticket:
+At every stage transition, and after every ticket: edit the affected rows of `state.js` — the stage object, the ticket object, the `requirements` counts, `updatedAt`. Change the rows that changed; do not rewrite the file. That is all of it. Roughly thirty tokens, one tool call, and the screen follows within ten seconds wherever it is open.
 
-1. Edit the affected rows of `state.json` — the stage object, the ticket object, the `requirements` counts, `updatedAt`. Change the rows that changed; do not rewrite the file.
-2. In `dashboard.html`, replace everything between `/*autopilot:state:start*/` and `/*autopilot:state:end*/` with `const STATE = ` + the new JSON + `;`, one minified line — exactly as in Phase 0.
+**Never touch `dashboard.html` after copying it**, and never hand-maintain a progress table in prose: a rewritten table grows quadratically in cost and invites tidying up history that should not be tidied.
 
-   One cheap check is worth running after the first write of a run:
+Two failure modes worth recognising, neither of which loses a run:
 
-   ```bash
-   grep -c 'autopilot:state:start' .autopilot/dashboard.html   # ровно 1
-   ```
-
-   If it is not `1`, the dashboard came from a template old enough to have no markers, or something wrote over them. Repair by rewriting that whole block from `state.json` — that file is the source of truth and is never the thing that broke. Patching the JSON in place is what produces two objects in one file.
-
-   A dashboard that opens to a panel saying «не смог прочитать состояние» is telling you exactly this, and it is not a lost run: the state is intact, only its copy inside the page is not.
-
-That is roughly thirty tokens per update. **Never rewrite the dashboard**, and never hand-maintain a progress table in prose: a rewritten table grows quadratically in cost and invites tidying up history that should not be tidied.
-
-Then re-point the pane, if that is where the dashboard lives. In the system browser the page refreshes itself every ten seconds until `finishedAt` is set, with a toggle in the header to stop it, and nothing further is needed.
+- **The page says «дашборд ещё не прочитал состояние».** `state.js` is missing or does not parse. If the run is young, this is just Phase 0 not having written it yet and the page will fill itself in on its own. If the build has been going a while, the file got mangled — rewrite it whole from what you know; the page is waiting and needs nothing from you.
+- **A write caught mid-flight.** If the poll reads the file while you are writing it, the load simply fails and the last good state stays on screen until the next poll ten seconds later. Nothing to handle, nothing to announce.
 
 ## Tier T0 — the dashboard still has to say something
 

@@ -5,12 +5,12 @@ Configure the repo and raise the instruments. What runs here depends on what is 
 | On disk | Case | What Phase 0 does |
 |---|---|---|
 | no `.autopilot/` | **new repo** | everything below, in order |
-| `.autopilot/state.json` with `finishedAt: null` | **resume** | none of the steps — go to *Resuming an interrupted flight* at the end of this file |
+| `.autopilot/state.js` with `finishedAt: null` | **resume** | none of the steps — go to *Resuming an interrupted flight* at the end of this file |
 | `.autopilot/` exists, last run has `finishedAt` set | **new feature in a configured repo** | steps 1, 3, 5, 7 only |
 
-**The third case is the one that gets missed**, and missing it is silent. The repo is configured, so the settings work is done — but this flight still needs its own slug directory, its own dated brief, its own manifest and its own fresh instruments. Reuse the previous run's `state.json` and the user spends this build watching a dashboard that describes a project which already shipped.
+**The third case is the one that gets missed**, and missing it is silent. The repo is configured, so the settings work is done — but this flight still needs its own slug directory, its own dated brief, its own manifest and its own fresh instruments. Reuse the previous run's `state.js` and the user spends this build watching a dashboard that describes a project which already shipped.
 
-In that case: derive a new slug (step 1) and create its directory (step 3); **archive the finished run** — move `state.json` to `.autopilot/<previous-slug>/state.json`, write a fresh one for this flight, mirror it into the dashboard and re-open it (step 3, rules in `phases/7-instruments.md`); top up the memory file rather than rewriting it (step 5); close the stage (step 7). Skip the conventions note and the git setup — they are already there, and `.autopilot/README.md` describes the folder, not the run.
+In that case: derive a new slug (step 1) and create its directory (step 3); **archive the finished run** — move `state.js` to `.autopilot/<previous-slug>/state.js`, write a fresh one for this flight and re-open the dashboard (step 3, rules in `phases/7-instruments.md`); top up the memory file rather than rewriting it (step 5); close the stage (step 7). Skip the conventions note and the git setup — they are already there, and `.autopilot/README.md` describes the folder, not the run.
 
 **Nothing here is a question for the user.** These are process decisions, not product ones. No mode buys the user a say in where ticket files live; asking about it is exactly the kind of question Autopilot exists to remove.
 
@@ -38,13 +38,13 @@ Read what is already here; assume nothing:
 │   ├── spec.md
 │   ├── interfaces.md
 │   └── tickets/
-├── state.json
+├── state.js
 └── dashboard.html
 ```
 
 The brief carries **the date it was dictated in its filename** — `2026-08-07-brief.md`. A slug directory outlives one conversation: the user comes back a month later with «доделай», a second brief gets appended, and a file called `brief.md` gives no way to tell which sitting is which. The date is the cheapest possible answer, and it sorts.
 
-`state.json` and `dashboard.html` are written now, empty-but-valid, per `phases/7-instruments.md`. The initial `stages` array lists all eight stages — `preflight` as `active`, the rest `pending` — so the dashboard shows the whole road from the first minute instead of a blank page.
+`state.js` and `dashboard.html` are written now, empty-but-valid, per `phases/7-instruments.md`. The initial `stages` array lists all eight stages — `preflight` as `active`, the rest `pending` — so the dashboard shows the whole road from the first minute instead of a blank page.
 
 ## 3a. Open the dashboard
 
@@ -57,7 +57,7 @@ open .autopilot/dashboard.html 2>/dev/null \
   || echo "открой вручную: .autopilot/dashboard.html"
 ```
 
-The two paths differ afterwards: a page in the system browser refreshes itself, a page in an in-app pane never does and you re-point it at the file on every state write. Read **only** the *Phase 0 needs five lines of this file* block at the top of `phases/7-instruments.md` — its fifth line is the update ritual you will use for the rest of the run, so do not skip it.
+Either way it then keeps itself current — the page re-reads `state.js` on its own, so it is never re-opened and never re-pointed. Read **only** the *Phase 0 needs four lines of this file* block at the top of `phases/7-instruments.md` — its fourth line is the update ritual you will use for the rest of the run, so do not skip it.
 
 Skip opening entirely in a remote session (`$SSH_CONNECTION`, `$CI`) and treat a failure as nothing: print the path in one line and carry on. Never open a second window later.
 
@@ -84,7 +84,7 @@ The repo needs a file that tells the **next** session what this project is — `
 
 Two things happen here: pick the file, write the skeleton between the `<!-- autopilot:start -->` markers. Announce the choice in one line inside the opening block, together with the mode — and do not wait for a reply.
 
-Record the chosen file in `state.json` as `memoryFile`, and note it in the Phase 8 report.
+Record the chosen file in `state.js` as `memoryFile`, and note it in the Phase 8 report.
 
 ## 6. Git
 
@@ -109,11 +109,11 @@ Leaving any phase means the same two marks, here and everywhere after: the stage
 
 ## Resuming an interrupted flight
 
-`.autopilot/state.json` exists with `finishedAt` still `null` → this is a resume, not a new flight. (A run that finished is the third case at the top of this file, not this one — and at tier T0 there are no tickets to be unfinished, so `finishedAt` is the only reliable test.)
+`.autopilot/state.js` exists with `finishedAt` still `null` → this is a resume, not a new flight. (A run that finished is the third case at the top of this file, not this one — and at tier T0 there are no tickets to be unfinished, so `finishedAt` is the only reliable test.)
 
-1. Read the project memory file first (`memoryFile` in `state.json` — `CLAUDE.md` or `AGENTS.md`), then `state.json`, `manifest.md`, `interfaces.md`. Do **not** re-read the whole dialogue; the files are the memory. The brief is `<slug>/*-brief.md` — the newest one if there is more than one.
+1. Read the project memory file first (`memoryFile` in `state.js` — `CLAUDE.md` or `AGENTS.md`), then `state.js`, `manifest.md`, `interfaces.md`. Do **not** re-read the whole dialogue; the files are the memory. The brief is `<slug>/*-brief.md` — the newest one if there is more than one.
 2. Tell the user in one line where things stand: «Продолжаю: 7 из 12 тасков готовы, следующий — корзина».
    Reopen the dashboard only if the previous run had finished (`finishedAt` set) — mid-flight, assume the tab is still open and just say the path.
-3. A ticket marked `in-progress` in `state.json` with no commit behind it was interrupted mid-flight. Reset it to `pending` and run it again from scratch — a half-applied ticket is worse than a fresh one.
+3. A ticket marked `in-progress` in `state.js` with no commit behind it was interrupted mid-flight. Reset it to `pending` and run it again from scratch — a half-applied ticket is worse than a fresh one.
 4. Re-run the Phase 6 checklist over the whole diff since the last green commit before continuing. Something may have been left broken.
 5. Continue from the frontier. Do not redo finished phases; do not re-ask answered questions.

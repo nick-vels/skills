@@ -4,13 +4,29 @@ Where the code gets written. **Identical in all four modes — this phase is alw
 
 At tier T0 there are no tickets: you are the crew, working straight from the spec in the current context. Everything below about contracts and returns still applies to you — top up `interfaces.md` with what you actually built, run the Phase 6 checklist, commit once.
 
-**T0 does not excuse empty instruments.** Mark the `build` stage `active` before you start and `done` when you finish, record the pass in `state.json` under `singlePass` (files, tests, commit, both timestamps), and update the `requirements` counts exactly as a ticket would. A run that finished the whole project and left the user a dashboard showing nothing but a running clock has failed at the one job the dashboard has. See `phases/7-instruments.md`.
+**T0 does not excuse empty instruments.** Mark the `build` stage `active` before you start and `done` when you finish, record the pass in `state.js` under `singlePass` (files, tests, commit, both timestamps), and update the `requirements` counts exactly as a ticket would. A run that finished the whole project and left the user a dashboard showing nothing but a running clock has failed at the one job the dashboard has. See `phases/7-instruments.md`.
 
 ## One ticket, one subagent, one fresh context
 
 Never two tickets in one context. Accumulated context is precisely what makes long vibecoding sessions start breaking things that used to work — the model stops reading and starts remembering, and its memory is worse than the files.
 
 The corollary is that a subagent knows **nothing** except what you hand it. Hand it the right things.
+
+## Your hands
+
+You dispatch; you do not build. Through the whole of Phase 5 your keyboard reaches exactly three things:
+
+- `.autopilot/**` — state, manifest, interfaces, tickets, dashboard
+- the project memory file, between its markers
+- git — `add`, `commit`, `--stat`; never the diff itself
+
+Every other file in the repository is written by someone whose context dies with the ticket. **This is rule 5 of the five in `SKILL.md`, and it loses to no argument** — least of all to the two that always arrive: «тут править две строки» and «исполнитель не смог, доделаю я».
+
+The reason is arithmetic, not taste. Yours is the one context in this design that is never refreshed: it carries the manifest, the plan, every return and every stage transition from the first phase to the last. A subagent spends its context and throws it away; you spend yours and keep it. A diff you read at ticket 02 is still sitting there at ticket 08, competing for room with the requirement you are checking. That is the same mechanism the whole framework is built against — except here it cannot be escaped by starting fresh, because starting fresh means losing the run.
+
+So the material never reaches you. What reaches you is a verdict, a list of names, one contract block per ticket.
+
+**At tier T0 you are the crew**, so the rule cannot apply — there is nobody to hand the keyboard to. That is a cost of T0, not an exemption pattern: it is affordable only because a T0 run ends before the context fills. The moment there are tickets, there is someone else to type.
 
 ## What a subagent gets
 
@@ -87,7 +103,7 @@ Created in Phase 0, **seeded in Phase 4 from the spec's boundaries** — so the 
 - Валидация телефона — `validatePhone(raw) -> {ok, normalized}`, не пиши свою
 ```
 
-Keep it to interfaces and rules. It is not a log — the log is `state.json`.
+Keep it to interfaces and rules. It is not a log — the log is `state.js`.
 
 ## The return contract
 
@@ -103,6 +119,8 @@ REQUIREMENTS: R01 done | R01.1 placeholder — <чего не хватило>
 CONCERNS: что сделано с оговоркой и почему
 BLOCKERS: чего не хватило (зависимость, решение, доступ)
 ```
+
+**Demand it short, in the prompt: не больше 25 строк, без кода, без диффов, без пересказа хода работы.** `FILES` is paths only; `INTERFACES` is signatures, not explanations of them. A subagent left to its own judgement returns an essay — it has just spent an hour on the work and wants credit for it — and eight essays cost you exactly what eight diffs would, arriving through a different door. A concern or a blocker that genuinely needs more gets one sentence; the detail stays in the code, where the next reader is anyway.
 
 `NEEDS_CONTEXT` means the ticket was under-specified — the executor could not tell what was wanted. Treat it as a defect in Phase 4, not in the executor: re-cut the ticket with the missing detail and run it again. Two `NEEDS_CONTEXT` in one flight means the tickets are too thin across the board — go back and merge.
 
@@ -121,7 +139,7 @@ That last sentence is the whole section. Two subagent calls sent in two messages
 
 ## Before each ticket
 
-Set the ticket's `status` to `in-progress` and its `startedAt` to now **before** launching the subagent, and mirror it into the dashboard. It costs one edit, and it is the difference between the user watching a ticket run and the user watching nothing happen for eighteen minutes.
+Set the ticket's `status` to `in-progress` and its `startedAt` to now in `state.js` **before** launching the subagent. It costs one edit, and it is the difference between the user watching a ticket run and the user watching nothing happen for eighteen minutes.
 
 For a wave, that is **one state write for the whole wave**, before the launch message — all of its tickets flipped together. Two clocks running side by side on the dashboard is what parallel work looks like; two tickets marked `in-progress` an edit apart is the same thing and costs half as much.
 
@@ -132,12 +150,15 @@ In this order, every time:
 1. **Read the contract block.** No block → the ticket is not finished; ask the subagent for it.
 2. **Append to `interfaces.md`.**
 3. **Update the manifest** — `in-ticket` → `done` or `placeholder`, commit noted.
-4. **Run the Phase 6 checklist** over the diff (`phases/6-review.md`).
-5. **Run the full test suite**, not just the ticket's own tests. A regression introduced now costs minutes; found eight tickets later it costs the evening. Red → fix before moving on.
-6. **Commit** — one commit per ticket, the ticket number in the subject. These are the user's rollback points.
-7. **Update the instruments** (`phases/7-instruments.md`) — one line of state, one line of the dashboard: the ticket's `finishedAt`, tests and commit, the `requirements` counts, the `build` and `review` stage notes («3 из 5 тасков готовы»), `updatedAt`.
-8. **Top up the project memory — only if something was discovered.** The real test command, a gotcha that cost time, a new variable in `.env.example`. One line appended between the markers, never a rewrite; the architecture is written once, at the end. Most tickets add nothing, and that is the correct rate. Rules in `phases/9-memory.md`.
-9. **Tell the user one plain-language line**: «Бот принимает заявки — 3 из 8 готово». No diffs, no jargon, no file lists.
+4. **Send the diff to review** — the Phase 6 checklist, run by someone who did not write the code (`phases/6-review.md`). What comes back to you is a verdict and a list of findings. The diff itself does not.
+5. **Run the full test suite**, not just the ticket's own tests — and truncate the output: `<тестовая команда> 2>&1 | tail -30`. You need two things from it, green-or-red and the names of what failed, and both survive the truncation; the other two hundred lines are pure leak. A regression introduced now costs minutes; found eight tickets later it costs the evening.
+6. **Red test, or a finding that has to be fixed → repair** (below), then re-run 4 and 5 over the repair alone. **Nothing is committed on red**, and nothing is repaired by you.
+7. **Commit** — one commit per ticket, the ticket number in the subject. These are the user's rollback points.
+8. **Update the instruments** (`phases/7-instruments.md`) — one line of state, one line of the dashboard: the ticket's `finishedAt`, tests and commit, the `requirements` counts, the `build` and `review` stage notes («3 из 5 тасков готовы»), `updatedAt`.
+9. **Top up the project memory — only if something was discovered.** The real test command, a gotcha that cost time, a new variable in `.env.example`. One line appended between the markers, never a rewrite; the architecture is written once, at the end. Most tickets add nothing, and that is the correct rate. Rules in `phases/9-memory.md`.
+10. **Tell the user one plain-language line**: «Бот принимает заявки — 3 из 8 готово». No diffs, no jargon, no file lists.
+
+Steps 4 through 6 are where the run is usually lost. Done as written, one ticket costs you a verdict, thirty lines of test output and a contract block. Done by hand — «посмотрю дифф сам, тут же немного» — the same ticket costs you the diff, the test log and every file you opened to fix it, and you pay that eight times.
 
 ### When two tickets return together
 
@@ -148,13 +169,44 @@ Process them **one at a time, each through the whole list above**. Two returns a
 - **`interfaces.md` is appended by you, in return order**, one block per ticket. Subagents never write to it — parallel writers collide.
 - **Two returns claiming the same interface is a plan defect, not a merge problem.** It means the zones overlapped: keep the one that fits `interfaces.md`, and re-cut the other rather than reconciling two versions of the same thing by hand.
 
+## Repair — two kinds, two addresses
+
+A ticket comes back imperfect in two very different ways, and telling them apart is the whole of this section:
+
+- **Недоделка** — a red test, a review finding, an acceptance criterion met in letter and dodged in substance. The executor *could* have done it and did not.
+- **Отказ** — `BLOCKED`, `NEEDS_CONTEXT`, or a repair that has already failed. The executor tried and could not.
+
+| | Недоделка | Отказ |
+|---|---|---|
+| Goes to | **the same subagent**, by message, its context intact — a **дозапрос** | a **fresh context**, and only with a changed approach |
+| You send | the acceptance criterion, and nothing else | the ticket again, the error, the failing test named, the path now spelled out |
+| Because | it holds why the code is the way it is; a cold reader repairs the symptom and breaks the reason | its context *is* the failure — it is stuck in its own groove, and the same request gets the same answer |
+
+**A дозапрос costs one line.** Do not resend `interfaces.md`, the spec sections or the testing contract — it has seen all three. Send the condition:
+
+```
+Тест `parses empty address` красный:
+<последние 10 строк вывода>
+
+Почини так, чтобы он проходил. Больше ничего не трогай.
+Верни контракт заново.
+```
+
+- **Two дозапроса into one context, then it stops being the cheap option.** By the third the context is no longer the fresh one that made this worth doing, and the repair moves to the right-hand column: new context, changed approach. That is the same rule as for a failed ticket, because by then it is one.
+- **State the finding as a condition, never as «поправь».** «Сделай получше» is an invitation to rewrite what already worked. Every repair names something checkable: this test green, this field visible, this error handled.
+- **The repair returns the contract block again** — new `FILES`, new `TESTS`. A repair that returns nothing is a ticket you cannot honestly commit.
+- **The author repairs; someone else judges.** Sending the finding back to the executor is cheap precisely because it keeps its context — which is also why it cannot review its own repair. Step 4 stays with a subagent that did not write the code.
+- **If continuing a subagent is not available in the harness you are running in**, fall back to a fresh context with the full ticket prompt plus the finding, and accept that it costs more. What is not a fallback is taking the keyboard yourself. That option feels like the cheapest one available and is the most expensive thing in the phase.
+
 ## When a ticket fails
+
+The right-hand column above, and its rules are the strict ones.
 
 Retry **once**, in a fresh context, with the error attached and the failing test named. If that fails too, one further attempt is allowed **only with a changed approach** — a different design decision, a different library, a path the ticket now names explicitly. Running the same attempt again with more hope is not a retry, and it is the only version of this that is forbidden.
 
 After that the flight stops: tell the user in plain language what is blocking and what you need from them. Do not improvise around a blocker, and do not silently narrow the ticket to whatever happened to work — a quietly reduced ticket is a lost requirement, and this whole design exists to make that impossible.
 
-Mark it `failed` in `state.json` and `placeholder` in the manifest, with the reason.
+Mark it `failed` in `state.js` and `placeholder` in the manifest, with the reason.
 
 One failure does not abort its wave-mates — they are independent by construction, so let them land. What it does stop is everything **downstream**: its dependents stay `pending`, and naming which ones are now blocked is part of the sentence you tell the user.
 
@@ -162,7 +214,7 @@ One failure does not abort its wave-mates — they are independent by constructi
 
 The plan was written before the code existed, so sometimes the code is right and the plan is wrong: a data model that does not hold, an interface the spec assumed cannot exist, two requirements that turn out to be incompatible in practice. This is ordinary, it is not the executor's error, and it needs a path — because without one what actually happens is worse. The executor quietly builds something else, the spec keeps claiming otherwise, and every check downstream measures the build against a document that stopped being true at ticket four.
 
-A subagent that hits this returns `BLOCKED` or `DONE_WITH_CONCERNS` with what it found. **You decide, in the orchestrator's context — never the executor**, and never by letting it stand:
+A subagent that hits this returns `BLOCKED` or `DONE_WITH_CONCERNS` with what it found. **You decide, in the orchestrator's context — never the executor**, and never by letting it stand. Deciding is yours; the code that follows from the decision is still written below you, by dozapros or by a fresh ticket:
 
 1. **Amend the spec section.** Edit the affected part of `spec.md` in place, keep the story marks, and add one line saying what the code proved and at which ticket. From the first ticket onward the spec is a living document; the brief and the manifest quotes are not.
 2. **Record a `D##` row in the manifest** — *discovered*. Its Основание is the finding, and it names the requirement it serves. This is not a requirement the user made; it is a constraint reality imposed, and it carries a status and appears in the final report like everything else.
@@ -178,7 +230,7 @@ Two things this is not:
 
 The rules themselves went out in the prompt (above). What stays here is the part the executor cannot do for itself: **a green suite is evidence only if the tests could have been red.**
 
-So on every return, before the commit, read the new tests — not their names, their assertions:
+That check reads assertions, so it is not yours — **it goes into the reviewer's prompt**, verbatim, as part of the Craft axis. It is the one review instruction most easily lost on the way down, because it looks like something the pass count already answers. On every return, before the commit, someone who did not write them reads the new tests — not their names, their assertions:
 
 - **Is it at a named seam?** A test reaching into internals will break on the next ticket and teach whoever hits it that the suite is noise.
 - **Where did the expected value come from?** If it was computed the same way the code computes it, the test asserts that the code equals itself. This is the single most common way a subagent produces a green suite that verifies nothing, and it is invisible in the pass count.

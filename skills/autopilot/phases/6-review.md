@@ -25,13 +25,18 @@ This is the same line the whole framework runs on, seen from close up. Between t
 
 ## Scale to the ticket
 
-Cheap on small diffs, thorough on large ones. A review that costs more than the ticket is its own kind of waste.
+Cheap early, delegated once it starts costing. A review that costs more than the ticket is its own kind of waste — and so is a review that quietly spends the one context the run cannot replace.
 
-| Diff | How |
+| Where the run is | How |
 |---|---|
-| under ~150 changed lines | all three axes yourself, inline, no subagents |
-| larger, or touching shared modules | Manifest+Spec in one subagent, Craft in another, in parallel |
+| tier T0 — no tickets at all | all three axes yourself, inline: there is nobody to delegate to, and the run ends before it matters |
+| the first two tickets, diff under ~150 changed lines | inline still allowed |
+| every ticket after that, and anything touching shared modules | Manifest+Spec in one subagent, Craft in another, in parallel |
 | the final whole-project pass at the end | separate subagents, per `phases/8-final.md` |
+
+**Why the threshold is not diff size alone.** A hundred-line diff costs the same to read whenever it arrives; what changes is what you have left to spend it from. The orchestrator's context is the only one in the run that is never refreshed (`phases/5-subagents.md`), and inline review is how it fills — undramatically, one ticket at a time, until ticket 08 is being judged by a reader who has been awake since the brief. The concession for the first two tickets is there because a reviewer's setup cost is real and early context is cheap. It expires because neither stays true.
+
+**The reviewer gets the testing check, verbatim.** «A green suite is evidence only if the tests could have been red» — the assertion-level reading in `phases/5-subagents.md`. It is part of the Craft axis, it goes into the prompt, and it is the instruction most often dropped on the way down, because a pass count looks like it already answered the question.
 
 ## Axis 1 — Manifest
 
@@ -83,9 +88,11 @@ Plus three that matter specifically here, because subagents cause them:
 
 ## What to do with findings
 
-- **Manifest `partial`/`missing`, or Craft "invented fact"** → fix now, in this ticket, before the commit.
-- **Spec "extra"** → remove it, unless it is genuinely required for the rest to work — then say so in one line in the commit message.
-- **Craft judgement calls** → fix if the fix is small and local. If it is structural, note it in `state.json` under `concerns` and carry it to the final report. Do not start a refactor inside a ticket that was not about refactoring.
+**Every "fix" below happens in the ticket, not in the orchestrator and not in the reviewer.** A finding goes back to the executor that wrote the code, as a **дозапрос** stating the condition — `phases/5-subagents.md`. The reviewer judged and is done; a reviewer that also repairs is a check that has stopped being one. Two дозапроса is the ceiling, after which the finding becomes a failed ticket and takes that path instead.
+
+- **Manifest `partial`/`missing`, or Craft "invented fact"** → repaired now, in this ticket, before the commit.
+- **Spec "extra"** → removed, unless it is genuinely required for the rest to work — then say so in one line in the commit message.
+- **Craft judgement calls** → repaired if the fix is small and local. If it is structural, note it in `state.js` under `concerns` and carry it to the final report. Do not start a refactor inside a ticket that was not about refactoring.
 
 Refactoring belongs here, not inside the red-green loop. Cleaning up while chasing a failing test is how both jobs get done badly.
 

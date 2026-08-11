@@ -36,7 +36,7 @@ Before the first commit, run this gate over everything under `.autopilot/`. A se
 
 ## 2. Write the brief file
 
-The redacted brief, **word for word**, into `.autopilot/<slug>/<YYYY-MM-DD>-brief.md` — today's date, then `-brief.md`: `2026-08-07-brief.md`. The date is part of the name because a slug directory outlives one sitting; a month later «доделай ещё вот это» arrives, and the files have to say which brief came when. Record the chosen name in `state.json` as `briefFile`, so nothing downstream has to guess it.
+The redacted brief, **word for word**, into `.autopilot/<slug>/<YYYY-MM-DD>-brief.md` — today's date, then `-brief.md`: `2026-08-07-brief.md`. The date is part of the name because a slug directory outlives one sitting; a month later «доделай ещё вот это» arrives, and the files have to say which brief came when. Record the chosen name in `state.js` as `briefFile`, so nothing downstream has to guess it.
 
 ```markdown
 # Изначальная задача

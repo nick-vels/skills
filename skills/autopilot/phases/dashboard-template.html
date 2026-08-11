@@ -232,21 +232,20 @@
 <body>
 <div class="wrap" id="app"></div>
 
-<script>
-/*autopilot:state:start*/
-const STATE = {"slug":"","title":"—","mode":"semi","depth":"normal","tier":"—","briefFile":null,"startedAt":null,"updatedAt":null,"finishedAt":null,"stages":[{"id":"preflight","status":"active","startedAt":null},{"id":"manifest","status":"pending"},{"id":"briefing","status":"pending"},{"id":"spec","status":"pending"},{"id":"plan","status":"pending"},{"id":"build","status":"pending"},{"id":"review","status":"pending"},{"id":"final","status":"pending"}],"requirements":{"total":0,"done":0,"inTicket":0,"inSpec":0,"placeholder":0,"deferred":0,"dropped":0},"tickets":[],"singlePass":null,"tests":null,"debt":{"placeholders":[],"assumptions":[],"emptyEnv":[]},"additions":[],"coverage":null,"blind":null};
-/*autopilot:state:end*/
-</script>
+<!-- Состояние живёт отдельным файлом и в страницу не вшивается: так его пишут
+     в одном месте, а не в двух, и подгружают заново, не перезагружая страницу.
+     Отсутствующий файл — не поломка: страница объяснит и дождётся его сама. -->
+<script src="state.js"></script>
 
 <script>
 const MODE_CLS  = {manual:'b-mode-1', interview:'b-mode-2', semi:'b-mode-3', full:'b-mode-4'};
 const DEPTH_CLS = {strict:'b-depth-1', normal:'b-depth-2', deep:'b-depth-3'};
 const TIER_CLS  = {T0:'b-tier-0', T1:'b-tier-1', T2:'b-tier-2', T3:'b-tier-3'};
 
-// Полный цикл сборки. state.json может прислать меньше — недостающие показываем как pending.
+// Полный цикл сборки. state.js может прислать меньше — недостающие показываем как pending.
 const STAGE_IDS = ['preflight','manifest','briefing','spec','plan','build','review','final'];
 
-const RELOAD_MS = 10000;
+const POLL_MS = 10000;
 
 const SUN  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>';
 const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>';
@@ -356,10 +355,11 @@ const I18N = {
 let CUR = I18N.ru;                 // язык, на котором сейчас отрисовано — нужен тикающим таймерам
 let autoOn = true;
 try { autoOn = (localStorage.getItem('autopilot-auto') || 'on') !== 'off'; } catch(e) {}
-let reloadT = null;
+let pollT = null;
+let lastStamp = null;              // метка отрисованного состояния — против лишних перерисовок
 
 // ——— живые таймеры ———————————————————————————————————————————————
-// Всё время считается из меток state.json. Незакрытый интервал тикает от текущего момента.
+// Всё время считается из меток state.js. Незакрытый интервал тикает от текущего момента.
 const spanMs = (from, to) => {
   const a = from ? new Date(from).getTime() : NaN;
   if (isNaN(a)) return null;
@@ -394,28 +394,51 @@ function tick(){
   document.querySelectorAll('[data-ago]').forEach(el => {
     el.textContent = agoText(el.dataset.ago);
     // Пять минут без обновления при незавершённой сборке — повод присмотреться.
-    el.classList.toggle('stale', !STATE.finishedAt && spanMs(el.dataset.ago, null) > 300000);
+    el.classList.toggle('stale', !(window.STATE && window.STATE.finishedAt)
+      && spanMs(el.dataset.ago, null) > 300000);
   });
 }
 
 // ——— автообновление ——————————————————————————————————————————————
-// STATE вшит в файл, поэтому свежие цифры приходят только с перезагрузкой страницы.
-// Видимость НЕ проверяем: встроенные панели (Claude Desktop, IDE-вьюверы) держат
-// document.hidden === true всё время, хотя пользователь смотрит именно туда.
-// Перезагрузка локального файла стоит почти ничего и фокус не забирает.
-function scheduleReload(){
-  clearTimeout(reloadT);
-  if (!autoOn || STATE.finishedAt) return;
-  reloadT = setTimeout(() => location.reload(), RELOAD_MS);
+// Страница не перезагружается: она подтягивает state.js заново отдельным тегом.
+// Так сделано потому, что встроенные панели (Claude Desktop, IDE-вьюверы) глушат
+// навигацию — и location.reload(), и <meta http-equiv="refresh"> там молча ничего
+// не делают, а вот загрузку подресурсов панель не трогает. Проверено измерением:
+// reload и meta refresh не сработали ни разу, подгрузка тега — двенадцать раз из
+// двенадцати. Побочная выгода — «обновить» больше не значит «потерять место на
+// странице», выделение и позицию прокрутки перерисовка сохраняет.
+// Видимость НЕ проверяем: те же панели держат document.hidden === true всё время,
+// хотя пользователь смотрит именно туда.
+const stampOf = S => (S.updatedAt || '') + '|' + (S.finishedAt || '') + '|' + (S.tickets || []).length;
+
+function applyState(){
+  const S = window.STATE;
+  if (!S || typeof S !== 'object') return;
+  // Перерисовываем только когда состояние действительно сдвинулось: молчаливая
+  // перерисовка раз в десять секунд сбрасывала бы выделенный текст ни за что.
+  const stamp = stampOf(S);
+  if (stamp === lastStamp) return;
+  lastStamp = stamp;
+  const y = window.scrollY;
+  render(CUR.lang);
+  window.scrollTo(0, y);
 }
 
-// Позицию чтения сохраняем на любой уход со страницы: и на своей перезагрузке,
-// и когда страницу переоткрывает агент (внутри панели self-reload не работает).
-const saveScroll = () => {
-  try { sessionStorage.setItem('autopilot-scroll', String(window.scrollY)); } catch(e) {}
-};
-window.addEventListener('pagehide', saveScroll);
-window.addEventListener('beforeunload', saveScroll);
+function pollState(){
+  clearTimeout(pollT);
+  if (!autoOn || (window.STATE && window.STATE.finishedAt)) return;
+  pollT = setTimeout(() => {
+    const s = document.createElement('script');
+    // Метка времени в запросе — иначе file:// отдаст скрипт из кеша.
+    s.src = 'state.js?t=' + Date.now();
+    // Ошибка — обычное дело: файл могли поймать в момент записи. Старое состояние
+    // остаётся на экране, следующий круг через десять секунд подберёт целое.
+    const next = () => { s.remove(); applyState(); pollState(); };
+    s.onload = next;
+    s.onerror = next;
+    document.head.appendChild(s);
+  }, POLL_MS);
+}
 
 function render(lang){
   const L = I18N[lang] || I18N.ru;
@@ -476,7 +499,7 @@ function render(lang){
   const eta = (median && cpMin > 0)
     ? [Math.max(1, Math.round(cpMin*0.75)), Math.max(2, Math.round(cpMin*1.4))] : null;
 
-  // Этапы: канонический порядок, поверх него — то, что прислал state.json.
+  // Этапы: канонический порядок, поверх него — то, что прислал state.js.
   const given = Array.isArray(S.stages) ? S.stages.filter(Boolean) : [];
   const stages = STAGE_IDS.map(id => given.find(s => s.id === id) || {id, status:'pending'})
     .concat(given.filter(s => !STAGE_IDS.includes(s.id)));
@@ -733,11 +756,11 @@ function render(lang){
       try { localStorage.setItem('autopilot-auto', autoOn ? 'on' : 'off'); } catch(e) {}
       b.setAttribute('aria-pressed', String(autoOn));
       b.title = autoOn ? L.autoOn : L.autoOff;
-      scheduleReload();
+      pollState();
     }));
 
   tick();
-  scheduleReload();
+  pollState();
 }
 
 let savedLang = 'ru';
@@ -746,30 +769,31 @@ try { savedLang = localStorage.getItem('autopilot-lang')
 
 applyTheme(storedTheme());
 
-// Состояние вшито отдельным блоком выше и переписывается на каждом обновлении.
-// Если этот блок испортили — объект не разобрался или их стало два — раньше
-// страница просто оставалась белой, и починить её было нечем: пустой экран
-// не говорит, что сломалось. Теперь она объясняет, что делать.
+// Состояние приходит из state.js рядом. Пустой экран не говорит, что сломалось,
+// поэтому страница объясняет — и, в отличие от прежней версии, не сдаётся:
+// опрос продолжается, и когда файл появится, дашборд оживёт сам.
 function bootFail(why){
   const app = document.getElementById('app');
   if (!app) return;
   const ru = (navigator.language || '').startsWith('ru');
   app.innerHTML = '<div class="card"><div class="k">' +
-    (ru ? 'Дашборд не смог прочитать состояние' : 'Dashboard could not read its state') +
+    (ru ? 'Дашборд ещё не прочитал состояние' : 'Dashboard has no state yet') +
     '</div><div class="sub" style="margin-top:10px">' + why + '</div>' +
     '<div class="sub" style="margin-top:10px">' + (ru
-      ? 'Данные целы — они в <code>.autopilot/state.json</code>. Скажи агенту «почини дашборд»: он перезапишет блок состояния из этого файла. Сборку это не затрагивает.'
-      : 'The data is intact in <code>.autopilot/state.json</code>. Ask the agent to rebuild the dashboard from it; the build itself is unaffected.') +
+      ? 'Страница проверяет файл каждые десять секунд и покажет данные, как только он появится. Если сборка идёт давно, скажи агенту «обнови состояние». Саму сборку это не затрагивает.'
+      : 'The page rechecks the file every ten seconds and will render as soon as it appears. If the build has been running a while, ask the agent to write the state. The build itself is unaffected.') +
     '</div></div>';
 }
 
 if (typeof STATE === 'undefined' || !STATE || typeof STATE !== 'object') {
   bootFail((navigator.language || '').startsWith('ru')
-    ? 'Блок <code>const STATE</code> не разобрался — обычно это второй объект состояния, дописанный рядом со старым, или JSON, развёрнутый на много строк.'
-    : 'The <code>const STATE</code> block failed to parse — usually a second state object written beside the first, or JSON spread over many lines.');
+    ? 'Файл <code>.autopilot/state.js</code> не загрузился или не разобрался — его ещё не создали, либо в нём не объект <code>window.STATE</code>.'
+    : '<code>.autopilot/state.js</code> did not load or did not parse — it has not been created yet, or it does not assign a <code>window.STATE</code> object.');
+  pollState();
 } else {
   try {
     render(I18N[savedLang] ? savedLang : 'ru');
+    lastStamp = stampOf(STATE);
   } catch (e) {
     bootFail(String(e && e.message || e));
   }
@@ -778,12 +802,8 @@ if (typeof STATE === 'undefined' || !STATE || typeof STATE !== 'object') {
 // Секундная стрелка для всех незакрытых интервалов и для «обновлено N назад».
 setInterval(tick, 1000);
 
-// Автообновление перезагружает страницу — возвращаем пользователя туда, где он читал.
-try {
-  const y = sessionStorage.getItem('autopilot-scroll');
-  if (y !== null) { window.scrollTo(0, Number(y) || 0); sessionStorage.removeItem('autopilot-scroll'); }
-} catch(e) {}
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); scheduleReload(); } });
+// Возврат на вкладку — повод не ждать очередного круга опроса.
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); pollState(); } });
 
 // Пока пользователь не выбрал тему явно, дашборд следует за системной.
 try {

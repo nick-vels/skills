@@ -225,7 +225,7 @@ Then act on it, before leaving the phase:
 | in the spec, not in the brief | an `A##` with no parent, or a `D##` written too early. Attach it or cut it |
 | «расхождений нет» | pass |
 
-Record the result in `state.json` under `coverage` — the count of findings and what was done with each — so the Phase 8 report can say whether this gate ever caught anything. A gate whose findings are never visible is a gate nobody will keep running.
+Record the result in `state.js` under `coverage` — the count of findings and what was done with each — so the Phase 8 report can say whether this gate ever caught anything. A gate whose findings are never visible is a gate nobody will keep running.
 
 **A finding here is the gate working, not a failure of the spec phase.** It costs a paragraph now. The same finding at G4 costs the build.
 

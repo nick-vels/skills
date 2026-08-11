@@ -17,7 +17,7 @@ The last two are what this file is about. Everything in the memory file must be 
 
 Read this block and stop; nothing else here applies until the build is over.
 
-1. **Pick the file** — the detection table immediately below, first match wins. An existing file always beats detection, the choice is recorded in `state.json` as `memoryFile`, and it is never a question for the user in any mode.
+1. **Pick the file** — the detection table immediately below, first match wins. An existing file always beats detection, the choice is recorded in `state.js` as `memoryFile`, and it is never a question for the user in any mode.
 2. **Write the skeleton** — the block under *Moment 1*, between the markers, with only what is already known. An invented command is worse than a missing one.
 
 What may be appended during the build (*Moment 2*), the full description written from the finished code (*Moment 3*) and the ADRs (*Moment 4*) are read when they happen — the second inside Phase 5, the last two in Phase 8.
@@ -39,7 +39,7 @@ Decided by detection, in this order. Stop at the first match.
 - **An existing file always wins over detection.** The repo has already answered the question; asking it again is how you end up with two half-filled memory files.
 - **The pointer file is written only in the fallback case.** When the agent was identified, one file is enough — a second file is a second thing to keep in sync, and it will not be kept in sync.
 - **Never duplicate the text into both files.** Two copies of a project description drift within one run.
-- Record the choice in `state.json` as `memoryFile`, so a resume does not re-derive it.
+- Record the choice in `state.js` as `memoryFile`, so a resume does not re-derive it.
 
 **This is never a question for the user** — in any mode, including manual. It is a process decision, like where ticket files live, and Phase 0 answers those itself. It is not, however, a *secret* decision: one line in the opening block, together with the mode.
 
@@ -86,7 +86,7 @@ Cheap, written before anything is built, and it is what survives an interrupted 
 может снять только пользователь.
 
 Если работа продолжается — скажи «продолжи автопилот»: состояние поднимется
-из `.autopilot/state.json`, переспрашивать ничего не нужно.
+из `.autopilot/state.js`, переспрашивать ничего не нужно.
 <!-- autopilot:end -->
 ```
 
@@ -224,6 +224,6 @@ The ADRs go in with the final commit, alongside the memory file, and get one lin
 
 ## On resume
 
-The memory file is the **first** thing to read on resume, before `state.json` — it is the cheapest possible re-entry into a project. If it is missing or plainly stale against the code, that is a defect of the previous run: fix it as part of the current one, do not work around it.
+The memory file is the **first** thing to read on resume, before `state.js` — it is the cheapest possible re-entry into a project. If it is missing or plainly stale against the code, that is a defect of the previous run: fix it as part of the current one, do not work around it.
 
 `docs/adr/` is **not** read on resume — it is for the session after this one, and reading a folder of past reasoning is exactly the kind of re-orientation the memory file exists to make unnecessary. Read one only when a decision is about to be reversed.
