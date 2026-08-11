@@ -36,7 +36,36 @@ Cheap early, delegated once it starts costing. A review that costs more than the
 
 **Why the threshold is not diff size alone.** A hundred-line diff costs the same to read whenever it arrives; what changes is what you have left to spend it from. The orchestrator's context is the only one in the run that is never refreshed (`phases/5-subagents.md`), and inline review is how it fills — undramatically, one ticket at a time, until ticket 08 is being judged by a reader who has been awake since the brief. The concession for the first two tickets is there because a reviewer's setup cost is real and early context is cheap. It expires because neither stays true.
 
-**The reviewer gets the testing check, verbatim.** «A green suite is evidence only if the tests could have been red» — the assertion-level reading in `phases/5-subagents.md`. It is part of the Craft axis, it goes into the prompt, and it is the instruction most often dropped on the way down, because a pass count looks like it already answered the question.
+## What a reviewer gets
+
+A reviewer knows nothing you do not hand it — the same rule as for an executor, and it bites harder here, because **axis Manifest is built entirely out of words the subagent has never seen.** A reviewer sent off with just the diff will quietly review two axes and report three.
+
+| | Manifest + Spec | Craft |
+|---|---|---|
+| the diff — `git diff` over the ticket's range, or the files its contract block named | ✓ | ✓ |
+| **the manifest rows the ticket names, with the verbatim brief quotes** | ✓ | — |
+| the spec sections the ticket named — the same ones the executor got | ✓ | — |
+| `interfaces.md` | ✓ | ✓ — the only way Reinvention is visible |
+| the ticket body and its acceptance criteria | ✓ | ✓ |
+| whatever the repo documents about how code is written | — | ✓ |
+| **the testing check, verbatim** — «зелёный прогон — доказательство, только если тесты могли быть красными», the assertion-level reading in `phases/5-subagents.md` | — | ✓ |
+| what it must not do: repair nothing, refactor nothing, open no files outside the diff to «понять получше» | ✓ | ✓ |
+
+**Give each one only its own axes.** A reviewer handed material for an axis it was not asked to judge will judge it anyway, badly and without saying so — and two overlapping half-reviews are what the separation of axes exists to prevent.
+
+The testing check is the line most often dropped on the way down, because a pass count looks like it already answered the question. It did not: it answers how many tests ran, not whether any of them could have failed.
+
+### What a reviewer returns
+
+```
+AXIS: manifest | spec | craft
+VERDICT: clean | findings
+FINDINGS: <ось> · <файл:строка> · что не так · какое условие должно выполняться
+          — одно предложение на находку, условием, а не пожеланием
+BLOCKING: какие из находок мешают коммиту
+```
+
+**Не больше 20 строк, без кусков кода и без диффа.** A finding phrased as a condition can be forwarded to the executor as a дозапрос unchanged; a finding phrased as «стоило бы аккуратнее» has to be rewritten by you before it can go anywhere, and rewriting it means reading the diff — which is the whole thing this arrangement exists to avoid.
 
 ## Axis 1 — Manifest
 
