@@ -2,83 +2,20 @@
 
 The user's live view of the build. Not a phase in sequence — raised in Phase 0, updated at every stage transition and after every ticket, read whenever they want to know where things stand.
 
+**Phase 0's share of this file is not here — it is `phases/0-instruments.md`**: copying the template, the state at the moment it is created, opening the page, and the update ritual that carries the rest of the run. This file is read **when the tickets are cut in Phase 4**, and afterwards only when a detail is actually needed. Reading it in Phase 0 costs six thousand characters in the one context that is never refreshed, to answer questions that arrive four phases later.
+
 Two files, and the split matters:
 
 - **`.autopilot/state.js`** — the truth, and the only thing you ever write. You read it on resume; the user never opens it.
-- **`.autopilot/dashboard.html`** — the only human view. Copied from the template once and **never touched again**. Self-contained, opens by double-click, no server, no build step.
+- **`.autopilot/dashboard.html`** — the only human view. Copied from the template once and **never touched again**. No build step and nothing to generate: it opened in Phase 0 and is already showing whatever you write here.
 
 The page loads `state.js` from beside it and re-loads that file every ten seconds on its own. So there is exactly one place where state lives, one write per update, and nothing that can drift out of sync — because there is no second copy to drift.
 
-## Phase 0 needs four lines of this file
-
-Raising the instruments is mechanical. Do exactly this and read no further — the rest of this file explains the reasoning and answers questions you do not have yet.
-
-1. **Copy the template.** Never regenerate it, never read it into context, never edit it afterwards:
-   ```bash
-   cp <skill-dir>/phases/dashboard-template.html .autopilot/dashboard.html
-   ```
-2. **Write `.autopilot/state.js`** — first line exactly `window.STATE =`, then the state as ordinary indented JSON. Fill in `slug`, `title`, `mode`, `depth`, `briefFile`, `memoryFile`, `startedAt`, `updatedAt`, `finishedAt: null`, all eight `stages` (`preflight` `active`, the rest `pending`), an empty `tickets` array and `requirements` at zero. The shape is below, under *state.js*.
-3. **Open it once.** Inside the user's own window if the harness has one, otherwise hand it to the OS. A failure is one printed path, not an error; under `$SSH_CONNECTION` or `$CI`, skip opening entirely.
-4. **Learn the update ritual — it is the same three moves for the rest of the run**, and it is here rather than further down because you will need it long after this file has left your context:
-
-   | When | What |
-   |---|---|
-   | entering a phase | that stage → `active` + `startedAt`; the one you left → `done` + `finishedAt` |
-   | launching a ticket (or a whole wave) | those tickets → `in-progress` + `startedAt` **before** the subagent goes out |
-   | a ticket returns, review starts | that ticket → `review` |
-   | a finding goes back for repair | → `repair`, and `repairs` + 1 |
-   | committed | → `done` + `finishedAt` + tests + commit |
-
-   Every one of them: edit the affected rows of `state.js` and move `updatedAt`. That is the whole ritual — no mirroring, no second file, no re-opening anything. The page picks the change up within ten seconds wherever it is open.
-
-   **`startedAt` on a ticket is that ticket's own launch time** — not the run's, not the build stage's. Copying the run's `startedAt` into a ticket is the one mistake that looks harmless and makes every per-ticket duration on the dashboard wrong from the first row.
-
-That is the whole of Phase 0's business here. Everything below is reasoning and reference.
-
-## Opening it — once, by you, at the start
-
-The user should not have to be told where a file is and then go find it. **Open the dashboard yourself, immediately after the first write**, before Phase 1 asks anything.
-
-**Wherever it opens, it keeps itself fresh** — you never have to refresh it, re-open it or re-point it. The page re-loads `state.js` every ten seconds, and the reason that works everywhere is worth knowing, because the obvious mechanism does not.
-
-In-app panes (Claude Desktop, IDE viewers) **silence navigation**. Measured, not assumed: `location.reload()` did nothing, and `<meta http-equiv="refresh">` did nothing either — eight seconds at a three-second interval, not one refresh. What those panes do *not* touch is sub-resource loading, so the page appends a fresh `<script src="state.js?t=…">` instead of reloading itself: twelve successful loads out of twelve, with the state swapped on disk mid-flight and picked up without a reload. It costs nothing, keeps scroll position and text selection intact, and works identically in a real browser.
-
-### Path A — inside the user's own window (preferred)
-
-If your harness gives you a way to show a local page in the window the user is already looking at — a preview pane, an in-app browser, a webview — **use it**. The whole point of a dashboard is being glanceable without leaving what you are doing; a separate browser window defeats half of that.
-
-In Claude Desktop that is the browser/preview pane: open it at the dashboard's `file://` path, once, and forget about it.
-
-### Path B — the system browser
-
-No in-app viewer → hand it to the OS:
-
-```bash
-open .autopilot/dashboard.html 2>/dev/null \
-  || xdg-open .autopilot/dashboard.html 2>/dev/null \
-  || start "" .autopilot\dashboard.html 2>/dev/null \
-  || echo "открой вручную: .autopilot/dashboard.html"
-```
-
-A background tab may be throttled to about one poll per minute — the data lags by a minute at worst, it does not freeze.
-
-An IDE is Path B, not Path A. `code file.html` opens the *source* in an editor tab, and rendering it needs an extension — which this skill does not install on the user's behalf.
-
-### Rules for both paths
-
-- **Opened exactly once.** Both paths keep themselves current. Neither ever opens a second window or tab, and neither is ever re-pointed.
-- **Never on resume into a window that is already open.** On a resume, open it again only if the previous session ended (`finishedAt` was set).
-- **A failure is not an error.** Headless machine, no default browser, no pane — print the path in one line and carry on. Do not retry, do not install anything, do not try a second launcher.
-- **Do not open it in a remote session.** If `$SSH_CONNECTION` or `$CI` is set, skip opening entirely and print the path — a browser window on someone else's machine helps nobody.
-- **No servers.** The dashboard is one static file, by design. Do not start an HTTP server to serve it, and do not add a build step.
-
-Say it in one line, once:
-
-> Дашборд открыл — `.autopilot/dashboard.html`, обновляется сам.
-
-## state.js
+## state.js — the full shape
 
 One assignment, then plain JSON. The first line is `window.STATE =` and nothing else — keeping it on its own line is what lets `tail -n +2 .autopilot/state.js | jq .` work, and what makes an edit further down a small edit. Indent the JSON normally; it is its own file now, so there is no reason to minify it.
+
+This is the file mid-build, with everything filled in. The starting shape — what Phase 0 writes — is in `phases/0-instruments.md`.
 
 ```js
 window.STATE =
@@ -135,7 +72,8 @@ window.STATE =
   },
   "additions": ["Номер заявки в подтверждении — ради R01"],
   "coverage": { "found": 2, "fixed": 2, "deferred": 0 },
-  "blind": null
+  "blind": null,
+  "polish": null
 }
 ```
 
@@ -150,7 +88,8 @@ Ticket `status`: `pending` · `in-progress` · `review` · `repair` · `done` ·
 `wave` and `zone` come from Phase 4 — the wave decides what flies together, the zone is why it may.
 `tests` is the last **full** suite run; `blind` stays `null` until the final phase.
 `coverage` is the independent check at gate G2 (`phases/3-spec.md`) — written once, when the spec is done, and read again by the Phase 8 report. `null` means the check has not run yet, **not** that it found nothing: a run that reaches the build with `coverage: null` skipped a gate.
-`memoryFile` is the project memory chosen in Phase 0 — `CLAUDE.md` or `AGENTS.md`, see `phases/9-memory.md`. A resume reads that file first.
+`memoryFile` is the project memory chosen in Phase 0 — `CLAUDE.md` or `AGENTS.md`, see `phases/0-memory.md`. A resume reads that file first.
+`polish` stays `null` on every run without the доводка parameter, which is most of them. Its shape and its `P`-prefixed tickets are in `phases/polish.md`.
 
 **Never put a secret value in here.** `emptyEnv` holds names only — the whole point of the list.
 
@@ -196,20 +135,11 @@ Two consequences worth knowing: it is not the same number as «покрытие 
 
 ## Timestamps are the clock
 
-Every timer on the dashboard is computed from these fields — total elapsed, per stage, per ticket, all ticking in real time from the marks you wrote. Nothing is stored as a duration.
+Every timer on the dashboard is computed from these fields — total elapsed, per stage, per ticket, all ticking in real time from the marks you wrote. Nothing is stored as a duration, and nothing is rounded: the rules for writing them are the update ritual in `phases/0-instruments.md`, which you already have.
 
-- **ISO 8601 with the offset** (`2026-08-07T14:50:17+03:00`). A bare `14:50` gives an invalid date and a dead dash on the dashboard.
-- **Read the clock, do not compose it.** `date -Iseconds` at the moment the thing happens — one cheap call, and the only way the number is true. **Seconds are part of the answer**: a column of durations that all end in `:00` is the visible tell that the times were written from memory and rounded to the minute, and once the user notices it they stop believing the rest of the screen.
-- **`startedAt` goes in when the thing starts, not when it ends.** An interval with a start and no end is what makes the timer run; filling both in at the end means the user watched a frozen clock while the work was happening.
-- **`updatedAt` moves on every write.** The dashboard shows «обновлено N назад» from it and marks it in warning colour after five silent minutes — that is the user's only way to tell «идёт работа» from «агент умер».
+## Updating — two failure modes
 
-## Updating — one edit, not a rewrite
-
-At every stage transition, and after every ticket: edit the affected rows of `state.js` — the stage object, the ticket object, the `requirements` counts, `updatedAt`. Change the rows that changed; do not rewrite the file. That is all of it. Roughly thirty tokens, one tool call, and the screen follows within ten seconds wherever it is open.
-
-**Never touch `dashboard.html` after copying it**, and never hand-maintain a progress table in prose: a rewritten table grows quadratically in cost and invites tidying up history that should not be tidied.
-
-Two failure modes worth recognising, neither of which loses a run:
+The ritual itself is in `phases/0-instruments.md`. What belongs here is what to do when the page disagrees with you — neither of these loses a run:
 
 - **The page says «дашборд ещё не прочитал состояние».** `state.js` is missing or does not parse. If the run is young, this is just Phase 0 not having written it yet and the page will fill itself in on its own. If the build has been going a while, the file got mangled — rewrite it whole from what you know; the page is waiting and needs nothing from you.
 - **A write caught mid-flight.** If the poll reads the file while you are writing it, the load simply fails and the last good state stays on screen until the next poll ten seconds later. Nothing to handle, nothing to announce.

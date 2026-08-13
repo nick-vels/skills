@@ -10,7 +10,7 @@ Configure the repo and raise the instruments. What runs here depends on what is 
 
 **The third case is the one that gets missed**, and missing it is silent. The repo is configured, so the settings work is done — but this flight still needs its own slug directory, its own dated brief, its own manifest and its own fresh instruments. Reuse the previous run's `state.js` and the user spends this build watching a dashboard that describes a project which already shipped.
 
-In that case: derive a new slug (step 1) and create its directory (step 3); **archive the finished run** — move `state.js` to `.autopilot/<previous-slug>/state.js`, write a fresh one for this flight and re-open the dashboard (step 3, rules in `phases/7-instruments.md`); top up the memory file rather than rewriting it (step 5); close the stage (step 7). Skip the conventions note and the git setup — they are already there, and `.autopilot/README.md` describes the folder, not the run.
+In that case: derive a new slug (step 1) and create its directory (step 3); **archive the finished run** — move `state.js` to `.autopilot/<previous-slug>/state.js`, write a fresh one for this flight and re-open the dashboard (step 3, rules in `phases/0-instruments.md`); top up the memory file rather than rewriting it (step 5); close the stage (step 7). Skip the conventions note and the git setup — they are already there, and `.autopilot/README.md` describes the folder, not the run.
 
 **Nothing here is a question for the user.** These are process decisions, not product ones. No mode buys the user a say in where ticket files live; asking about it is exactly the kind of question Autopilot exists to remove.
 
@@ -35,6 +35,7 @@ Read what is already here; assume nothing:
 ├── <feature-slug>/
 │   ├── <YYYY-MM-DD>-brief.md
 │   ├── manifest.md
+│   ├── reference.md        (only if the briefing collects one — `phases/2-briefing.md`)
 │   ├── spec.md
 │   ├── interfaces.md
 │   └── tickets/
@@ -44,22 +45,13 @@ Read what is already here; assume nothing:
 
 The brief carries **the date it was dictated in its filename** — `2026-08-07-brief.md`. A slug directory outlives one conversation: the user comes back a month later with «доделай», a second brief gets appended, and a file called `brief.md` gives no way to tell which sitting is which. The date is the cheapest possible answer, and it sorts.
 
-`state.js` and `dashboard.html` are written now, empty-but-valid, per `phases/7-instruments.md`. The initial `stages` array lists all eight stages — `preflight` as `active`, the rest `pending` — so the dashboard shows the whole road from the first minute instead of a blank page.
+`state.js` and `dashboard.html` are written now, empty-but-valid, per `phases/0-instruments.md`. The initial `stages` array lists all eight stages — `preflight` as `active`, the rest `pending` — so the dashboard shows the whole road from the first minute instead of a blank page.
 
-## 3a. Open the dashboard
+## 3a. Raise the instruments
 
-The moment it is written, open it — once. **If your harness can show a local page inside the user's own window** — a preview pane, an in-app browser — open it there; a separate browser window costs the user half the value of a glanceable dashboard. Otherwise hand it to the OS:
+Copy the template, write the starting `state.js`, open the page once. **Read `phases/0-instruments.md`** — it is Phase 0's whole share of the dashboard, including the update ritual you will use for the rest of the run.
 
-```bash
-open .autopilot/dashboard.html 2>/dev/null \
-  || xdg-open .autopilot/dashboard.html 2>/dev/null \
-  || start "" .autopilot\dashboard.html 2>/dev/null \
-  || echo "открой вручную: .autopilot/dashboard.html"
-```
-
-Either way it then keeps itself current — the page re-reads `state.js` on its own, so it is never re-opened and never re-pointed. Read **only** the *Phase 0 needs four lines of this file* block at the top of `phases/7-instruments.md` — its fourth line is the update ritual you will use for the rest of the run, so do not skip it.
-
-Skip opening entirely in a remote session (`$SSH_CONNECTION`, `$CI`) and treat a failure as nothing: print the path in one line and carry on. Never open a second window later.
+Do **not** read `phases/7-instruments.md` here. It answers questions that arrive in Phase 4, and reading it now spends six thousand characters of the one context that is never refreshed.
 
 ## 4. Record the conventions
 
@@ -80,11 +72,11 @@ Write `.autopilot/README.md` — a short note for the human, not for the agent:
 
 ## 5. Raise the project memory
 
-The repo needs a file that tells the **next** session what this project is — `CLAUDE.md` or `AGENTS.md`. Which one is decided by detection, never by a question; the skeleton is written now and finished in Phase 8. Read **only** the *Phase 0 needs two things from this file* block at the top of `phases/9-memory.md` — everything else there belongs to Phase 8.
+The repo needs a file that tells the **next** session what this project is — `CLAUDE.md` or `AGENTS.md`. Which one is decided by detection, never by a question; the skeleton is written now and finished in Phase 8. **Read `phases/0-memory.md`** — the detection table and the skeleton, and nothing else applies until the build is over.
 
 Two things happen here: pick the file, write the skeleton between the `<!-- autopilot:start -->` markers. Announce the choice in one line inside the opening block, together with the mode — and do not wait for a reply.
 
-Record the chosen file in `state.js` as `memoryFile`, and note it in the Phase 8 report.
+Record the chosen file in `state.js` as `memoryFile`, and note it in the Phase 8 report. Do **not** read `phases/9-memory.md` here — everything in it belongs to Phase 5 and Phase 8.
 
 ## 6. Git
 
@@ -105,7 +97,7 @@ If a repo already exists and its working tree is dirty, say so in one line and c
 
 ## 7. Close the stage
 
-Leaving any phase means the same two marks, here and everywhere after: the stage you are leaving goes `done` with `finishedAt`, the stage you are entering goes `active` with `startedAt`, `updatedAt` moves, and the dashboard line is replaced. Two edits, per `phases/7-instruments.md`. **A run whose stage list never moves is a run the user cannot see** — and that is the same as no dashboard at all.
+Leaving any phase means the same two marks, here and everywhere after: the stage you are leaving goes `done` with `finishedAt`, the stage you are entering goes `active` with `startedAt`, `updatedAt` moves, and the dashboard line is replaced. Two edits, per `phases/0-instruments.md`. **A run whose stage list never moves is a run the user cannot see** — and that is the same as no dashboard at all.
 
 ## Resuming an interrupted flight
 

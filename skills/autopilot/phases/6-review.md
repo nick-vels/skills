@@ -59,14 +59,14 @@ A reviewer knows nothing you do not hand it — the same rule as for an executor
 | `interfaces.md` | ✓ | ✓ — the only way Reinvention is visible |
 | the ticket body and its acceptance criteria | ✓ | ✓ |
 | whatever the repo documents about how code is written | — | ✓ |
-| **the testing check, verbatim** — «зелёный прогон — доказательство, только если тесты могли быть красными», the assertion-level reading in `phases/5-subagents.md` | — | ✓ |
+| **`prompts/craft-review.md`, by path** — the smells, the assertion-level testing check, the return format | — | ✓ |
 | what it must not do: repair nothing, refactor nothing, open no files outside the diff to «понять получше» | ✓ | ✓ |
 
 **Give each one only its own axes.** A reviewer handed material for an axis it was not asked to judge will judge it anyway, badly and without saying so — and two overlapping half-reviews are what the separation of axes exists to prevent.
 
 **That table is the first ticket only.** A reviewer you are keeping (above) already holds the standing material; from the second ticket onward it gets the diff, the ticket body, this ticket's manifest rows, and whatever `interfaces.md` has grown since — nothing else. Resending what it already has is not harmless: it reads as new material, and a reviewer re-reading yesterday's interfaces as though they arrived today is how a ticket gets judged against the wrong contract.
 
-The testing check is the line most often dropped on the way down, because a pass count looks like it already answered the question. It did not: it answers how many tests ran, not whether any of them could have failed.
+**Give the Craft reviewer the path, and require it to read the file before the first diff.** A path is not a delivery: what makes the check exist is the reviewer having read it, so say so as a requirement and expect the return format from that file. If the harness gives you no way to have a subagent read a file, paste the contents once, into the first ticket's prompt only — the reviewer keeps them for the run.
 
 ### What a reviewer returns
 
@@ -106,27 +106,14 @@ Quote the spec line for every finding.
 
 ## Axis 3 — Craft
 
-Whatever the repo documents about how code should be written wins over everything below. Skip anything tooling already enforces — a linter finding is not a review finding.
+**The whole of what this reviewer judges by is `prompts/craft-review.md`, and it goes down as a path, not as your retelling of it.** The list of smells, the assertion-level testing check and the return format live there because they are the subagent's material, not yours: an orchestrator that reads them keeps them until the end of the run and gains nothing, and an orchestrator that paraphrases them ships a weaker version of the check than the one that was written.
 
-On top of that, a fixed baseline of smells worth naming. These are Fowler's, from *Refactoring* ch. 3, and each is a **judgement call** — "possible Feature Envy" — never a hard violation:
+What stays here is the part you decide:
 
-- **Mysterious name** — the name does not say what it does or holds → rename; if no honest name comes, the design is murky.
-- **Duplicated code** — the same shape in more than one place in the diff → extract it, call it from both.
-- **Feature envy** — a function reaching into another object's data more than its own → move it to the data.
-- **Data clumps** — the same few parameters always travelling together → a type wants to be born.
-- **Primitive obsession** — a string standing in for a domain concept → give the concept its own small type.
-- **Repeated switches** — the same branch cascade on the same type, more than once → one map both sites share, or polymorphism.
-- **Shotgun surgery** — one logical change scattered across many files → gather what changes together.
-- **Divergent change** — one module edited for several unrelated reasons → split it.
-- **Speculative generality** — abstraction for needs the spec does not have → delete it.
-- **Message chains** — `a.b().c().d()` the caller should not know about → hide the walk.
-- **Middle man** — a layer that mostly delegates onward → call the real target.
-
-Plus three that matter specifically here, because subagents cause them:
-
-- **Reinvention** — the diff builds something `interfaces.md` already provides. The most common defect of parallel crews, and the most expensive.
-- **Silent narrowing** — an acceptance criterion satisfied in letter and dodged in substance (an empty catch, a hardcoded happy path, a test asserting the code back to itself).
-- **Invented fact** — a real-looking price, address, name, or phone number where the user's actual data belongs. Always a defect, never a placeholder.
+- Whatever the repo documents about how code is written **wins over that file** — hand the reviewer the repo's conventions too, and say which wins.
+- Everything in it is a **judgement call** — "possible Feature Envy", never a hard violation — and anything tooling already enforces is out of scope: a linter finding is not a review finding.
+- Three of its entries exist because subagents cause them — *Reinvention*, *Silent narrowing*, *Invented fact* — and the first is the reason the Craft reviewer gets `interfaces.md`. Without it that whole class of finding is invisible.
+- The testing check in it is the line most often lost on the way down, because a pass count looks like it already answered the question. Handing over the file is what makes it arrive; nothing about it is checkable from the count.
 
 ## What to do with findings
 

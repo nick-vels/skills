@@ -1,6 +1,6 @@
 # Phase 8 — Touchdown
 
-Landing. Two things happen here, and the first one is the reason this framework exists.
+Landing. Two things happen here, and the first one is the reason this framework exists. A third — the доводка loop — happens between them, and only when the `polish` parameter is on.
 
 ## 1. Blind acceptance — gate G4
 
@@ -71,6 +71,14 @@ Everything about all of this — which memory file, the markers, the sections pe
 
 This is the artifact that decides what the *next* run costs. A project whose second session begins by re-reading the whole codebase paid for that in the first session and got nothing.
 
+## 2a. Доводка — only with `polish` on
+
+If the run has the `polish` parameter, the loop goes **here**: after the blind acceptance has said what is and is not built, and before the report describes the result. Both halves of that matter. The blind verdict is the baseline the regression rule compares against, and a report written before the loop describes a build that no longer exists.
+
+Read `phases/polish.md` now — and only now. On a run without the parameter, skip this section entirely and do not read the file.
+
+Without `polish`, nothing changes: the blind checker's findings go into the report as open items, exactly as below.
+
 ## 3. The final report
 
 Run the full test suite once more first — truncated, `2>&1 | tail -30`, for the same reason as after every ticket — and wait for both subagents. Then write in the user's language, plain, no jargon.
@@ -87,6 +95,7 @@ So build each section from its source, opened now:
 |---|---|
 | Решения, принятые за вас | `manifest.md` — every `ASSUMPTION` in Основание |
 | Готово | the blind checker's return, not the manifest's `done` rows |
+| Доводка *(only with `polish`)* | `state.js` → `polish`, and `reference.md` for what was compared against |
 | Что нужно от тебя | `manifest.md` `placeholder` rows + `state.js` → `debt` |
 | Что не вошло | `manifest.md` `deferred` and `dropped` rows, with their quotes |
 | Что я добавил сверх заказанного | `state.js` → `additions`, cross-checked against `A##` in the spec |
@@ -182,3 +191,11 @@ The memory file goes in with the final commit, before this. Then, in `state.js` 
 The open page picks this up by itself within ten seconds — this is the picture the user is left with, and it arrives without you doing anything more.
 
 `finishedAt` also stops the clocks and the ten-second polling: the page freezes on the final numbers instead of counting time nobody is spending. Leave it `null` on a finished run and the user's total keeps growing overnight.
+
+**Then, and only then, put out the server** — the one Phase 0 started for the pane (`phases/0-instruments.md`). It goes last because the page has to fetch the final state first, and it goes at all because a run that ends leaving an HTTP server on the user's machine has left something running that nobody will ever think to stop:
+
+```bash
+[ -f .autopilot/serve.pid ] && kill "$(cut -d' ' -f2 .autopilot/serve.pid)" 2>/dev/null; rm -f .autopilot/serve.pid
+```
+
+The pane keeps the final picture on screen — it is already rendered and no longer polling. Nothing is lost with the port: `dashboard.html` is a static file, and a double-click reopens it in a real browser with every number intact. Say nothing about any of this; the shutdown is not news. If доводка is running (`phases/polish.md`), the run is not over — the server stays up until the доводка closes too.

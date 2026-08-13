@@ -1,7 +1,7 @@
 ---
 name: autopilot
-description: Use when the user dictates an app, site, bot, or feature to build end-to-end and expects a finished result without reviewing specs, tickets, or code — vibecoding sessions, non-technical users, "собери под ключ", "build it for me", "не задавай лишних вопросов" requests. Also use when the user invokes /autopilot, or asks for a build in a named mode or depth — «полный автомат», «режим интервью», «погриль меня», «ручной режим», «строго по брифу», «проработай глубоко».
-argument-hint: "[full|semi|interview|manual] [strict|deep] что нужно построить или путь к brief.md"
+description: Use when the user dictates an app, site, bot, or feature to build end-to-end and expects a finished result without reviewing specs, tickets, or code — vibecoding sessions, non-technical users, "собери под ключ", "build it for me", "не задавай лишних вопросов" requests. Also use when the user invokes /autopilot, or asks for a build in a named mode, depth or finish — «полный автомат», «режим интервью», «погриль меня», «ручной режим», «строго по брифу», «проработай глубоко», «вылижи до эталона».
+argument-hint: "[full|semi|interview|manual] [strict|deep] [polish] что нужно построить или путь к brief.md"
 ---
 
 # Autopilot
@@ -24,18 +24,20 @@ Two ideas carry the whole design.
 
 This file is the orchestrator: modes, phase order, gates. The rules for each phase live in `phases/` and are **read at the moment that phase starts, not before** — that is what keeps the working context small.
 
+**The unit of loading is the file, not the section.** «Read only the block at the top» is not a mechanism — a read pulls in the whole file — so anything needed by one phase and not another is its own file. That is why Phase 0's share of the instruments and of the project memory sit in `phases/0-instruments.md` and `phases/0-memory.md` rather than at the top of the phase-7 and phase-9 files: taking the whole of both would cost thirty-eight thousand characters in the one context that is never refreshed, to answer questions that arrive four phases later.
+
 | Phase | Read | Produces |
 |---|---|---|
-| 0 Preflight | `phases/0-preflight.md` | repo configured, `.autopilot/` created |
+| 0 Preflight | `phases/0-preflight.md`, then `0-instruments.md` and `0-memory.md` | repo configured, `.autopilot/` created |
 | 1 Manifest | `phases/1-manifest.md` | `brief.md`, `manifest.md` |
 | 2 Briefing | `phases/2-briefing.md` | answers recorded into the manifest |
 | 3 Spec | `phases/3-spec.md` | `spec.md` |
 | 4 Plan | `phases/4-plan.md` | `tickets/NN-*.md` (or none — see tiers), `interfaces.md` seeded |
 | 5 Subagents | `phases/5-subagents.md` | code, commits, `interfaces.md` grown |
 | 6 Review | `phases/6-review.md` | per-ticket review |
-| 7 Instruments | `phases/7-instruments.md` | `state.js`, `dashboard.html` (opened for the user) |
+| 7 Instruments | `phases/7-instruments.md` — **in Phase 4**, when the tickets are cut | `state.js`, `dashboard.html` (opened for the user) |
 | 8 Final | `phases/8-final.md` | blind acceptance, final report |
-| 9 Memory | `phases/9-memory.md` | `CLAUDE.md` / `AGENTS.md`, `docs/adr/` — the project as the next session will find it |
+| 9 Memory | `phases/9-memory.md` — **in Phase 5 and Phase 8** | `CLAUDE.md` / `AGENTS.md`, `docs/adr/` — the project as the next session will find it |
 
 ## The words the user sees
 
@@ -57,13 +59,13 @@ Two rules hold this together:
 - **«Сборка» — это весь прогон, а не один этап.** «Сборка идёт», «сборка прервалась», «продолжи сборку» — про процесс целиком. Поэтому пятый этап называется «Разработка»: иначе одно слово означает и часть, и целое. И «сборка» в смысле `npm run build` — тоже не он.
 - **Единица работы — «таск».** Не «задача», не «тикет», не «issue». «Задача» — это то, что поставил пользователь (бриф); одно слово на две разные вещи ломает и отчёт, и дашборд.
 
-Phases 7 and 9 are not sequential. The instruments are written and opened in Phase 0, then updated at every stage transition and after every ticket. The project memory is raised in Phase 0, topped up when the build discovers something, and written in full in Phase 8 by a subagent reading the finished code.
+Phases 7 and 9 are not sequential, and each is split in two along the line where it is read. The instruments are raised in Phase 0 from `phases/0-instruments.md` — template, starting state, the update ritual — and `phases/7-instruments.md` is opened only when the tickets are cut. The project memory is raised in Phase 0 from `phases/0-memory.md` — which file, and the skeleton — and `phases/9-memory.md` is opened when the build discovers something and again in Phase 8, where a subagent writes the full description from the finished code.
 
 ## Modes
 
-Everything typed after `/autopilot` splits into three parts: **the mode** (optional bare word — `full`, `semi`, `interview`, `manual`), **the depth** (optional bare word — `strict`, `deep`), and **the brief** (everything else). No dashes on either parameter. Text that is not a recognised parameter is always brief.
+Everything typed after `/autopilot` splits into four parts: **the mode** (optional bare word — `full`, `semi`, `interview`, `manual`), **the depth** (optional bare word — `strict`, `deep`), **the finish** (optional bare word — `polish`), and **the brief** (everything else). No dashes on any parameter. Text that is not a recognised parameter is always brief.
 
-`/autopilot full deep интернет-магазин керамики` — full mode, deep elaboration. Order does not matter; both parameters are optional and independent.
+`/autopilot full deep интернет-магазин керамики` — full mode, deep elaboration. Order does not matter; all three parameters are optional and independent.
 
 | Mode | Triggers | Human gates |
 |---|---|---|
@@ -78,7 +80,7 @@ Everything typed after `/autopilot` splits into three parts: **the mode** (optio
 
   ```
   Режим: полуавтомат · глубина: обычная — спрошу только то, что в задаче не определено, дальше соберу сам.
-  Дашборд открыл: .autopilot/dashboard.html — обновляется сам.
+  Дашборд открыл — обновляется сам.
   Память проекта — AGENTS.md (+ CLAUDE.md со ссылкой). Скажи, если нужен другой.
 
   Можно переключить в любой момент, просто скажи:
@@ -86,7 +88,10 @@ Everything typed after `/autopilot` splits into three parts: **the mode** (optio
   • «погриль меня» — разберу задачу вопросами до конца, дальше соберу сам
   • «ручной режим» — то же плюс согласуешь спецификацию и список тасков
   • «строго по брифу» / «проработай глубоко» — меньше или больше проработки сверх сказанного
+  • «вылижи» — в конце сравню с эталоном и доведу; дольше и дороже
   ```
+
+  With `polish` on, the first line names it and its ceiling: «Режим: полуавтомат · глубина: обычная · доводка: до трёх кругов».
 
   One short block, once, at the start. **It is a hint, not a question** — say it and go straight into Phase 1; waiting for a reply to it is exactly the pause this skill exists to remove. Do not repeat it later, do not restate it after a mid-run switch (one line is enough there: «Понял, дальше ручной режим»).
 - **Ambiguity resolves to semi.** A mode word contradicting the rest of the sentence («ручной режим, но не спрашивай») → the explicit mode word wins; two mode words → ask which one, in one line.
@@ -113,6 +118,23 @@ How far past the brief's own words the spec is allowed to go. The mode decides *
 
 The rules for each level live in `phases/3-spec.md`.
 
+## Polish — доводка
+
+**Off by default.** One bare word turns it on, and it is the only parameter that costs the user real money and real time rather than just attention.
+
+| | Triggers | What it adds |
+|---|---|---|
+| **polish** | `/autopilot polish`, «вылижи», «доведи до идеала», «сравни с эталоном», «не останавливайся, пока не будет как надо», «бюджет не важен, важен результат» | after the blind acceptance, up to three rounds of comparing the running build against the user's own reference and fixing the differences |
+
+**Why this is a third dial and not a value of `depth`.** Depth decides how much is worked out *before* the code exists; polish decides how much is corrected *after* it does. A `strict` brief can deserve a flawless finish, and a `deep` spec can be right the first time. Folding one into the other would tie two independent decisions to one word, which is the same argument that gives this skill four modes instead of three.
+
+Two things are decided here; everything else — the critic's prompt, the filter, the stop conditions, the bookkeeping — is in `phases/polish.md`, **read only when the parameter is on.**
+
+- **It measures against a reference, never against taste.** No `reference.md` with something comparable in it → the loop says so in one line and does not run. A critic with nothing to compare against invents a standard, and the run then pays for chasing it.
+- **Its findings become tickets**, cut and flown and reviewed and committed like any others. Nothing about доводка bypasses Phase 6 or the green suite; it is more work of the same kind, not a different kind of work.
+
+Announced with the mode and depth in the opening block, ceiling named: «доводка: до трёх кругов».
+
 ## When to Use
 
 - User dictates what to build and expects the finished thing, not a collaboration on process.
@@ -135,6 +157,8 @@ The rules for each level live in `phases/3-spec.md`.
 | 5 Subagents | auto | auto | auto | auto |
 | 6 Review | auto | auto | auto | auto |
 | 8 Final | report + Assumptions | report | report | report |
+
+**`polish` adds a step inside Phase 8, in every mode** — the доводка loop, between the blind acceptance and the report. It changes no cell above: it asks the user nothing, and it approves nothing with them.
 
 **`interview` and `manual` differ in exactly two cells** — the spec gate and the plan gate. If you find yourself treating them differently anywhere else, one of them is wrong.
 
@@ -170,6 +194,7 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 ├── <feature-slug>/
 │   ├── <YYYY-MM-DD>-brief.md   the user's original words, redacted, never edited again
 │   ├── manifest.md      R01…Rnn — requirements and their status
+│   ├── reference.md     what the result should be like — the user's comparables, never yours
 │   ├── spec.md          the specification
 │   ├── interfaces.md    the boundaries from the spec, then what finished tickets built
 │   └── tickets/NN-<slug>.md
@@ -238,6 +263,9 @@ Phase-specific mechanics are not here; they live in the phase that owns them. Wh
 | «Пользователь сказал "погриль меня" — покажу и спецификацию» | Режим интервью покупает вопросы, а не гейты. Гейты — это «ручной режим», и это отдельное слово, которое он не сказал. |
 | «Таски и спецификация видны в чате — зачем файлы» | Файл в `.autopilot/` и есть артефакт; чат — только его пересказ. Диалог умрёт, файлы останутся. |
 | «Пользователь не спрашивал про режимы — не буду грузить» | Он и не спросит: в чате нет `--help`. Пять строк в начале — единственное место, где он вообще узнаёт, что у сборки есть ручки. |
+| «Просил вылизать — критик разберётся, с чем сравнивать» | Не разберётся: он придумает эталон и погонит сборку к нему. Нет эталона от пользователя — доводка не запускается, и это ответ, а не отказ. |
+| «Круг доводки нашёл мелочь — поправлю сам, это же не таск» | Тогда правка идёт без ревью, без зелёного прогона и без точки отката. Доводка — это ещё таски, а не право взять клавиатуру. |
+| «Критик всё ещё недоволен — значит, рано останавливаться» | Он будет недоволен всегда: ему за это и платят. Остановка — это отсутствие находок, потолок кругов или слово пользователя. |
 | «Проект собран, тесты зелёные — значит, работает» | Тесты писал тот же процесс, что и код. Пока проект никто не запустил, «работает» — это гипотеза, а первым его запустит пользователь. |
 
 ## Red Flags — start the phase over
@@ -258,6 +286,8 @@ Every line here means something the user asked for is at risk. Phase mechanics �
 - A T2+ run that ended with no ADR: every `D##` and every load-bearing implementation decision left to die with `.autopilot/`.
 - The finished project was never actually run — accepted on green tests and a reading of the code.
 - Starting without announcing mode and depth, or announcing one and behaving as another: questions in full, a spec put up for approval in interview, a start-and-see instead of «ок» in manual.
+- With `polish` on: a доводка round run against no reference, its findings applied outside the ticket path, a fourth round, or a round that broke something and was patched instead of reverted.
+- A comparable in `reference.md` that the user never named — your taste entered as though it were theirs, and everything downstream now judges the build against it.
 - The adversarial pass skipped in `interview` because the brief «выглядел продуманным» — or used to argue the user out of a requirement instead of into a decision.
 - A blocking unknown — payment, hosting, an account, where the data lives — left unasked in semi, interview or manual because the brief «выглядел понятным». Asking nothing is legitimate only when nothing is open; a manufactured question and a skipped blocking one are both defects, in opposite directions.
 - Promising the user a wait — a countdown, «через минуту», «если не ответишь за N секунд» — that you have no way to honour.

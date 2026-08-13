@@ -92,8 +92,45 @@ In priority order. Ask only what is actually unresolved for *this* brief; skip a
 
    At **strict** these narrow to clarifying what the user already said — never to offering them something extra.
 5. **Untestable requirements** — «красиво», «удобно», «быстро». Turn one into something checkable, or accept it as a matter of taste and record that. Do not spend three questions here.
+
+   The cheapest way to turn one into something checkable is to ask what it should be **like**: «Есть сайты, на которые это должно быть похоже? Скинь два-три». An answer here is worth more than three rounds of guessing what «современно» meant — see *Эталон* below.
 6. **Contradictions inside the brief** — quote both halves and ask which wins.
 7. **Scope edges** — what is explicitly *not* needed. Answers here become `dropped` rows and save whole tickets.
+
+## Эталон — what the result should be like
+
+The manifest records *what* to build. Nothing yet records **what it should be like**, and for anything with a surface — a page, an app, a piece of copy — that gap is where «сделал по требованиям, а выглядит не так» comes from. The brief almost never says it, and the user almost always has it in their head.
+
+So: **whatever the user hands you that a finished result could be measured against goes into `.autopilot/<slug>/reference.md`.** Reference sites, a competitor, screenshots, a text whose tone they like, a number they want beaten, «как в приложении банка». One line each, verbatim after redaction, with where it came from.
+
+```markdown
+# Эталон
+
+На что это должно быть похоже. Собрано со слов пользователя — не выдумано.
+
+## Внешний вид
+- linear.app — «вот такая чистота, ничего лишнего» (ответ на вопрос 3)
+- скриншот в брифе — раскладка карточек
+
+## Как должно ощущаться
+- «заявка отправляется в два клика, без регистрации»
+
+## Тексты
+- пример письма, который прислал пользователь — короткий, на «ты»
+
+## Чего быть не должно
+- «не хочу как на госуслугах»
+```
+
+Three rules, and they are what keep this from becoming a second spec:
+
+- **Only what the user gave.** A comparable you chose yourself is your taste with a citation, and it will later be used to judge the build as though the user had asked for it. If they named nothing, the file has the sections that do have content and no others — an empty `reference.md` is a truthful one.
+- **A comparable is not a requirement.** It never becomes an `R##`, never gets a status, never gates anything. «Похоже на linear.app» is a direction; «должна быть тёмная тема» is a requirement, and if the user said that, it belongs in the manifest.
+- **Ask for it once, cheaply, and only where it can matter.** One question in the interview, folded into an existing one where possible. A backend integration with no surface does not need this question, and asking it there is exactly the manufactured question this phase warns against.
+
+In **full** mode there is no interview, so `reference.md` gets only what the brief itself carries — and that is correct. Do not self-brief a reference: an invented comparable is an invented fact about the user's taste, and the rule against those does not have an exception here.
+
+**One case makes this a required question in every mode, including full:** the run has `polish` on. Доводка is a comparison, a comparison needs a comparable, and a user who explicitly asked for it has already agreed to the one question that makes it possible. If they have nothing to name, record that — the loop will decline to run, per `phases/polish.md`, and that is a better outcome than a critic inventing the standard.
 
 ## Recording answers
 

@@ -13,39 +13,7 @@ Four files describe this project and they are not interchangeable. Confusing the
 
 The last two are what this file is about. Everything in the memory file must be true of the repository *as it stands* — not of the plan, not of the run that produced it. Everything in an ADR is true of the moment it was decided, and stays written even when it is later reversed; that is what makes it a record rather than a second, staler copy of the memory file.
 
-## Phase 0 needs two things from this file
-
-Read this block and stop; nothing else here applies until the build is over.
-
-1. **Pick the file** — the detection table immediately below, first match wins. An existing file always beats detection, the choice is recorded in `state.js` as `memoryFile`, and it is never a question for the user in any mode.
-2. **Write the skeleton** — the block under *Moment 1*, between the markers, with only what is already known. An invented command is worse than a missing one.
-
-What may be appended during the build (*Moment 2*), the full description written from the finished code (*Moment 3*) and the ADRs (*Moment 4*) are read when they happen — the second inside Phase 5, the last two in Phase 8.
-
-## Which file
-
-Decided by detection, in this order. Stop at the first match.
-
-| Check | File |
-|---|---|
-| `CLAUDE.md` already exists | `CLAUDE.md` |
-| `AGENTS.md` already exists | `AGENTS.md` |
-| both exist | the one that already holds the project description; if neither does, `AGENTS.md` — and **leave the other file alone** |
-| `.claude/` directory, or `$CLAUDECODE` / `$CLAUDE_CODE_ENTRYPOINT` is set | `CLAUDE.md` |
-| `.cursor/` directory | `AGENTS.md` |
-| `.codex/` directory, or `.github/copilot-instructions.md` | `AGENTS.md` |
-| nothing matched | `AGENTS.md` as the real file **+ `CLAUDE.md` containing one line: `См. @AGENTS.md`** |
-
-- **An existing file always wins over detection.** The repo has already answered the question; asking it again is how you end up with two half-filled memory files.
-- **The pointer file is written only in the fallback case.** When the agent was identified, one file is enough — a second file is a second thing to keep in sync, and it will not be kept in sync.
-- **Never duplicate the text into both files.** Two copies of a project description drift within one run.
-- Record the choice in `state.js` as `memoryFile`, so a resume does not re-derive it.
-
-**This is never a question for the user** — in any mode, including manual. It is a process decision, like where ticket files live, and Phase 0 answers those itself. It is not, however, a *secret* decision: one line in the opening block, together with the mode.
-
-> Память проекта — `AGENTS.md` (+ `CLAUDE.md` со ссылкой). Скажи, если нужен другой.
-
-Say it and move on. **Do not wait for an answer** — if the user names a different file later, switch and move the block; renaming a markdown file costs nothing, which is exactly why this never earned a gate.
+**Phase 0's share of this file is not here — it is `phases/0-memory.md`**: which file to write, and the skeleton to put in it. That is Moment 1, which is why the moments below start at two. This file is read **inside Phase 5** for what may be appended during the build, and **in Phase 8** for the full description and the ADRs. Nothing below applies until there is code to describe.
 
 ## Where the content lives — the markers
 
@@ -60,37 +28,6 @@ Everything Autopilot writes sits between two markers, in every case, including a
 One rule, and it buys two things: updating is «replace what is between the markers», and **anything the user wrote outside them is untouchable**. A brownfield repo whose CLAUDE.md carries a team's hard-won rules must come out of an Autopilot run with those rules intact.
 
 If the markers are missing on a later run but Autopilot's sections are recognisably there, wrap them — do not append a second copy.
-
-## Moment 1 — the skeleton (Phase 0)
-
-Cheap, written before anything is built, and it is what survives an interrupted run. Only what is already known:
-
-```markdown
-<!-- autopilot:start -->
-# <Название проекта>
-
-<Одна строка: что это и для кого.>
-
-## Команды
-
-| Команда | Что делает |
-|---------|------------|
-| `<установка>` | Установить зависимости |
-| `<запуск>` | Запустить локально |
-| `<тесты>` | Прогнать тесты |
-
-## Как здесь работает Autopilot
-
-Сборка ведётся навыком `/autopilot`. Требования, спецификация и таски — в `.autopilot/`.
-Прогресс — `.autopilot/dashboard.html`. Правило: требование из `manifest.md`
-может снять только пользователь.
-
-Если работа продолжается — скажи «продолжи автопилот»: состояние поднимется
-из `.autopilot/state.js`, переспрашивать ничего не нужно.
-<!-- autopilot:end -->
-```
-
-Commands that are not known yet are simply absent. **An invented command is worse than a missing one** — the next session runs it, it fails, and now the whole file is suspect.
 
 ## Moment 2 — during the build
 

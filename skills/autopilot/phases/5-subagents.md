@@ -234,10 +234,6 @@ Two things this is not:
 
 The rules themselves went out in the prompt (above). What stays here is the part the executor cannot do for itself: **a green suite is evidence only if the tests could have been red.**
 
-That check reads assertions, so it is not yours — **it goes into the reviewer's prompt**, verbatim, as part of the Craft axis. It is the one review instruction most easily lost on the way down, because it looks like something the pass count already answers. On every return, before the commit, someone who did not write them reads the new tests — not their names, their assertions:
+That check reads assertions, so it is not yours either — it belongs to the Craft reviewer, and its three questions are written out in `prompts/craft-review.md`, which is the file that reviewer is given. It is the one review instruction most easily lost on the way down, because it looks like something the pass count already answers; handing over the file is what makes it arrive.
 
-- **Is it at a named seam?** A test reaching into internals will break on the next ticket and teach whoever hits it that the suite is noise.
-- **Where did the expected value come from?** If it was computed the same way the code computes it, the test asserts that the code equals itself. This is the single most common way a subagent produces a green suite that verifies nothing, and it is invisible in the pass count.
-- **Does it cover the failure the ticket named,** or only the happy path in its acceptance criteria?
-
-Anything wrong here is a Craft finding of kind *silent narrowing* (`phases/6-review.md`), and it is fixed in this ticket. A bad test is worse than a missing one: the missing one is visible.
+Your part is two moves: see that the file went down with the reviewer (`phases/6-review.md`), and treat what comes back as a Craft finding of kind *silent narrowing*, fixed in this ticket. A bad test is worse than a missing one: the missing one is visible.
