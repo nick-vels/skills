@@ -57,6 +57,7 @@ window.STATE =
       "finishedAt": "2026-08-07T14:53:26+03:00",
       "retries": 0,
       "repairs": 1,
+      "handoffs": 0,
       "files": ["src/bot/intake.ts", "src/bot/validate.ts"],
       "tests": { "passed": 34, "failed": 0 },
       "commit": "a1b2c3d",
@@ -82,6 +83,8 @@ Ticket `status`: `pending` · `in-progress` · `review` · `repair` · `done` ·
 **Three of those are «идёт прямо сейчас», and the dashboard shows them apart.** A ticket is written, then checked, then sometimes repaired — and since review and repair run while the next ticket is already flying (`phases/5-subagents.md`), collapsing them into one state is what makes the screen answer «готово 2 из 6» while four tickets are in motion. `done` now means one thing only: reviewed, green, committed.
 
 `repairs` counts the дозапросы this ticket needed, the way `retries` counts restarts. Two is the ceiling by rule, and a ticket carrying two is a signal about the cut, not about the executor.
+
+`handoffs` counts the times the ticket outgrew a context and was relayed to a fresh one (`phases/5-subagents.md`). **It is not a defect count and must not be shown as one** — nothing was found wrong; the ticket was long. The status stays `in-progress` across a handoff, so the user sees one ticket still being written rather than a ticket that failed and restarted. Two is the ceiling here as well, and a ticket carrying two says the same thing `repairs` does: the cut was too coarse.
 
 `finishedAt` goes in at the commit, not at the subagent's return — so the ticket's clock covers everything the ticket cost, review and repair included. A ticket that «finished» in four minutes and then sat in review for twenty did not take four minutes.
 `mode`: `full` · `semi` · `interview` · `manual`. `depth`: `strict` · `normal` · `deep`.

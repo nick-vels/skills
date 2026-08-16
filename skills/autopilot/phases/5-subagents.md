@@ -12,6 +12,25 @@ Never two tickets in one context. Accumulated context is precisely what makes lo
 
 The corollary is that a subagent knows **nothing** except what you hand it. Hand it the right things.
 
+## The context ceiling — when one ticket outgrows one context
+
+Freshness is not smallness. A subagent that starts clean and then runs three hundred steps ends up in exactly the context this design exists to avoid; it just took an hour to get there.
+
+The arithmetic is what decides it. What a run pays for reading is `число шагов × средний контекст`, and the average is roughly half of whatever ceiling the executor is allowed to reach — so **doubling the ceiling doubles the bill**, while splitting the same work across two contexts costs one extra cold start. The setup is tens of thousands of tokens; the reading it saves is millions. Measured on a T3 run: nine executors averaging 200 K spent 392 M tokens on reading, where a 120 K ceiling would have spent 161 M for twenty extra starts.
+
+So the executor is given a ceiling, and it travels **in its prompt**, like everything else it must obey:
+
+```
+Ты работаешь до конца таска, но не бесконечно. Если ты сделал около
+семидесяти правок и прогонов — остановись на ближайшем зелёном прогоне,
+не начиная следующий критерий приёмки, и верни `STATUS: HANDOFF`
+вместо `DONE`, записав передачу в файл (формат — в контракте возврата).
+```
+
+**The count permits; the green run decides.** A hard stop at a counter lands mid-edit, and the successor spends its first twenty steps working out what was going on — which is the whole cost this was meant to remove. A ticket that has just gone green is a seam: the suite passes, and everything unfinished is named in the acceptance criteria instead of in someone's head. Seventy is calibration, not a target — it is roughly 120 K at the token growth these runs show, and a ticket that finishes at fifty steps simply never reaches it.
+
+**Two handoffs per ticket, then stop relaying.** A ticket needing a fourth context is not an executor's failure — it is Phase 4 having cut too coarsely, and it goes to the final report as a note on the plan. Without a ceiling on the ceiling a badly cut ticket relays forever and nobody finds out why the run cost what it did.
+
 ## Your hands
 
 You dispatch; you do not build. Through the whole of Phase 5 your keyboard reaches exactly three things:
@@ -37,9 +56,13 @@ So the material never reaches you. What reaches you is a verdict, a list of name
 | the spec sections its ticket names | not the whole spec |
 | the test command and how to run one file | so it does not have to derive them |
 | **the testing contract**, verbatim | the block below — it is what makes the tests worth having |
+| **the context ceiling**, verbatim | the block above — without it the ticket runs until it stops, and that is the single most expensive thing in the flight |
 | the working directory and stack constraints | including what it must not touch |
 | variable **names** for any credential | never a value, ever |
 | the return contract | the block below, as a requirement, not a suggestion |
+| the path to `handoff-<NN>.md` | **only when continuing a handed-off ticket** — as a path, never pasted |
+
+**Paths, not contents — for everything on this list that lives in a file.** The ticket, the spec sections, `interfaces.md`, a handoff: a subagent has a filesystem and can read. Pasting the material instead writes it twice into the run's bill — once as your output, then on every subsequent turn of your own context, which is the one that is never refreshed. The exceptions are the two verbatim blocks above, which exist nowhere the executor can reach, and any harness where a subagent genuinely cannot open a file.
 
 **A rule that lives only in this file does not exist.** These phase files are read by the orchestrator; the code is written by someone who never sees them. Anything the executor must do has to travel in its prompt — and the testing contract is the one that gets left behind most often, because it reads like guidance rather than an input.
 
@@ -110,7 +133,7 @@ Keep it to interfaces and rules. It is not a log — the log is `state.js`.
 Every subagent ends by returning exactly this. Put it in the prompt as a requirement, not a suggestion: without it you cannot update the instruments or the manifest, and the next ticket flies blind.
 
 ```
-STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+STATUS: DONE | DONE_WITH_CONCERNS | HANDOFF | BLOCKED | NEEDS_CONTEXT
 FILES: созданные и изменённые
 TESTS: команда → результат (например, `npm test` → 34 passed)
 INTERFACES: публичные сигнатуры, схемы, форматы событий, которые ты выставил
@@ -123,6 +146,24 @@ BLOCKERS: чего не хватило (зависимость, решение, 
 **Demand it short, in the prompt: не больше 25 строк, без кода, без диффов, без пересказа хода работы.** `FILES` is paths only; `INTERFACES` is signatures, not explanations of them. A subagent left to its own judgement returns an essay — it has just spent an hour on the work and wants credit for it — and eight essays cost you exactly what eight diffs would, arriving through a different door. A concern or a blocker that genuinely needs more gets one sentence; the detail stays in the code, where the next reader is anyway.
 
 `NEEDS_CONTEXT` means the ticket was under-specified — the executor could not tell what was wanted. Treat it as a defect in Phase 4, not in the executor: re-cut the ticket with the missing detail and run it again. Two `NEEDS_CONTEXT` in one flight means the tickets are too thin across the board — go back and merge.
+
+### `HANDOFF` — the ticket continues in the next context
+
+`HANDOFF` is not a failure and not a repair. The work is sound as far as it got, the suite is green, and the ticket is simply longer than one context should be. Along with the contract block the executor writes **one file**, `.autopilot/<slug>/handoff-<NN>.md`, and names its path in `FILES`:
+
+```
+СДЕЛАНО: какие критерии приёмки закрыты, какие нет
+ФАЙЛЫ:   что готово, что начато и в каком состоянии
+РЕШЕНИЯ: что решено по ходу и почему — иначе преемник решит иначе
+ТУПИКИ:  что пробовал и отверг, чтобы преемник не потратил на это те же шаги
+ДАЛЬШЕ:  следующий критерий и шов, на котором он стоит
+```
+
+Fifteen lines, no code. **The successor is a normal executor**, not a repair: it gets everything the first one got — `interfaces.md`, the ticket, its spec sections, the testing contract, the ceiling — plus this file's path. Nothing is pasted into your context; you forward a path, the same way you forward `prompts/craft-review.md`. The material would cost you what a diff costs, and buy the same nothing.
+
+The three lines that matter are `РЕШЕНИЯ`, `ТУПИКИ` and `ДАЛЬШЕ`: the code on disk already says what was built, and only these say *why it was built that way*, what has already been ruled out, and where the seam is. A handoff missing them produces a second design of the same thing — the *Reinvention* smell in `prompts/craft-review.md`, arriving through a door the framework opened itself.
+
+In `state.js` the ticket stays `in-progress` across a handoff and its `handoffs` count goes up by one. It is not `repair`: nothing was found wrong, and a run that counts handoffs as repairs will read its own dashboard as a quality problem.
 
 ## Order of flight — waves, not one at a time
 
@@ -147,7 +188,7 @@ For a wave, that is **one state write for the whole wave**, before the launch me
 
 In this order, every time:
 
-1. **Read the contract block.** No block → the ticket is not finished; ask the subagent for it.
+1. **Read the contract block.** No block → the ticket is not finished; ask the subagent for it. **`HANDOFF` skips this whole list**: append whatever interfaces it declared, bump `handoffs` in `state.js`, and launch the successor. Nothing else — no review, no commit, no user line. The ticket is mid-flight, and a half-ticket has nothing a reviewer can judge against its acceptance criteria.
 2. **Append to `interfaces.md`.**
 3. **Update the manifest** — `in-ticket` → `done` or `placeholder`, commit noted.
 4. **Send the diff to review** — the ticket goes to `review` in `state.js` first, then the Phase 6 checklist runs, by someone who did not write the code (`phases/6-review.md`). What comes back to you is a verdict and a list of findings. The diff itself does not.
@@ -161,6 +202,8 @@ In this order, every time:
 Steps 4 through 6 are where the run is usually lost. Done as written, one ticket costs you a verdict, thirty lines of test output and a contract block. Done by hand — «посмотрю дифф сам, тут же немного» — the same ticket costs you the diff, the test log and every file you opened to fix it, and you pay that eight times.
 
 **Steps 4–7 hold up the commit, not the crew.** The list is the order for *this* ticket; it is not a queue the rest of the flight waits in. The moment a ticket returns, the next launchable ticket goes out — and only then do you walk the list for the one that landed. Its review runs while the next ticket is being written, and the wall-clock cost of reviewing everything drops to roughly nothing.
+
+**Step 4 is sent in the same breath as the launch, not at your convenience.** «Отправлю на ревью, как разгребу» is the default way this goes wrong, and it is expensive twice over: the ticket sits finished-but-uncommitted while its dependents wait, and the reviewer you are keeping alive (`phases/6-review.md`) goes cold. A reviewer woken after forty minutes rebuilds its whole prefix from scratch, at write prices rather than read prices — on the run measured for this section, the two reviewers were busy six percent of their lives and paid four to seven times the orchestrator's rate for the privilege of waiting. Dispatch the next ticket, dispatch the review, then do the bookkeeping.
 
 What this does not buy is a shortcut: the ticket is still committed only after its review and a green suite. Nothing lands unreviewed because something else was in flight; the review simply stopped being the thing everyone waits for. The one ordering that stays strict is a ticket whose dependents are pending — do not launch a dependent on an unreviewed parent, because a finding there invalidates the ground the dependent is standing on.
 

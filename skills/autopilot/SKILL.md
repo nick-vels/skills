@@ -26,6 +26,8 @@ This file is the orchestrator: modes, phase order, gates. The rules for each pha
 
 **The unit of loading is the file, not the section.** «Read only the block at the top» is not a mechanism — a read pulls in the whole file — so anything needed by one phase and not another is its own file. That is why Phase 0's share of the instruments and of the project memory sit in `phases/0-instruments.md` and `phases/0-memory.md` rather than at the top of the phase-7 and phase-9 files: taking the whole of both would cost thirty-eight thousand characters in the one context that is never refreshed, to answer questions that arrive four phases later.
 
+**One phase file at a time, and never twice.** The two ways this rule is broken do not feel like breaking it. The first is opening the next few files while you are already reading — they are small, the flight is planned, and it seems tidy; what it actually does is put Phase 5's rules into the context that Phase 1 is thinking in, and leave them there for the rest of the run. The second is re-reading a file you have already read, because it was long ago and the details have faded: the second read costs what the first did and buys a copy, since the first one never left. If a phase's rules have genuinely gone stale in your head, that is the context filling up — the signal to check what else is still in there, not to read more.
+
 | Phase | Read | Produces |
 |---|---|---|
 | 0 Preflight | `phases/0-preflight.md`, then `0-instruments.md` and `0-memory.md` | repo configured, `.autopilot/` created |
@@ -197,6 +199,7 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 │   ├── reference.md     what the result should be like — the user's comparables, never yours
 │   ├── spec.md          the specification
 │   ├── interfaces.md    the boundaries from the spec, then what finished tickets built
+│   ├── handoff-NN.md    only when a ticket outgrew one context — what the successor needs
 │   └── tickets/NN-<slug>.md
 ├── README.md            how to read this folder — for the human, written once in Phase 0
 ├── state.js             the run state, and the only file you update: stages, tickets, timings, debt

@@ -124,6 +124,7 @@ This is here rather than in `phases/7-instruments.md` because **you will need it
 | launching a ticket (or a whole wave) | those tickets → `in-progress` + `startedAt` **before** the subagent goes out |
 | a ticket returns, review starts | that ticket → `review` |
 | a finding goes back for repair | → `repair`, and `repairs` + 1 |
+| a ticket is handed off to a fresh context | stays `in-progress`, and `handoffs` + 1 |
 | committed | → `done` + `finishedAt` + tests + commit |
 
 Every one of them: **edit the affected rows** of `state.js` and move `updatedAt`. Not a rewrite of the file — roughly thirty tokens, one tool call, and the screen follows within ten seconds wherever it is open. No mirroring, no second file, no re-opening anything.
