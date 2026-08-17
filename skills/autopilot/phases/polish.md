@@ -8,7 +8,7 @@ Everything up to here measures the build against what was *asked for*. This meas
 
 ## The one thing that makes this work
 
-**A comparison needs something to compare against.** Give a critic a product and no reference and it will invent one, then drive the build toward a standard nobody chose — expensively, and for as many rounds as you let it. That is the failure this whole file is arranged around, and it is the same one the manifest axis of `phases/6-review.md` exists to prevent: a reviewer judges what it was handed, and what it was not handed it makes up.
+**A comparison needs something to compare against.** Give a critic a product and no reference and it will invent one, then drive the build toward a standard nobody chose, for as many rounds as you allow. It is the failure this whole file is arranged around, and the same one the manifest axis of `phases/6-review.md` prevents: a reviewer judges what it was handed and makes up what it was not.
 
 So the loop has a precondition, and it is hard:
 

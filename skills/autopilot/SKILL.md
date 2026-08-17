@@ -24,11 +24,11 @@ Two ideas carry the whole design.
 
 This file is the orchestrator: modes, phase order, gates. The rules for each phase live in `phases/` and are **read at the moment that phase starts, not before** — that is what keeps the working context small.
 
-**The unit of loading is the file, not the section.** «Read only the block at the top» is not a mechanism — a read pulls in the whole file — so anything needed by one phase and not another is its own file. That is why Phase 0's share of the instruments and of the project memory sit in `phases/0-instruments.md` and `phases/0-memory.md` rather than at the top of the phase-7 and phase-9 files: taking the whole of both would cost thirty-eight thousand characters in the one context that is never refreshed, to answer questions that arrive four phases later.
+**One file at a time, and never ahead.** Breaking this does not feel like breaking it: the next files are small, the flight is planned, opening them while you are already reading seems tidy. What it does is put Phase 5's rules into the context Phase 1 is thinking in, and leave them there for the rest of the run. The unit of loading is the file, not the section — a read pulls in the whole thing, which is why anything one phase needs and another does not is its own file.
 
-**One phase file at a time, and never ahead.** The way this rule is broken does not feel like breaking it: you open the next few files while already reading, because they are small and the flight is planned and it seems tidy. What it does is put Phase 5's rules into the context Phase 1 is thinking in, and leave them there for the rest of the run. Read the file whose phase you are entering, and nothing else — the table below says which, and when.
+**Twice only where the table says twice** — `7-instruments.md` in Phase 4, `9-memory.md` in Phases 5 and 8, legitimate there because the run has usually been compacted in between. Everywhere else, re-reading because «details have faded» buys a copy of what is still in the context.
 
-**Twice is allowed only where that table says twice.** Two files are read at two moments by design — `7-instruments.md` in Phase 4, `9-memory.md` in Phases 5 and 8 — and the second read is legitimate there because the run has usually been compacted in between, and a phase you must execute now is worth more than a copy of one you finished hours ago. Everywhere else, re-reading because «details have faded» buys a copy of what is still in the context. The distinction is the table, not your confidence.
+**After a compaction, re-read the state, not the phases.** `state.js` (it holds `skillDir`, the reviewers and the tickets), `manifest.md`, `interfaces.md`, and the file of the phase you are actually in — those four and nothing else. The pull is to reopen `5-subagents.md` to recover the thread; that spends eight thousand tokens re-reading rules you are already executing, and the thread was never in them.
 
 | Phase | Read | Produces |
 |---|---|---|

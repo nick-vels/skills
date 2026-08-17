@@ -34,7 +34,7 @@ Cheap early, delegated once it starts costing. A review that costs more than the
 | every ticket after that, and anything touching shared modules | Manifest+Spec in one subagent, Craft in another, in parallel |
 | the final whole-project pass at the end | separate subagents, per `phases/8-final.md` |
 
-**Why the threshold is not diff size alone.** A hundred-line diff costs the same to read whenever it arrives; what changes is what you have left to spend it from. The orchestrator's context is the only one in the run that is never refreshed (`phases/5-subagents.md`), and inline review is how it fills — undramatically, one ticket at a time, until ticket 08 is being judged by a reader who has been awake since the brief. The concession for the first two tickets is there because a reviewer's setup cost is real and early context is cheap. It expires because neither stays true.
+**The threshold is not diff size alone.** A hundred-line diff costs the same to read whenever it arrives; what changes is what you have left to spend it from. Inline review is how the one never-refreshed context fills — one ticket at a time, until ticket 08 is judged by a reader who has been awake since the brief. The concession for the first two exists because early context is cheap and a reviewer's setup is not; it expires because neither stays true.
 
 ## The reviewer outlives the ticket
 
@@ -42,6 +42,7 @@ Cheap early, delegated once it starts costing. A review that costs more than the
 
 The second gain is the one that is hard to buy any other way. A reviewer that saw ticket 02 can see that ticket 05 quietly contradicts it — a whole class of defect that no per-ticket reviewer can reach, because nothing in its inputs mentions ticket 02 at all. **This is the panoramic view the orchestrator used to have and can no longer afford**, relocated to the one context where accumulation is safe: a reviewer writes nothing, so a tired reviewer misses findings but cannot break the build, and unlike you it can be replaced.
 
+- **Write both handles into `state.js` under `reviewers` when you first spawn them**, and read them from there rather than from memory. This rule is worth exactly as much as your ability to reach the reviewer you kept alive, and that is the one thing a compaction takes away silently: what follows is a fresh reviewer per ticket, working correctly, while the cross-ticket findings quietly stop happening.
 - **Refresh it at wave boundaries, or whenever its judgement starts drifting** — repeating findings, hedging, reviewing the previous ticket instead of this one. A fresh reviewer rebuilds everything it needs from `interfaces.md`; the only thing lost is the cross-ticket memory, and that is exactly what has already gone stale.
 - **Each reviewer keeps its own axes for the whole run.** Swapping which one holds Manifest halfway through gives you two reviewers with half a picture each.
 - **The Craft reviewer is the one worth keeping longest.** Reinvention and divergent change are visible only to someone who remembers what the earlier tickets built.
@@ -59,7 +60,7 @@ A reviewer knows nothing you do not hand it — the same rule as for an executor
 | `interfaces.md` | ✓ | ✓ — the only way Reinvention is visible |
 | the ticket body and its acceptance criteria | ✓ | ✓ |
 | whatever the repo documents about how code is written | — | ✓ |
-| **`prompts/craft-review.md`, by path** — the smells, the assertion-level testing check, the return format | — | ✓ |
+| **`prompts/craft-review.md`, by path** — the smells, the assertion-level testing check, the return format. The path is `skillDir` in `state.js` | — | ✓ |
 | what it must not do: repair nothing, refactor nothing, open no files outside the diff to «понять получше» | ✓ | ✓ |
 
 **Give each one only its own axes.** A reviewer handed material for an axis it was not asked to judge will judge it anyway, badly and without saying so — and two overlapping half-reviews are what the separation of axes exists to prevent.

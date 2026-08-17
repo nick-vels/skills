@@ -16,15 +16,15 @@ The corollary is that a subagent knows **nothing** except what you hand it. Hand
 
 Freshness is not smallness. A subagent that starts clean and then runs three hundred steps ends up in exactly the context this design exists to avoid; it just took an hour to get there.
 
-The arithmetic is what decides it. What a run pays for reading is `число шагов × средний контекст`, and the average is roughly half of whatever ceiling the executor is allowed to reach — so **doubling the ceiling doubles the bill**, while splitting the same work across two contexts costs one extra cold start. The setup is tens of thousands of tokens; the reading it saves is millions. Measured on a T3 run: nine executors averaging 200 K spent 392 M tokens on reading, where a 120 K ceiling would have spent 161 M for twenty extra starts.
+**Doubling the ceiling doubles the bill.** A run pays `число шагов × средний контекст`, and the average is half of whatever ceiling the executor may reach; splitting the same work across two contexts costs one extra cold start instead. Measured on a T3 run: nine executors averaging 200 K spent 392 M tokens on reading, where a 120 K ceiling would have spent 161 M.
 
-**Count what the executor can count.** It cannot see its own context size, and «правок» is the wrong unit — a ticket that reads forty files and edits nine is far past any ceiling while its edit count says otherwise. What it can count is its own **tool calls**: every read, every edit, every command. Measured across those nine executors, one call costs about 1 900 tokens of context, so **fifty calls is roughly 120 K** — and the spread across tickets (29 to 68) is exactly why the number permits rather than commands.
+**Count what the executor can count** — its own tool calls, not its edits. A ticket that reads forty files and edits nine is far past any ceiling while the edit count says otherwise. One call costs about 1 900 tokens, so **fifty calls is roughly 120 K**, and the spread across tickets (29 to 68) is why the number permits rather than commands.
 
 The rule itself — the count, the handoff format, the path, and what to do when green cannot be reached — is written for the executor in **`prompts/executor.md`**, and it goes down as a **path**. Nothing about a handoff may live only in this file: the executor writing that file has never read it.
 
 **The count permits; the green run decides.** A hard stop at a counter lands mid-edit, and the successor spends its first twenty calls working out what was going on — which is the whole cost this was meant to remove. A ticket that has just gone green is a seam: the suite passes, and everything unfinished is named in the acceptance criteria instead of in someone's head. A ticket that finishes at thirty calls simply never reaches the ceiling, and most do.
 
-**The three lines that pay for the handoff are `РЕШЕНИЯ`, `ТУПИКИ` and `ДАЛЬШЕ`.** The code on disk already says what was built; only these say why it was built that way, what has already been ruled out, and where the seam is. A handoff missing them produces a second design of the same thing — the *Reinvention* smell in `prompts/craft-review.md`, arriving through a door this section opened.
+**A handoff without `РЕШЕНИЯ`, `ТУПИКИ` and `ДАЛЬШЕ` produces a second design of the same thing** — *Reinvention*, arriving through a door this section opened. The code on disk says what was built; only those three say why, what is already ruled out, and where the seam is. The format is the executor's (`prompts/executor.md`); your part is noticing a handoff that came back without them.
 
 **At tier T0 the ceiling does not apply to you** — you are the crew and there is nobody to relay to, and rule 5 forbids the only alternative. That is one more cost of T0, affordable for the same reason the rest of it is: a T0 run ends before the context fills. If it does not — if you are fifty calls in and the end is not in sight — the tier was read wrong, and the honest move is to say so and cut tickets, not to keep typing.
 
@@ -40,7 +40,7 @@ You dispatch; you do not build. Through the whole of Phase 5 your keyboard reach
 
 Every other file in the repository is written by someone whose context dies with the ticket. **This is rule 5 of the five in `SKILL.md`, and it loses to no argument** — least of all to the two that always arrive: «тут править две строки» and «исполнитель не смог, доделаю я».
 
-The reason is arithmetic, not taste. Yours is the one context in this design that is never refreshed: it carries the manifest, the plan, every return and every stage transition from the first phase to the last. A subagent spends its context and throws it away; you spend yours and keep it. A diff you read at ticket 02 is still sitting there at ticket 08, competing for room with the requirement you are checking. That is the same mechanism the whole framework is built against — except here it cannot be escaped by starting fresh, because starting fresh means losing the run.
+The reason is arithmetic, not taste. A subagent spends its context and throws it away; you spend yours and keep it — a diff read at ticket 02 is still sitting there at ticket 08, competing for room with the requirement you are checking. It is the mechanism the whole framework is built against, and here it cannot be escaped by starting fresh, because starting fresh means losing the run.
 
 So the material never reaches you. What reaches you is a verdict, a list of names, one contract block per ticket.
 
@@ -54,7 +54,7 @@ So the material never reaches you. What reaches you is a verdict, a list of name
 | its ticket | **by path only.** The ticket file already contains the verbatim brief quotes; sending the body as well means the run pays for the same words twice |
 | the spec sections its ticket names | by path **and section headings** — `spec.md`, разделы «Приём заявки», «Валидация». Not the whole spec, and not the sections pasted: naming them is what keeps the executor out of the rest of the document |
 | the test command and how to run one file | so it does not have to derive them |
-| **`prompts/executor.md`, by path** | the testing contract, the context ceiling and the return contract — **require it read before the first edit.** Without the ceiling the ticket runs until it stops, which is the single most expensive thing in the flight |
+| **`prompts/executor.md`, by path** | the testing contract, the context ceiling and the return contract — **require it read before the first edit.** The path is `skillDir` in `state.js`, resolved in Phase 0 and read from there rather than remembered. Without the ceiling the ticket runs until it stops, which is the single most expensive thing in the flight |
 | the working directory and stack constraints | including what it must not touch |
 | variable **names** for any credential | never a value, ever |
 | the return contract | the block below, as a requirement, not a suggestion |
@@ -64,13 +64,13 @@ So the material never reaches you. What reaches you is a verdict, a list of name
 
 **This is a rule about executors, and it does not reach the blind checks.** G2 and G4 work because a subagent has *not seen* the spec — and «can read» cuts both ways: `.autopilot/` is committed and sits in the repository the checker is pointed at, so not sending a file is no longer the same as withholding it. A blind check therefore needs the prohibition stated to it, not merely honoured by you: **«не открывай `.autopilot/` — ни спецификацию, ни манифест, ни таски»**, in its own prompt (`phases/3-spec.md`, `phases/8-final.md`). Independence you can only observe is independence you have already lost.
 
-**A rule that lives only in this file does not exist.** These phase files are read by the orchestrator; the code is written by someone who never sees them. Anything the executor must do has to travel in its prompt — and the testing contract is the one that gets left behind most often, because it reads like guidance rather than an input.
+**A rule that lives only in this file does not exist.** These phase files are read by the orchestrator; the code is written by someone who never sees them. Anything the executor must do travels in its prompt or not at all.
 
 ## What the executor is judged by — `prompts/executor.md`
 
 Two conditions decide whether a returned ticket is acceptable, and neither of them is about what the ticket asked for: **how its tests are written**, and **when it stops and hands the ticket on**. Both live in `prompts/executor.md`, and both go down as a **path** in the prompt — with reading it required before the first edit, exactly as the Craft reviewer is given `prompts/craft-review.md`.
 
-They are there and not here for two reasons. The first is that they are the executor's material: an orchestrator that reads them keeps them for the rest of the run and gains nothing, because it does not write code. The second is that a paraphrase is a weaker version of the check than the one that was written — and the testing contract is the rule that gets left behind most often, because it reads like guidance rather than an input.
+They are there and not here because they are the executor's material — an orchestrator that reads them keeps them for the rest of the run and gains nothing, since it does not write code — and because a paraphrase is a weaker check than the one that was written. The testing contract is the rule left behind most often, since it reads like guidance rather than an input.
 
 What you still decide, and what does not fit in a shared file:
 
@@ -124,7 +124,7 @@ Every subagent ends by returning exactly this. Put it in the prompt as a require
 ```
 STATUS: DONE | DONE_WITH_CONCERNS | HANDOFF | BLOCKED | NEEDS_CONTEXT
 FILES: созданные и изменённые
-TESTS: команда → результат (например, `npm test` → 34 passed)
+TESTS: команда → результат и сколько было до тебя (`npm test` → 34 passed, было 21)
 INTERFACES: публичные сигнатуры, схемы, форматы событий, которые ты выставил
             — то, чем будут пользоваться следующие таски
 REQUIREMENTS: R01 done | R01.1 placeholder — <чего не хватило>
@@ -183,6 +183,7 @@ In this order, every time:
 3. **Update the manifest** — `in-ticket` → `done` or `placeholder`, commit noted.
 4. **Send the diff to review** — the ticket goes to `review` in `state.js` first, then the Phase 6 checklist runs, by someone who did not write the code (`phases/6-review.md`). What comes back to you is a verdict and a list of findings. The diff itself does not.
 5. **Run the full test suite**, not just the ticket's own tests — and truncate the output: `<тестовая команда> 2>&1 | tail -30`. You need two things from it, green-or-red and the names of what failed, and both survive the truncation; the other two hundred lines are pure leak. A regression introduced now costs minutes; found eight tickets later it costs the evening.
+   **Read the count, not just the colour.** The contract block reports what the suite ran and what it ran before this ticket, and the two numbers are the only floor there is: a `DONE` that added acceptance criteria and no tests is a дозапрос, and a suite reporting zero tests is red however it exits. A green run proves nothing about tests that were never written.
 6. **Red test, or a finding the reviewer marked `BLOCKING` → repair:** the ticket goes to `repair` and its `repairs` count goes up by one, then re-run 4 and 5 over the repair alone — the re-review sees the fix's diff, not the ticket again. Findings *not* marked blocking do not come here: they go to `concerns` in `state.js` and are triaged once in `phases/8-final.md`. **Nothing is committed on red**, and nothing is repaired by you. The rules — which findings go back to whom, what a дозапрос may contain, when a ticket has failed instead, and what to do when the build proves the plan wrong — are in **`phases/5-repair.md`**, opened now and not before: most tickets return `DONE` and never need it.
 7. **Commit** — one commit per ticket, the ticket number in the subject, and only now does the ticket become `done`. These are the user's rollback points.
 8. **Update the instruments** (`phases/7-instruments.md`) — one line of state, one line of the dashboard: the ticket's `finishedAt`, tests and commit, the `requirements` counts, the `build` and `review` stage notes («3 из 5 тасков готовы»), `updatedAt`.
@@ -191,11 +192,11 @@ In this order, every time:
 
 Steps 4 through 6 are where the run is usually lost. Done as written, one ticket costs you a verdict, thirty lines of test output and a contract block. Done by hand — «посмотрю дифф сам, тут же немного» — the same ticket costs you the diff, the test log and every file you opened to fix it, and you pay that eight times.
 
-**Ten steps, but not ten writes to `state.js`.** The list is an order of operations, not a count of edits: batch the state changes the way a wave launch is already batched (`phases/0-instruments.md`). Two writes per ticket is the target — one when it goes to `review`, one at the commit that carries `finishedAt`, the tests, the counts and the stage notes together. Every extra write is a turn, and a turn costs the whole of your context re-read; nine tickets at six writes each is a hundred and thirty turns spent on bookkeeping, which on a T3 run is a quarter of everything you do. The user cannot see the difference — the screen follows either way — so the only thing the extra writes buy is the bill.
+**Ten steps, but not ten writes to `state.js`.** The list is an order of operations, not a count of edits: batch the state changes the way a wave launch is already batched (`phases/0-instruments.md`). Two writes per ticket is the target — one when it goes to `review`, one at the commit that carries `finishedAt`, the tests, the counts and the stage notes together. Every extra write is a turn, and a turn costs the whole of your context re-read; nine tickets at six writes each is a hundred and thirty turns spent on bookkeeping, which on a T3 run is a quarter of everything you do. The user cannot see the difference — the screen follows either way — so the only thing the extra writes buy is the bill. **Everything batches except `startedAt`**, which is worthless in arrears: written together with `finishedAt` it gives the user a clock that never ran, on work that took twenty minutes (`phases/0-instruments.md`). It is the one write that has to happen when the thing starts.
 
 **Steps 4–7 hold up the commit, not the crew.** The list is the order for *this* ticket; it is not a queue the rest of the flight waits in. The moment a ticket returns, the next launchable ticket goes out — and only then do you walk the list for the one that landed. Its review runs while the next ticket is being written, and the wall-clock cost of reviewing everything drops to roughly nothing.
 
-**Step 4 is sent in the same breath as the launch, not at your convenience.** «Отправлю на ревью, как разгребу» is the default way this goes wrong, and it is expensive twice over: the ticket sits finished-but-uncommitted while its dependents wait, and the reviewer you are keeping alive (`phases/6-review.md`) goes cold. A reviewer woken after forty minutes rebuilds its whole prefix from scratch, at write prices rather than read prices — on the run measured for this section, the two reviewers were busy six percent of their lives and paid four to seven times the orchestrator's rate for the privilege of waiting.
+**Step 4 is sent in the same breath as the launch, not at your convenience.** «Отправлю на ревью, как разгребу» costs twice over: the ticket sits finished-but-uncommitted while its dependents wait, and the reviewer you are keeping alive (`phases/6-review.md`) goes cold — woken after forty minutes it rebuilds its whole prefix at write prices instead of read prices. Measured on the run behind this section: the two reviewers were busy six percent of their lives and paid four to seven times the orchestrator's rate for the privilege of waiting.
 
 So the front of the list is: **launch the next ticket, append `interfaces.md`, send the review** — and the manifest, the instruments and the user's line come after. Appending stays ahead of the review because `interfaces.md` is «the only way Reinvention is visible» (`phases/6-review.md`), and from the second ticket onward the reviewer is sent only what the file has grown since: send the review first and it judges this ticket against a map that does not contain it.
 

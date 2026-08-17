@@ -17,7 +17,7 @@ Everything typed after `/autopilot` splits into four parts: **the mode** (option
 | **interview** — режим интервью | `/autopilot interview`, «режим интервью», «погриль меня», «допроси», «задай все вопросы», «разбери задачу со мной», "grill me", "interview me", "ask me everything" | questions, all of them |
 | **manual** — ручной | `/autopilot manual`, «ручной режим», «согласовывай каждый шаг», "approve every step" | the same questions + spec + tickets |
 
-**Why four and not three.** A mode decides two separate things: how much the user is asked about the *product*, and how much of the *process* they approve. Those are different kinds of their time — answering questions is the work, approving artifacts is control over how the work runs — and wanting one without the other is the ordinary case, not an exotic one. `interview` is that case: take the задачу apart with me question by question, then build the rest yourself. `manual` is `interview` plus the two artifact gates, and nothing else.
+A mode decides two separate things — how much the user is asked about the *product*, and how much of the *process* they approve — and wanting one without the other is the ordinary case. `interview` is that case; `manual` is `interview` plus the two artifact gates, and nothing else.
 
 - **Announce the resolved mode and offer the others, once, before Phase 1.** The user must never discover the mode by noticing questions that did or did not arrive — and they cannot ask for a mode they do not know exists. In a chat client there is no `--help` to read: this block is the only place the dials are ever named, so it is not optional.
 
@@ -69,7 +69,7 @@ The rules for each level live in `phases/3-spec.md`.
 |---|---|---|
 | **polish** | `/autopilot polish`, «вылижи», «доведи до идеала», «сравни с эталоном», «не останавливайся, пока не будет как надо», «бюджет не важен, важен результат» | after the blind acceptance, up to three rounds of comparing the running build against the user's own reference and fixing the differences |
 
-**Why this is a third dial and not a value of `depth`.** Depth decides how much is worked out *before* the code exists; polish decides how much is corrected *after* it does. A `strict` brief can deserve a flawless finish, and a `deep` spec can be right the first time. Folding one into the other would tie two independent decisions to one word, which is the same argument that gives this skill four modes instead of three.
+It is a separate dial because depth decides how much is worked out *before* the code exists and polish how much is corrected *after*: a `strict` brief can deserve a flawless finish, and a `deep` spec can be right the first time.
 
 Two things are decided here; everything else — the critic's prompt, the filter, the stop conditions, the bookkeeping — is in `phases/polish.md`, **read only when the parameter is on.**
 

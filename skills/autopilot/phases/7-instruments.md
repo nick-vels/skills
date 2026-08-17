@@ -4,12 +4,7 @@ The user's live view of the build. Not a phase in sequence — raised in Phase 0
 
 **Phase 0's share of this file is not here — it is `phases/0-instruments.md`**: copying the template, the state at the moment it is created, opening the page, and the update ritual that carries the rest of the run. This file is read **when the tickets are cut in Phase 4**, and afterwards only when a detail is actually needed. Reading it in Phase 0 costs six thousand characters in the one context that is never refreshed, to answer questions that arrive four phases later.
 
-Two files, and the split matters:
-
-- **`.autopilot/state.js`** — the truth, and the only thing you ever write. You read it on resume; the user never opens it.
-- **`.autopilot/dashboard.html`** — the only human view. Copied from the template once and **never touched again**. No build step and nothing to generate: it opened in Phase 0 and is already showing whatever you write here.
-
-The page loads `state.js` from beside it and re-loads that file every ten seconds on its own. So there is exactly one place where state lives, one write per update, and nothing that can drift out of sync — because there is no second copy to drift.
+The split is the one Phase 0 set up: `state.js` is the truth and the only thing you write, `dashboard.html` was copied once and is never touched again, and the page re-reads `state.js` by itself every ten seconds.
 
 ## state.js — the full shape
 
@@ -27,6 +22,7 @@ window.STATE =
   "tier": "T2",
   "briefFile": "2026-08-07-brief.md",
   "memoryFile": "AGENTS.md",
+  "skillDir": "/Users/x/.claude/skills/autopilot",
   "startedAt": "2026-08-07T14:02:06+03:00",
   "updatedAt": "2026-08-07T15:31:43+03:00",
   "finishedAt": null,
@@ -57,6 +53,7 @@ window.STATE =
       "finishedAt": "2026-08-07T14:53:26+03:00",
       "retries": 0,
       "repairs": 1,
+      "repairFindings": ["пустой адрес проходит валидацию — R01.1"],
       "handoffs": 0,
       "files": ["src/bot/intake.ts", "src/bot/validate.ts"],
       "tests": { "passed": 34, "failed": 0 },
@@ -73,6 +70,8 @@ window.STATE =
   },
   "additions": ["Номер заявки в подтверждении — ради R01"],
   "coverage": { "found": 2, "fixed": 2, "deferred": 0 },
+  "concerns": ["src/notify.ts:40 — два формата даты в одном модуле"],
+  "reviewers": { "manifestSpec": "rev-ms-1", "craft": "rev-craft-1" },
   "blind": null,
   "polish": null
 }
@@ -82,7 +81,9 @@ Ticket `status`: `pending` · `in-progress` · `review` · `repair` · `done` ·
 
 **Three of those are «идёт прямо сейчас», and the dashboard shows them apart.** A ticket is written, then checked, then sometimes repaired — and since review and repair run while the next ticket is already flying (`phases/5-subagents.md`), collapsing them into one state is what makes the screen answer «готово 2 из 6» while four tickets are in motion. `done` now means one thing only: reviewed, green, committed.
 
-`repairs` counts the дозапросы this ticket needed, the way `retries` counts restarts. Two is the ceiling by rule, and a ticket carrying two is a signal about the cut, not about the executor.
+`repairs` counts the дозапросы this ticket needed, the way `retries` counts restarts. Two is the ceiling by rule, and a ticket carrying two is a signal about the cut, not about the executor. `repairFindings` holds what each one was **for**, one line apiece: a repair condition exists nowhere else on disk, so a ticket that gets handed off mid-repair loses the finding while the counter that paid for it stays spent (`phases/5-subagents.md`).
+
+`concerns` at the top level is the deferred Craft findings — the list `phases/8-final.md` triages once, and the reason the loosening in `phases/6-review.md` was affordable. It sits beside the tickets rather than inside them because tier T0 has no tickets and defers findings all the same. `reviewers` holds the two long-lived reviewers' handles (`phases/6-review.md`), and `skillDir` the path the subagent contracts travel by (`phases/0-instruments.md`) — both are things the orchestrator cannot rebuild from the repository after a compaction, which is the only reason they are written down at all.
 
 `handoffs` counts the times the ticket outgrew a context and was relayed to a fresh one (`phases/5-subagents.md`). **It is not a defect count and must not be shown as one** — nothing was found wrong; the ticket was long. The status stays `in-progress` across a handoff, so the user sees one ticket still being written rather than a ticket that failed and restarted. Two is the ceiling here as well, and a ticket carrying two says the same thing `repairs` does: the cut was too coarse.
 
@@ -130,15 +131,9 @@ The build block earns its place only if the rows are true at a glance, which tak
 - **`startedAt` at launch, `finishedAt` at return** — that is where every per-ticket duration comes from, live for the running ones. The header line («Сейчас: 04 …») is built from the same marks.
 - **`wave`** — rows group by wave, and a wave with more than one ticket is labelled «2 таска параллельно». This is the user's only view of parallelism actually happening.
 
-## Progress bar — how the percentage is built
+## The numbers are computed, not written
 
-The bar at the top is not «tickets done»: it is the whole run, weighted by how long stages actually take (`build` counts for six, `spec` and `review` for two, the rest one each), and inside the build it moves with the share of finished tickets. So it advances with every ticket instead of standing still for hours and jumping at the end.
-
-Two consequences worth knowing: it is not the same number as «покрытие брифа» — one measures the road travelled, the other measures value delivered, and they diverge on purpose — and it can only move forward, which is why a stalled bar means a stage that was never marked, not a build that is stuck.
-
-## Timestamps are the clock
-
-Every timer on the dashboard is computed from these fields — total elapsed, per stage, per ticket, all ticking in real time from the marks you wrote. Nothing is stored as a duration, and nothing is rounded: the rules for writing them are the update ritual in `phases/0-instruments.md`, which you already have.
+Every percentage and every clock is derived from the fields above: nothing is stored as a duration and there is no metric here for you to calculate. Two consequences are worth holding on to — **a stalled progress bar means a stage nobody marked**, not a build that is stuck; and «прогресс» and «покрытие брифа» are different numbers on purpose, one measuring the road travelled and the other the value delivered.
 
 ## Updating — two failure modes
 
@@ -169,33 +164,9 @@ At T0 there are no tickets by design, and a dashboard that shows only a running 
 
 ## What the dashboard shows
 
-The template computes all of this from `STATE`. You supply the facts; it does the arithmetic.
+Everything, from `STATE`: progress and brief coverage, the stage strip, live clocks per stage and per ticket, waves and their width, the debt, the retries and repairs, the chips for «пишутся · на ревью · в ремонте». You supply the facts and it does the arithmetic — there is no metric here for you to compute, and none worth repeating in the chat.
 
-| Metric | Why it earns its place |
-|---|---|
-| **Прогресс проекта, %** | the one number for «сколько осталось до конца» — stages by weight, the build by finished tickets. Answers the question a ticket count cannot: how far along is the *project* |
-| **Покрытие брифа, %** | *The* completion number. Ticket progress measures effort; brief coverage measures value. They diverge, and when they do, this one is right |
-| **Этап сейчас, N из 8** | where the run is in the cycle, and how long it has been there. The first thing a person looks for and the last thing a ticket count answers |
-| **Лента этапов** | the whole cycle at once — what is done, what was skipped and why, what has not started. Works when there are no tickets at all |
-| **Прошло времени** | live, to the second, from `startedAt` |
-| **Осталось по критическому пути** | remaining time is `median × longest remaining chain of blockers`, **not** the sum of what is left. With parallel waves the sum overstates by two or three times |
-| Таски готовы, % | familiar progress, honest about effort. At T0 it says «без разбивки» instead of a fake zero |
-| **Долг: заглушки · допущения · пустые переменные** | decides whether the result is *usable*. 100% of tickets with eight placeholders is not a finished project, and this is the number that says so |
-| Тесты и их дельта по таскам | catches a regression at ticket 3 instead of at the end |
-| Повторы | a ticket that needed a retry is a signal the cut was wrong, not that luck was bad |
-| **Сейчас в работе: какой таск, в какой фазе, сколько уже идёт** | during the build this is the question, and «3 из 8 готово» does not answer it. Each running ticket says whether it is being written, reviewed or repaired — two names with two clocks also make parallel work visible as it happens |
-| **Чипы «пишутся · на ревью · в ремонте»** | the shape of the moment in one line. Review and repair appear only when there are any: zeroes teach nothing and cost a row |
-| Ремонты рядом с повторами | how many дозапросы a ticket needed. Like retries, it says the cut was wrong more often than it says the executor was |
-| **Волны и их ширина** | what is flying together and what is waiting on it — the plan's parallelism, checkable against reality |
-| **Время на каждый таск и каждый этап** | over-cutting made visible: a ticket that took forty minutes of context to produce forty lines should not have existed |
-| Пересечения по файлам | validates parallel waves — an overlap is visible before it becomes a conflict |
-| Расхождения слепой приёмки | at the end: what the manifest calls done and an independent check does not |
-
-## About the estimate
-
-Say what is true: the estimate is the observed median of finished tickets multiplied by the remaining critical path, shown as a range. Agents are bad at predicting wall-clock time up front, and a precise-looking number would be a fabrication. A range built from what actually happened is not.
-
-With fewer than two finished tickets there is no median — the dashboard says «рано считать» rather than guessing.
+One number is worth knowing, because it is the one you might be tempted to improve on: **«осталось» is the median of finished tickets times the remaining critical path, shown as a range**, and below two finished tickets it says «рано считать» instead of guessing. Do not offer the user a sharper number than the dashboard's. A precise-looking wall-clock prediction is a fabrication; a range built from what already happened is not.
 
 ## The one-line report to the user
 

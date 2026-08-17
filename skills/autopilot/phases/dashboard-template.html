@@ -442,7 +442,9 @@ function applyState(){
   if (stamp === lastStamp) return;
   lastStamp = stamp;
   const y = window.scrollY;
-  render(CUR.lang);
+  // Упавший рендер не должен убивать страницу: сбрасываем штамп, чтобы следующий
+  // круг опроса попробовал заново — иначе исправленный state.js уже не подберётся.
+  try { render(CUR.lang); } catch (e) { lastStamp = ''; bootFail(String(e && e.message || e)); }
   window.scrollTo(0, y);
 }
 
@@ -844,6 +846,7 @@ if (typeof STATE === 'undefined' || !STATE || typeof STATE !== 'object') {
     lastStamp = stampOf(STATE);
   } catch (e) {
     bootFail(String(e && e.message || e));
+    pollState();
   }
 }
 

@@ -48,7 +48,7 @@ Its brief:
 | Manifest says | Blind says | Meaning |
 |---|---|---|
 | `done` | реализовано | agreed |
-| `done` | **частично / нет** | 🔴 **drift** — the manifest is wrong. Report it, and fix it if it is small |
+| `done` | **частично / нет** | 🔴 **drift** — the manifest is wrong. Report it; the fix is a ticket or a line in the report, never an edit of your own (§1a) |
 | `placeholder` | частично | expected — confirm the placeholder is visible, not an invented fact |
 | `dropped` / `deferred` | нет | expected — must appear in the report as not built |
 | — | реализовано, но не из брифа | scope that grew without a parent; report it |
@@ -109,7 +109,7 @@ Run the full test suite once more first — truncated, `2>&1 | tail -30`, for th
 
 **Re-read the files. Do not write this from memory.**
 
-By the time you reach this phase your context is the most polluted it has been all run — the brief, the manifest, the briefing, the spec, every phase file, and the returns of every subagent, most of it compacted at least once. The report is the one artifact the user actually reads, and writing it from that is how a `deferred` requirement gets reported as done, a placeholder disappears, and an `A##` nobody ordered turns up in the summary as if they had asked for it.
+By this phase your context is the most polluted it has been all run, and most of it has been compacted at least once. The report is the one artifact the user actually reads, and writing it from memory is how a `deferred` requirement gets reported as done, a placeholder disappears, and an `A##` nobody ordered turns up in the summary as though they had asked for it.
 
 So build each section from its source, opened now:
 
@@ -214,10 +214,12 @@ The open page picks this up by itself within ten seconds — this is the picture
 
 `finishedAt` also stops the clocks and the ten-second polling: the page freezes on the final numbers instead of counting time nobody is spending. Leave it `null` on a finished run and the user's total keeps growing overnight.
 
-**Then, and only then, put out the server** — the one Phase 0 started for the pane (`phases/0-instruments.md`). It goes last because the page has to fetch the final state first, and it goes at all because a run that ends leaving an HTTP server on the user's machine has left something running that nobody will ever think to stop:
+**Then, and only then, put out the server** — the one Phase 0 started for the pane (`phases/0-instruments.md`). It goes last because the page has to fetch the final state first, and it goes at all because a run that ends leaving an HTTP server on the user's machine has left something running that nobody will ever think to stop.
+
+**Last means after the report reaches the user, not in the same breath as `finishedAt`.** The page polls every ten seconds; killing the server in the same turn that wrote the final state means it never fetches it, and the picture the user is left staring at says «в работе» forever — the exact failure this whole section exists to prevent, arriving from the other side. Writing the report is what buys the time, so put the kill after it:
 
 ```bash
-[ -f .autopilot/serve.pid ] && kill "$(cut -d' ' -f2 .autopilot/serve.pid)" 2>/dev/null; rm -f .autopilot/serve.pid
+[ -f /tmp/autopilot-serve.pid ] && kill "$(cut -d' ' -f2 /tmp/autopilot-serve.pid)" 2>/dev/null; rm -f /tmp/autopilot-serve.pid
 ```
 
 The pane keeps the final picture on screen — it is already rendered and no longer polling. Nothing is lost with the port: `dashboard.html` is a static file, and a double-click reopens it in a real browser with every number intact. Say nothing about any of this; the shutdown is not news. If доводка is running (`phases/polish.md`), the run is not over — the server stays up until the доводка closes too.

@@ -2,7 +2,7 @@
 
 **Read this file at three moments, and not otherwise:** when a gate fails (G1–G4), when you catch yourself building an argument for skipping something, and once before writing the final report. It is a checklist, not an instruction — nothing here tells you how to do a phase, and everything here tells you how a phase goes wrong.
 
-It lives outside `SKILL.md` for the reason `SKILL.md` explains about the unit of loading: fifteen thousand characters of failure modes, resident from the first turn in the one context that is never refreshed, is paid for on every step of the run to answer questions that arrive at three of them. The five rules that must never be broken are in `SKILL.md` and stay there; this is the long tail.
+The five rules that never lose are in `SKILL.md` and stay there. This is the long tail.
 
 ## Rationalizations — the ones that cost the user the product
 
@@ -13,14 +13,11 @@ Phase-specific mechanics are not here; they live in the phase that owns them. Wh
 | «Пользователь сказал не задавать вопросов» | Он сказал не задавать ЛИШНИХ. Решающие вопросы — часть работы, не обсуждение процесса. |
 | «KISS — просто собери» | Простой результат даёт порядок, а не пропуск этапов. Без спецификации каждая правка — «а я имел в виду другое». |
 | «Бриф весь в диалоге, зачем его переписывать в файл» | Диалог сжимается, и бриф в нём — самое старое. Через три фазы ты будешь синтезировать по пересказу пересказа. |
-| «Это требование явно неважное, пропущу» | Важность требований определяет пользователь. Ты можешь предложить `deferred` — вычеркнуть может только он. |
-| «Пользователь про это больше не вспоминал — значит, отменил» | Молчание не отменяет. Отмена — это его слова, записанные в манифест цитатой. |
+| «Требование неважное» / «он про это больше не вспоминал — значит, отменил» | Важность определяет пользователь, а молчание не отменяет. Предложить `deferred` можешь ты; вычеркнуть — только он, своими словами, цитатой в манифест. |
 | «Сделаю заглушку, уточнит потом» | Блокирующие неизвестные (оплата, хостинг, аккаунты) решаются в брифинге — в полном автомате в self-briefing, — но всегда до билда. |
-| «Пусть пришлёт ключ, я вставлю в код» | Ключи вставляет пользователь и только в `.env`. Ты работаешь с именем переменной. |
-| «Ключ уже в контексте, значит, можно записать» | Наоборот: значит, надо отредактировать и предупредить. Контекст — не разрешение. |
+| «Пусть пришлёт ключ, я вставлю» / «ключ уже в контексте — значит, можно записать» | Ключи вставляет пользователь и только в `.env`; ты работаешь с именем переменной. Ключ, оказавшийся в контексте, — повод отредактировать и предупредить, а не разрешение. |
 | «Быстрее всё сделать в одном контексте» | Быстрее в первый час. Дальше модель ходит кругами и ломает работавшее. |
-| «Исполнитель написал, что не смог, — доделаю сам, я же в контексте» | Ты в контексте всего прогона — поэтому и нельзя. Каждая правка твоими руками оставляет у тебя дифф до конца сборки и ухудшает каждый следующий таск. Не смог — значит, дозапрос ему или свежий контекст, но не твои руки. |
-| «Тут правки на две строки — гонять субагента дороже» | Дороже этому таску. Платят все следующие: контекст оркестратора тратится один раз и не возвращается. К восьмому таску разница — между «собрал» и «сломал работавшее». |
+| «Исполнитель не смог — доделаю сам, я же в контексте» / «тут правки на две строки, гонять субагента дороже» | Дороже этому таску — платят все следующие. Твой контекст тратится один раз и не возвращается: правка твоими руками лежит в нём до конца сборки. Не смог — дозапрос ему или свежий контекст, но не твоя клавиатура. |
 | «Бриф краткий — значит, и спецификация краткая» | Бриф — силуэт: пользователь описал happy path и не описал ни пустых состояний, ни ошибок, ни обрывов. На нормальной и максимальной глубине продумать их — твоя работа. |
 | «Это и так очевидно, писать не буду» | Очевидное тебе — не зафиксировано, и каждый субагент додумает его по-своему: три исполнителя — три разные «очевидности». Манифест и спецификация — единственные точки сверки. |
 | «Придумал полезную фичу, добавлю» | Углубление заказанного (`R##.n`) — да. Новая возможность (`A`) — только с родительским требованием, в пределах пропорции и в отчёт. На `strict` — нельзя вообще. |
@@ -28,8 +25,7 @@ Phase-specific mechanics are not here; they live in the phase that owns them. Wh
 | «В полном автомате можно додумать за пользователя всё» | Решения — да, и все в ASSUMPTIONS. Факты о пользователе (цены, тексты, аккаунты) — нет: заглушка и строка в отчёте. |
 | «Напишу "запускаю через 60 секунд"» | Ты не умеешь ждать — обещанной паузы не будет. Честная формулировка: «начинаю, скажи стоп». |
 | «В ручном режиме тоже начну и подожду возражений» | В ручном согласование — это явное «ок». Молчание им не является, начатая работа тем более. |
-| «Сверю результат со спецификацией, этого хватит» | Спецификация может уже потерять требование. Финальная сверка идёт с брифом и без спецификации — иначе она подтвердит собственную ошибку. |
-| «Покрытие проверю сам — я же только что писал спецификацию» | Тот, кто писал, не видит, чего не написал. На G2 бриф и спецификацию читает субагент, которому не дают ни манифеста, ни разговора. |
+| «Сверю со спецификацией, этого хватит» / «покрытие проверю сам — я же её и писал» | Тот, кто писал, не видит, чего не написал, а спецификация может уже потерять требование. На G2 и G4 читает субагент — по брифу, без спеки и без манифеста, — иначе проверка подтверждает собственную ошибку. |
 | «Правило про тесты записано в фазе — значит, оно действует» | Действует только то, что доехало в промпт исполнителя. Фазовый файл читает оркестратор, а код пишет не он. |
 | «Интерфейсы устаканятся по ходу — первый таск задаст» | Тогда их задаст тот, кто видел одну восьмую задачи. Границы модулей решаются до нарезки, иначе восемь контекстов договариваются задним числом. |
 | «Отчёт напишу по памяти — я же всё это и делал» | К восьмой фазе твой контекст самый загрязнённый за весь прогон. Отчёт собирается из `manifest.md` и `state.js`, перечитанных с диска. |
@@ -54,9 +50,8 @@ Every line here means something the user asked for is at risk. Phase mechanics �
 - Spec or tickets that exist only in the dialogue — nothing written under `.autopilot/`.
 - Instruments that disagree with the chat: a stage still `active` after you moved on, a ticket running while the dashboard calls it `pending`, a ticket carrying the run's `startedAt` instead of its own, timestamps filled in afterwards from memory. The user believes the screen over your sentences, which is the whole reason it exists.
 - The announced depth and the actual spec diverge: a bare restatement of the brief at normal or deep, or an invented capability — any `A##` — at strict.
-- Gate G2 passed on your own reading of your own spec — the independent coverage check skipped, or its checker handed the manifest.
-- Final acceptance measured against the spec instead of blind against the brief.
-- The blind checker, the coverage checker or the memory subagent handed `spec.md`, the manifest or the tickets — whichever of those it was supposed to be blind to, or left free to open `.autopilot/` for itself. Independence is the entire mechanism; without it each of them confirms the plan instead of the thing.
+- G2 or G4 judged by you instead of by a subagent: your own reading of your own spec, or a final acceptance measured against the spec rather than blind against the brief.
+- A blind checker, coverage checker or memory subagent handed `spec.md`, the manifest or the tickets — or left free to open `.autopilot/` for itself. Independence is the entire mechanism; without it each confirms the plan instead of the thing.
 - The final report composed from memory instead of from `manifest.md`, `state.js` and the two subagents' returns, re-read from disk.
 - A T2+ run that ended with no ADR: every `D##` and every load-bearing implementation decision left to die with `.autopilot/`.
 - The finished project was never actually run — accepted on green tests and a reading of the code.

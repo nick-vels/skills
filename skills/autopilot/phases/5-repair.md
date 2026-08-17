@@ -27,10 +27,11 @@ A ticket comes back imperfect in two very different ways, and telling them apart
 Тест `parses empty address` красный:
 <последние 10 строк вывода>
 
-Почини так, чтобы он проходил. Больше ничего не трогай.
-Верни контракт заново.
+Назови причину одной строкой, потом чини — так, чтобы тест проходил.
+Больше ничего не трогай. Верни контракт заново.
 ```
 
+- **The cause first, then the fix — one line of it, in the дозапрос.** A repair that starts at the symptom fixes the symptom: the same defect returns two tickets later through a different door, and by then the `repairs` counter is spent. If the executor cannot name a cause, that is `BLOCKED`, not a workaround. **A weakened or deleted assertion is not a repair** — the re-review sees the fix's diff and this is the first thing it is looking at.
 - **Two дозапроса into one context, then it stops being the cheap option.** By the third the context is no longer the fresh one that made this worth doing, and the repair moves to the right-hand column: new context, changed approach. That is the same rule as for a failed ticket, because by then it is one.
 - **State the finding as a condition, never as «поправь».** «Сделай получше» is an invitation to rewrite what already worked. Every repair names something checkable: this test green, this field visible, this error handled.
 - **The repair returns the contract block again** — new `FILES`, new `TESTS`. A repair that returns nothing is a ticket you cannot honestly commit.

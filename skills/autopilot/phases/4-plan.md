@@ -6,11 +6,9 @@ Before cutting anything, understand what a cut costs.
 
 ## The cost of a boundary
 
-Every ticket boundary is a fresh context that has to fly in from nothing: read the interfaces, explore the code, work out the stack, find the test command. Call it 20–40k tokens of pure re-orientation before a single line gets written. And the subagent runs a review at the end, which is more contexts again.
+Every ticket boundary is a fresh context flying in from nothing — read the interfaces, explore the code, find the test command: 20–40k tokens of re-orientation before a line is written, plus a review at the end. So a ticket is worth creating **only when the work inside it is bigger than its own boundary**; one carrying eighty words of instruction pays full price and delivers a fraction of the value.
 
-So a ticket is worth creating **only when the work inside it is bigger than its own boundary**. A ticket carrying eighty words of instruction pays full price for a boundary and delivers a fraction of the value.
-
-This is the mistake to avoid, and it is not the obvious one. Cutting too fine feels careful. It is the opposite: each extra boundary is another chance for two subagents to disagree about an interface, and another whole context spent re-learning the project. **Fewer, denser tickets beat more, thinner ones** — every time.
+The mistake to avoid is not the obvious one. Cutting too fine feels careful and is the opposite: each extra boundary is another chance for two subagents to disagree about an interface, and another context spent re-learning the project. **Fewer, denser tickets beat more, thinner ones** — every time.
 
 ## The tier budget
 
