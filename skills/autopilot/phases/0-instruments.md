@@ -14,14 +14,14 @@ The page loads `state.js` from beside it and re-loads that file every ten second
 **The path matters far beyond this copy.** `prompts/executor.md` and `prompts/craft-review.md` go down to every subagent **as paths** (`phases/5-subagents.md`, `phases/6-review.md`), and there is no way to derive one after a compaction. So resolve it once, here, and put it in `state.js` as `skillDir` — the two contracts that decide how the code is written and how it is judged both hang off this one line.
 
 ```bash
-TPL=$(ls ~/.claude/skills/autopilot/phases/dashboard-template.html \
-        ~/.claude/plugins/*/skills/autopilot/phases/dashboard-template.html \
-        .claude/skills/autopilot/phases/dashboard-template.html \
-        .agents/skills/autopilot/phases/dashboard-template.html 2>/dev/null | head -1)
+TPL=$(find -L ~/.claude/skills ~/.agents/skills ~/.claude/plugins .claude/skills .agents/skills \
+        -maxdepth 6 -name dashboard-template.html 2>/dev/null | head -1)
 cp "$TPL" .autopilot/dashboard.html && echo "skillDir = ${TPL%/phases/*}"
 ```
 
-Empty output means the skill sits somewhere that list does not cover — `find ~/.claude . -name dashboard-template.html` once, then carry on. Never regenerate the template, never read it into context, never edit it after the copy.
+**`find -L`, and no `*` anywhere in it** — both parts are load-bearing, and each was measured on 2026-08-17. Skills are installed as symlinks (`~/.claude/skills/autopilot` → `~/.agents/skills/autopilot`), and a plain `find` does not follow one, so it reports nothing while the file sits right there. A `plugins/*/` glob is worse: in zsh an unmatched glob aborts the whole command before it runs, so the search never happens and `skillDir` comes out empty — in bash the same line works, which is exactly what makes it hard to notice.
+
+Empty output means the skill lives somewhere none of those five roots cover: widen the search once, by hand, and carry on. Never regenerate the template, never read it into context, never edit it after the copy.
 
 ## 2. Write `.autopilot/state.js`
 
