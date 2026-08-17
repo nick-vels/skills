@@ -18,18 +18,38 @@ Freshness is not smallness. A subagent that starts clean and then runs three hun
 
 The arithmetic is what decides it. What a run pays for reading is `число шагов × средний контекст`, and the average is roughly half of whatever ceiling the executor is allowed to reach — so **doubling the ceiling doubles the bill**, while splitting the same work across two contexts costs one extra cold start. The setup is tens of thousands of tokens; the reading it saves is millions. Measured on a T3 run: nine executors averaging 200 K spent 392 M tokens on reading, where a 120 K ceiling would have spent 161 M for twenty extra starts.
 
-So the executor is given a ceiling, and it travels **in its prompt**, like everything else it must obey:
+**Count what the executor can count.** It cannot see its own context size, and «правок» is the wrong unit — a ticket that reads forty files and edits nine is far past any ceiling while its edit count says otherwise. What it can count is its own **tool calls**: every read, every edit, every command. Measured across those nine executors, one call costs about 1 900 tokens of context, so **fifty calls is roughly 120 K** — and the spread across tickets (29 to 68) is exactly why the number permits rather than commands.
+
+The whole rule travels **in the prompt**, format included. Nothing about a handoff may live only in this file: the executor writing that file has never read it.
 
 ```
-Ты работаешь до конца таска, но не бесконечно. Если ты сделал около
-семидесяти правок и прогонов — остановись на ближайшем зелёном прогоне,
-не начиная следующий критерий приёмки, и верни `STATUS: HANDOFF`
-вместо `DONE`, записав передачу в файл (формат — в контракте возврата).
+Ты работаешь до конца таска, но не бесконечно. Считай свои вызовы
+инструментов — чтения, правки, команды. Дошёл до пятидесяти —
+останавливайся на ближайшем зелёном прогоне, не начиная следующий
+критерий приёмки: верни `STATUS: HANDOFF` вместо `DONE` и запиши
+передачу в `.autopilot/<slug>/handoff-<NN>-<номер передачи>.md`
+(например `handoff-05-1.md`), а путь назови в `FILES`.
+
+Формат передачи — пятнадцать строк, без кода:
+
+СДЕЛАНО: какие критерии приёмки закрыты, какие нет
+ФАЙЛЫ:   что готово, что начато и в каком состоянии
+РЕШЕНИЯ: что решено по ходу и почему — иначе преемник решит иначе
+ТУПИКИ:  что пробовал и отверг, чтобы преемник не потратил те же шаги
+ДАЛЬШЕ:  следующий критерий и шов, на котором он стоит
+
+Если зелёного прогона добиться не удаётся, потолок отменяется:
+доводи до зелёного или возвращай `BLOCKED`. Передавать красное дерево
+нельзя — преемник примет поломку за свою и будет искать её в своём коде.
 ```
 
-**The count permits; the green run decides.** A hard stop at a counter lands mid-edit, and the successor spends its first twenty steps working out what was going on — which is the whole cost this was meant to remove. A ticket that has just gone green is a seam: the suite passes, and everything unfinished is named in the acceptance criteria instead of in someone's head. Seventy is calibration, not a target — it is roughly 120 K at the token growth these runs show, and a ticket that finishes at fifty steps simply never reaches it.
+**The count permits; the green run decides.** A hard stop at a counter lands mid-edit, and the successor spends its first twenty calls working out what was going on — which is the whole cost this was meant to remove. A ticket that has just gone green is a seam: the suite passes, and everything unfinished is named in the acceptance criteria instead of in someone's head. A ticket that finishes at thirty calls simply never reaches the ceiling, and most do.
 
-**Two handoffs per ticket, then stop relaying.** A ticket needing a fourth context is not an executor's failure — it is Phase 4 having cut too coarsely, and it goes to the final report as a note on the plan. Without a ceiling on the ceiling a badly cut ticket relays forever and nobody finds out why the run cost what it did.
+**The three lines that pay for the handoff are `РЕШЕНИЯ`, `ТУПИКИ` and `ДАЛЬШЕ`.** The code on disk already says what was built; only these say why it was built that way, what has already been ruled out, and where the seam is. A handoff missing them produces a second design of the same thing — the *Reinvention* smell in `prompts/craft-review.md`, arriving through a door this section opened.
+
+**At tier T0 the ceiling does not apply to you** — you are the crew and there is nobody to relay to, and rule 5 forbids the only alternative. That is one more cost of T0, affordable for the same reason the rest of it is: a T0 run ends before the context fills. If it does not — if you are fifty calls in and the end is not in sight — the tier was read wrong, and the honest move is to say so and cut tickets, not to keep typing.
+
+**Two handoffs per ticket, then stop relaying.** The third context finishes the ticket or returns `BLOCKED` — it does not relay again. A ticket that needs a fourth is not an executor's failure but a Phase 4 cut that was too coarse: record it in `state.js` under `concerns` and carry it to the final report as a note on the plan, the same way a structural Craft finding travels (`phases/6-review.md`). Without a ceiling on the ceiling a badly cut ticket relays forever and nobody finds out why the run cost what it did.
 
 ## Your hands
 
@@ -51,18 +71,20 @@ So the material never reaches you. What reaches you is a verdict, a list of name
 
 | | |
 |---|---|
-| `interfaces.md` | the boundaries from the spec, plus what previous tickets built — read in full, first |
-| its ticket file path and body | including the verbatim brief quotes |
-| the spec sections its ticket names | not the whole spec |
+| `interfaces.md` | by path — the boundaries from the spec, plus what previous tickets built; read in full, first |
+| its ticket | **by path only.** The ticket file already contains the verbatim brief quotes; sending the body as well means the run pays for the same words twice |
+| the spec sections its ticket names | by path **and section headings** — `spec.md`, разделы «Приём заявки», «Валидация». Not the whole spec, and not the sections pasted: naming them is what keeps the executor out of the rest of the document |
 | the test command and how to run one file | so it does not have to derive them |
 | **the testing contract**, verbatim | the block below — it is what makes the tests worth having |
 | **the context ceiling**, verbatim | the block above — without it the ticket runs until it stops, and that is the single most expensive thing in the flight |
 | the working directory and stack constraints | including what it must not touch |
 | variable **names** for any credential | never a value, ever |
 | the return contract | the block below, as a requirement, not a suggestion |
-| the path to `handoff-<NN>.md` | **only when continuing a handed-off ticket** — as a path, never pasted |
+| the paths to `handoff-<NN>-*.md` | **only when continuing a handed-off ticket** — all of them, oldest first, as paths, never pasted |
 
 **Paths, not contents — for everything on this list that lives in a file.** The ticket, the spec sections, `interfaces.md`, a handoff: a subagent has a filesystem and can read. Pasting the material instead writes it twice into the run's bill — once as your output, then on every subsequent turn of your own context, which is the one that is never refreshed. The exceptions are the two verbatim blocks above, which exist nowhere the executor can reach, and any harness where a subagent genuinely cannot open a file.
+
+**This is a rule about executors, and it does not reach the blind checks.** G2 and G4 work because a subagent has *not seen* the spec — and «can read» cuts both ways: `.autopilot/` is committed and sits in the repository the checker is pointed at, so not sending a file is no longer the same as withholding it. A blind check therefore needs the prohibition stated to it, not merely honoured by you: **«не открывай `.autopilot/` — ни спецификацию, ни манифест, ни таски»**, in its own prompt (`phases/3-spec.md`, `phases/8-final.md`). Independence you can only observe is independence you have already lost.
 
 **A rule that lives only in this file does not exist.** These phase files are read by the orchestrator; the code is written by someone who never sees them. Anything the executor must do has to travel in its prompt — and the testing contract is the one that gets left behind most often, because it reads like guidance rather than an input.
 
@@ -87,9 +109,16 @@ So the material never reaches you. What reaches you is a verdict, a list of name
 
 Пустой catch, захардкоженный happy path и тест, подтверждающий сам себя, —
 это невыполненный критерий приёмки, а не выполненный.
+
+Прогоняй тесты с усечением вывода: `<тестовая команда> 2>&1 | tail -30`.
+Тебе нужны две вещи — зелёный или красный и имена упавших, — и обе
+выживают после усечения. Остальные двести строк ты будешь перечитывать
+на каждом следующем шаге до конца таска.
 ```
 
 At tier T0 you are the executor, so this block applies to you directly.
+
+**That last paragraph is the one most often left out, and it is pure leak when it is.** The truncation rule used to live only in the orchestrator's checklist below — while the tests are run by executors, hundreds of times, in contexts the orchestrator never sees. A rule about test output belongs wherever tests are run, and that is here.
 
 ## interfaces.md — the shared contract
 
@@ -149,21 +178,21 @@ BLOCKERS: чего не хватило (зависимость, решение, 
 
 ### `HANDOFF` — the ticket continues in the next context
 
-`HANDOFF` is not a failure and not a repair. The work is sound as far as it got, the suite is green, and the ticket is simply longer than one context should be. Along with the contract block the executor writes **one file**, `.autopilot/<slug>/handoff-<NN>.md`, and names its path in `FILES`:
+`HANDOFF` is not a failure and not a repair. The work is sound as far as it got, the suite is green, and the ticket is simply longer than one context should be. The executor's side of it — when to stop, what to write, where — is the ceiling block at the top of this file, and it goes out **in the prompt**. What follows is your side.
 
-```
-СДЕЛАНО: какие критерии приёмки закрыты, какие нет
-ФАЙЛЫ:   что готово, что начато и в каком состоянии
-РЕШЕНИЯ: что решено по ходу и почему — иначе преемник решит иначе
-ТУПИКИ:  что пробовал и отверг, чтобы преемник не потратил на это те же шаги
-ДАЛЬШЕ:  следующий критерий и шов, на котором он стоит
-```
+**Verify the green before you relay.** The executor's word is the only evidence you have that the tree is clean, and it ran the suite from inside the context that just spent fifty calls. Run the full suite yourself, truncated as in step 5 below, *before* launching the successor. A red tree relayed forward is the worst thing this section can produce: the successor inherits a failure it did not cause, spends its fresh context hunting it in its own code, and the regression surfaces two tickets later with three possible authors.
 
-Fifteen lines, no code. **The successor is a normal executor**, not a repair: it gets everything the first one got — `interfaces.md`, the ticket, its spec sections, the testing contract, the ceiling — plus this file's path. Nothing is pasted into your context; you forward a path, the same way you forward `prompts/craft-review.md`. The material would cost you what a diff costs, and buy the same nothing.
+**The successor is a normal executor, not a repair.** It gets everything the first one got — `interfaces.md`, the ticket, its spec sections, the testing contract, the ceiling — plus the path to the handoff file. Its counter starts at zero. Nothing is pasted into your context: you forward a path, the same way you forward `prompts/craft-review.md`.
 
-The three lines that matter are `РЕШЕНИЯ`, `ТУПИКИ` and `ДАЛЬШЕ`: the code on disk already says what was built, and only these say *why it was built that way*, what has already been ruled out, and where the seam is. A handoff missing them produces a second design of the same thing — the *Reinvention* smell in `prompts/craft-review.md`, arriving through a door the framework opened itself.
+**Each relay writes its own file** — `handoff-05-1.md`, then `handoff-05-2.md` — and the successor gets **all** of them, oldest first. One file per ticket lets the second relay overwrite the first, and with it every dead end the first executor paid to find; the third context then rediscovers them at full price.
 
-In `state.js` the ticket stays `in-progress` across a handoff and its `handoffs` count goes up by one. It is not `repair`: nothing was found wrong, and a run that counts handoffs as repairs will read its own dashboard as a quality problem.
+**`INTERFACES` from a handoff is provisional.** Append it as usual, but a successor may legitimately change a signature its predecessor declared mid-work — that declaration was made at a seam, not at a finish. When the successor's block contradicts it, **replace the block instead of appending a second one**: two «Из таска 05» sections with different signatures is a file that contradicts itself, and every parallel ticket reads it. This is the one place where a later return overwrites an earlier one rather than accumulating.
+
+**A дозапрос carries the ceiling too.** A repair request landing in a context already near the ceiling may itself come back `HANDOFF` — and then the successor needs the finding as well as the paths, because a repair condition exists nowhere on disk. Send the условие verbatim along with the handoff paths, or the successor finishes the ticket honestly and never fixes what review found, while `repairs` has already been spent.
+
+In `state.js` the ticket stays `in-progress` across a handoff and its `handoffs` count goes up by one; `startedAt` is **not** rewritten — the ticket's clock covers the whole ticket, and resetting it on relay hides exactly the coarse cut the counter exists to expose. It is not `repair`: nothing was found wrong, and a run that counts handoffs as repairs reads its own dashboard as a quality problem.
+
+**Review still judges the whole ticket, not the last context.** When the final context returns `DONE`, what goes to review is the diff since the last commit — not the `FILES` of the returning executor, which lists only its own share. One ticket, one commit, one review: the handoffs are invisible to the reviewer by design, and a reviewer shown only the last third would pass a ticket whose first two thirds nobody read.
 
 ## Order of flight — waves, not one at a time
 
@@ -188,7 +217,8 @@ For a wave, that is **one state write for the whole wave**, before the launch me
 
 In this order, every time:
 
-1. **Read the contract block.** No block → the ticket is not finished; ask the subagent for it. **`HANDOFF` skips this whole list**: append whatever interfaces it declared, bump `handoffs` in `state.js`, and launch the successor. Nothing else — no review, no commit, no user line. The ticket is mid-flight, and a half-ticket has nothing a reviewer can judge against its acceptance criteria.
+1. **Read the contract block.** No block → the ticket is not finished; ask the subagent for it. A block longer than the limit it was given is not read either: ask for it again in one line, because an essay you skim once you then re-read on every remaining turn of the run.
+   **`HANDOFF` takes a different path — steps 5, 1 and 2 only:** run the full suite yourself (step 5) to confirm the tree really is green, append whatever interfaces were declared, bump `handoffs` in `state.js`, and launch the successor with the handoff paths. No review, no commit, no user line, and the ticket stays `in-progress`. The ticket is mid-flight: a third of a ticket has nothing a reviewer can judge against acceptance criteria, and its review happens once, on the whole diff, when the last context returns `DONE`.
 2. **Append to `interfaces.md`.**
 3. **Update the manifest** — `in-ticket` → `done` or `placeholder`, commit noted.
 4. **Send the diff to review** — the ticket goes to `review` in `state.js` first, then the Phase 6 checklist runs, by someone who did not write the code (`phases/6-review.md`). What comes back to you is a verdict and a list of findings. The diff itself does not.
@@ -203,7 +233,9 @@ Steps 4 through 6 are where the run is usually lost. Done as written, one ticket
 
 **Steps 4–7 hold up the commit, not the crew.** The list is the order for *this* ticket; it is not a queue the rest of the flight waits in. The moment a ticket returns, the next launchable ticket goes out — and only then do you walk the list for the one that landed. Its review runs while the next ticket is being written, and the wall-clock cost of reviewing everything drops to roughly nothing.
 
-**Step 4 is sent in the same breath as the launch, not at your convenience.** «Отправлю на ревью, как разгребу» is the default way this goes wrong, and it is expensive twice over: the ticket sits finished-but-uncommitted while its dependents wait, and the reviewer you are keeping alive (`phases/6-review.md`) goes cold. A reviewer woken after forty minutes rebuilds its whole prefix from scratch, at write prices rather than read prices — on the run measured for this section, the two reviewers were busy six percent of their lives and paid four to seven times the orchestrator's rate for the privilege of waiting. Dispatch the next ticket, dispatch the review, then do the bookkeeping.
+**Step 4 is sent in the same breath as the launch, not at your convenience.** «Отправлю на ревью, как разгребу» is the default way this goes wrong, and it is expensive twice over: the ticket sits finished-but-uncommitted while its dependents wait, and the reviewer you are keeping alive (`phases/6-review.md`) goes cold. A reviewer woken after forty minutes rebuilds its whole prefix from scratch, at write prices rather than read prices — on the run measured for this section, the two reviewers were busy six percent of their lives and paid four to seven times the orchestrator's rate for the privilege of waiting.
+
+So the front of the list is: **launch the next ticket, append `interfaces.md`, send the review** — and the manifest, the instruments and the user's line come after. Appending stays ahead of the review because `interfaces.md` is «the only way Reinvention is visible» (`phases/6-review.md`), and from the second ticket onward the reviewer is sent only what the file has grown since: send the review first and it judges this ticket against a map that does not contain it.
 
 What this does not buy is a shortcut: the ticket is still committed only after its review and a green suite. Nothing lands unreviewed because something else was in flight; the review simply stopped being the thing everyone waits for. The one ordering that stays strict is a ticket whose dependents are pending — do not launch a dependent on an unreviewed parent, because a finding there invalidates the ground the dependent is standing on.
 

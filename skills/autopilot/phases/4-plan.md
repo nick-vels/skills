@@ -101,10 +101,11 @@ The moment the ticket files exist, **every ticket goes into `state.js` and into 
 
 ```json
 { "id": "04", "title": "Панель мастера: очередь заявок", "requirements": ["R04", "R04.1"],
-  "blockedBy": ["02"], "wave": 3, "zone": ["src/admin/"], "status": "pending", "retries": 0 }
+  "blockedBy": ["02"], "wave": 3, "zone": ["src/admin/"], "status": "pending",
+  "retries": 0, "repairs": 0, "handoffs": 0 }
 ```
 
-`status: "pending"`, no timestamps yet — they come when the ticket launches. This is one edit, and it is what turns the dashboard from «таски ещё не нарезаны» into the whole plan with its waves, visible before a line of code is written.
+`status: "pending"`, no timestamps yet — they come when the ticket launches. The three counters start at zero **here**, not on first use: a field created halfway through the run is a field somebody increments from `undefined`, and on a dashboard that does not render it the resulting `NaN` is never seen by anyone. This is one edit, and it is what turns the dashboard from «таски ещё не нарезаны» into the whole plan with its waves, visible before a line of code is written.
 
 **A build running while the dashboard still says the tickets were never cut is broken instruments**, and it breaks them at the exact moment the user is most likely to look. The count, the waves, the «ход сборки» block and the honest progress bar all read from this array — nothing on the dashboard can show what was never written. See `phases/7-instruments.md`.
 

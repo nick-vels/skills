@@ -16,6 +16,8 @@ So the last check does not use the spec.
 
 **It must not receive:** `spec.md`, `manifest.md`, the tickets, or any summary of them. A checker given the spec inherits the spec's blind spots and will confirm them. Independence is the entire mechanism — take it away and this phase is theatre.
 
+**Not sending them is no longer enough — say it in the prompt.** `.autopilot/` is committed and sits in the repository you just handed over, with a `README.md` explaining what each file is; a checker that opens `spec.md` «чтобы понять контекст» has broken the gate without disobeying anything you wrote. One line closes it: **«не открывай `.autopilot/` — ни спецификацию, ни манифест, ни таски; сверяйся только с брифом и с тем, что реально работает»**. The same line belongs in the G2 coverage check (`phases/3-spec.md`) and in the memory agent's prompt below, for the same reason.
+
 Its brief:
 
 > Прочитай приложенный файл брифа — это задача, которую поставил заказчик. Затем изучи
@@ -99,7 +101,7 @@ So build each section from its source, opened now:
 | Что нужно от тебя | `manifest.md` `placeholder` rows + `state.js` → `debt` |
 | Что не вошло | `manifest.md` `deferred` and `dropped` rows, with their quotes |
 | Что я добавил сверх заказанного | `state.js` → `additions`, cross-checked against `A##` in the spec |
-| Что пошло не по плану | every `D##` row in `manifest.md` |
+| Что пошло не по плану | every `D##` row in `manifest.md`, plus any ticket whose `handoffs` reached 2 — that is the plan reporting its own coarse cut, and it is the only place the counter is ever read |
 | Открытые вопросы | `state.js` → `blind`, plus anything in `coverage` that ended up not built |
 | Запустить / Где что лежит | `state.js` → `memoryFile`, `briefFile`, and the commands the memory agent verified |
 

@@ -199,8 +199,14 @@ So spawn a subagent. It receives **exactly two files** — `<дата>-brief.md`
 
 **It must not receive:** `manifest.md`, the conversation, the briefing answers, or any summary of them. The manifest is your reading of the brief; hand it over and you have asked someone to check your reading against itself.
 
+**And it must be told not to go looking.** Both files live in `.autopilot/`, next to the manifest, under a `README.md` that explains what the manifest is — so a checker curious about «как это отслеживают» finds your reading in one step, without disobeying a word of the above. The first line of its brief is therefore a prohibition, not an instruction.
+
 Its brief:
 
+> Открой ровно два названных файла и больше ничего — ни `manifest.md`,
+> ни остальное содержимое `.autopilot/`. Твоя ценность здесь в том, что ты
+> не видел, как автор спецификации читал задачу.
+>
 > Прочитай два файла. Первый — задача, как её поставил заказчик своими словами.
 > Второй — спецификация, написанная по этой задаче.
 >
