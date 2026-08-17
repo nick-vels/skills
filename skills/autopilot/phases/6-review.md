@@ -75,10 +75,14 @@ AXIS: manifest | spec | craft
 VERDICT: clean | findings
 FINDINGS: <ось> · <файл:строка> · что не так · какое условие должно выполняться
           — одно предложение на находку, условием, а не пожеланием
-BLOCKING: какие из находок мешают коммиту
+BLOCKING: только требование не доставлено, выдуманный факт о пользователе,
+          лишняя поверхность из спеки или красный прогон — и ничего больше.
+          Нечего блокировать — пиши `нет`, это нормальный и частый ответ.
 ```
 
 **Не больше 20 строк, без кусков кода и без диффа.** A finding phrased as a condition can be forwarded to the executor as a дозапрос unchanged; a finding phrased as «стоило бы аккуратнее» has to be rewritten by you before it can go anywhere, and rewriting it means reading the diff — which is the whole thing this arrangement exists to avoid.
+
+**Tell the reviewer what `BLOCKING` costs, in its prompt.** It is not a severity rating for its own use: everything it lists there becomes a дозапрос plus a re-review, and everything it leaves out still reaches the user in the report. A reviewer that does not know this hedges upward — listing anything it feels strongly about — and the run pays a repair cycle per feeling.
 
 ## Axis 1 — Manifest
 
@@ -117,11 +121,28 @@ What stays here is the part you decide:
 
 ## What to do with findings
 
-**Every "fix" below happens in the ticket, not in the orchestrator and not in the reviewer.** A finding goes back to the executor that wrote the code, as a **дозапрос** stating the condition — `phases/5-subagents.md`. The reviewer judged and is done; a reviewer that also repairs is a check that has stopped being one. Two дозапроса is the ceiling, after which the finding becomes a failed ticket and takes that path instead.
+**Every "fix" below happens in the ticket, not in the orchestrator and not in the reviewer.** A finding goes back to the executor that wrote the code, as a **дозапрос** stating the condition — `phases/5-repair.md`. The reviewer judged and is done; a reviewer that also repairs is a check that has stopped being one. Two дозапроса is the ceiling, after which the finding becomes a failed ticket and takes that path instead.
 
-- **Manifest `partial`/`missing`, or Craft "invented fact"** → repaired now, in this ticket, before the commit.
-- **Spec "extra"** → removed, unless it is genuinely required for the rest to work — then say so in one line in the commit message.
-- **Craft judgement calls** → repaired if the fix is small and local. If it is structural, note it in `state.js` under `concerns` and carry it to the final report. Do not start a refactor inside a ticket that was not about refactoring.
+### `BLOCKING` decides, and it is a short list
+
+**Only findings the reviewer put in `BLOCKING` hold up the commit.** That line exists in the return format for this and nothing else; a run that treats every finding as blocking has turned a three-line verdict into a repair queue, and it pays for that queue twice — once in the дозапрос, once in the re-review that follows it.
+
+What is always blocking, no judgement involved:
+
+- **Manifest `partial` or `missing`** — a requirement the user asked for is not delivered. This is the one category no ослабление ever touches: the whole framework exists to catch it, and «поправим потом» is how it stops being caught.
+- **Craft *invented fact*** — a plausible-looking price, address or text standing where the user's own fact belongs. It ships as truth if it ships at all.
+- **Spec *extra*** that adds surface nobody asked for — removed, unless the rest genuinely needs it, and then one line in the commit message says so.
+- **A red suite.** Nothing is committed on red, ever.
+
+Everything else — Craft judgement calls, style, structure, a test set that is bigger than its seams — goes to `state.js` under `concerns` with its file and line, and travels to the final report. **It is not a дозапрос and does not delay the commit.**
+
+**This is a deliberate loosening, and here is what it costs.** Deferred findings accumulate, and a list nobody reads is a silent discard — so the list has one reader by construction: the whole-project pass in `phases/8-final.md` triages it, and what it decides is worth fixing becomes a ticket like any other, reviewed and committed the same way. What is not fixed is named in the report. The alternative — repairing every judgement call inside the ticket that surfaced it — was measured at thirteen repairs across nine tickets, each adding roughly forty percent to its ticket's clock, for findings that were mostly not what the run was at risk from.
+
+**Structural findings were already exempt** («if it is structural, note it in `concerns`») — this rule keeps that exemption and stops relying on «small and local», which is the phrase that quietly pulled everything back into the loop.
+
+### The re-review is scoped to the fix
+
+When a дозапрос comes back, **review the fix, not the ticket again.** Send the reviewer the diff of the repair alone and the list of findings it was supposed to close; it verdicts each one addressed or not, and flags new breakage inside the fix only. Re-reading the whole ticket costs what the first review cost and re-derives a verdict you already have — and it is how a two-round ceiling turns into an evening.
 
 Refactoring belongs here, not inside the red-green loop. Cleaning up while chasing a failing test is how both jobs get done badly.
 

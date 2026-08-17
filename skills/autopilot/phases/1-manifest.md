@@ -102,7 +102,7 @@ These are the most dangerous items in the whole flight: too obvious to state, to
 
 Mark with `D` (`D01`, `D02`) anything the **build** proved that the plan did not know — a data model that does not hold, an assumed interface that cannot exist, two requirements that collide in practice. Its Основание is the finding itself, and it names the requirement it serves.
 
-A `D##` row is the only thing allowed to enter the manifest after the briefing, and only from `phases/5-subagents.md`. It is not a requirement the user made and it never replaces one: a requirement the code proves impossible is a question for the user, not a `D##` that quietly retires it. An idea you had while building is not a discovery either — that is an `A##`, and it lives in the spec under the usual parent-and-proportion rules.
+A `D##` row is the only thing allowed to enter the manifest after the briefing, and only from `phases/5-repair.md`. It is not a requirement the user made and it never replaces one: a requirement the code proves impossible is a question for the user, not a `D##` that quietly retires it. An idea you had while building is not a discovery either — that is an `A##`, and it lives in the spec under the usual parent-and-proportion rules.
 
 ### How fine to cut
 

@@ -20,28 +20,7 @@ The arithmetic is what decides it. What a run pays for reading is `число ш
 
 **Count what the executor can count.** It cannot see its own context size, and «правок» is the wrong unit — a ticket that reads forty files and edits nine is far past any ceiling while its edit count says otherwise. What it can count is its own **tool calls**: every read, every edit, every command. Measured across those nine executors, one call costs about 1 900 tokens of context, so **fifty calls is roughly 120 K** — and the spread across tickets (29 to 68) is exactly why the number permits rather than commands.
 
-The whole rule travels **in the prompt**, format included. Nothing about a handoff may live only in this file: the executor writing that file has never read it.
-
-```
-Ты работаешь до конца таска, но не бесконечно. Считай свои вызовы
-инструментов — чтения, правки, команды. Дошёл до пятидесяти —
-останавливайся на ближайшем зелёном прогоне, не начиная следующий
-критерий приёмки: верни `STATUS: HANDOFF` вместо `DONE` и запиши
-передачу в `.autopilot/<slug>/handoff-<NN>-<номер передачи>.md`
-(например `handoff-05-1.md`), а путь назови в `FILES`.
-
-Формат передачи — пятнадцать строк, без кода:
-
-СДЕЛАНО: какие критерии приёмки закрыты, какие нет
-ФАЙЛЫ:   что готово, что начато и в каком состоянии
-РЕШЕНИЯ: что решено по ходу и почему — иначе преемник решит иначе
-ТУПИКИ:  что пробовал и отверг, чтобы преемник не потратил те же шаги
-ДАЛЬШЕ:  следующий критерий и шов, на котором он стоит
-
-Если зелёного прогона добиться не удаётся, потолок отменяется:
-доводи до зелёного или возвращай `BLOCKED`. Передавать красное дерево
-нельзя — преемник примет поломку за свою и будет искать её в своём коде.
-```
+The rule itself — the count, the handoff format, the path, and what to do when green cannot be reached — is written for the executor in **`prompts/executor.md`**, and it goes down as a **path**. Nothing about a handoff may live only in this file: the executor writing that file has never read it.
 
 **The count permits; the green run decides.** A hard stop at a counter lands mid-edit, and the successor spends its first twenty calls working out what was going on — which is the whole cost this was meant to remove. A ticket that has just gone green is a seam: the suite passes, and everything unfinished is named in the acceptance criteria instead of in someone's head. A ticket that finishes at thirty calls simply never reaches the ceiling, and most do.
 
@@ -75,8 +54,7 @@ So the material never reaches you. What reaches you is a verdict, a list of name
 | its ticket | **by path only.** The ticket file already contains the verbatim brief quotes; sending the body as well means the run pays for the same words twice |
 | the spec sections its ticket names | by path **and section headings** — `spec.md`, разделы «Приём заявки», «Валидация». Not the whole spec, and not the sections pasted: naming them is what keeps the executor out of the rest of the document |
 | the test command and how to run one file | so it does not have to derive them |
-| **the testing contract**, verbatim | the block below — it is what makes the tests worth having |
-| **the context ceiling**, verbatim | the block above — without it the ticket runs until it stops, and that is the single most expensive thing in the flight |
+| **`prompts/executor.md`, by path** | the testing contract, the context ceiling and the return contract — **require it read before the first edit.** Without the ceiling the ticket runs until it stops, which is the single most expensive thing in the flight |
 | the working directory and stack constraints | including what it must not touch |
 | variable **names** for any credential | never a value, ever |
 | the return contract | the block below, as a requirement, not a suggestion |
@@ -88,37 +66,19 @@ So the material never reaches you. What reaches you is a verdict, a list of name
 
 **A rule that lives only in this file does not exist.** These phase files are read by the orchestrator; the code is written by someone who never sees them. Anything the executor must do has to travel in its prompt — and the testing contract is the one that gets left behind most often, because it reads like guidance rather than an input.
 
-## The testing contract — goes into the prompt, word for word
+## What the executor is judged by — `prompts/executor.md`
 
-```
-Тесты пиши только на швах, названных в приложенных разделах спецификации.
-Не тестируй всё подряд и не тестируй внутренности.
+Two conditions decide whether a returned ticket is acceptable, and neither of them is about what the ticket asked for: **how its tests are written**, and **when it stops and hands the ticket on**. Both live in `prompts/executor.md`, and both go down as a **path** in the prompt — with reading it required before the first edit, exactly as the Craft reviewer is given `prompts/craft-review.md`.
 
-Порядок: один тест — реализация — следующий тест. Не пиши тесты пачкой заранее:
-написанные впрок, они проверяют воображаемое поведение и перестают реагировать
-на реальные изменения.
+They are there and not here for two reasons. The first is that they are the executor's material: an orchestrator that reads them keeps them for the rest of the run and gains nothing, because it does not write code. The second is that a paraphrase is a weaker version of the check than the one that was written — and the testing contract is the rule that gets left behind most often, because it reads like guidance rather than an input.
 
-Тест утверждает через публичный интерфейс и остаётся зелёным после рефакторинга.
-Если он ломается, когда внутренности переехали, а поведение то же — он проверяет
-не то.
+What you still decide, and what does not fit in a shared file:
 
-Ожидаемое значение бери откуда угодно, кроме кода под тестом: известная величина,
-разобранный вручную пример, строка из спецификации. Утверждение, которое считает
-ответ тем же способом, что и код, не может с ним не согласиться — и не находит
-ошибок никогда.
+- **The test command and how to run one file** — so the executor does not derive them.
+- **What the ticket must not touch** — zones from Phase 4, and anything a parallel ticket owns.
+- **The tier.** At T0 you are the executor: read that file and apply it to yourself, minus the ceiling — there is nobody to relay to (above).
 
-Пустой catch, захардкоженный happy path и тест, подтверждающий сам себя, —
-это невыполненный критерий приёмки, а не выполненный.
-
-Прогоняй тесты с усечением вывода: `<тестовая команда> 2>&1 | tail -30`.
-Тебе нужны две вещи — зелёный или красный и имена упавших, — и обе
-выживают после усечения. Остальные двести строк ты будешь перечитывать
-на каждом следующем шаге до конца таска.
-```
-
-At tier T0 you are the executor, so this block applies to you directly.
-
-**That last paragraph is the one most often left out, and it is pure leak when it is.** The truncation rule used to live only in the orchestrator's checklist below — while the tests are run by executors, hundreds of times, in contexts the orchestrator never sees. A rule about test output belongs wherever tests are run, and that is here.
+**A green suite is evidence only if the tests could have been red**, and that is not checkable from a pass count. Your part is two moves: see that the file's path went down with the executor, and treat what the Craft reviewer finds about the tests as a finding of kind *silent narrowing*, fixed in this ticket if it is blocking. A bad test is worse than a missing one — the missing one is visible.
 
 ## interfaces.md — the shared contract
 
@@ -223,13 +183,15 @@ In this order, every time:
 3. **Update the manifest** — `in-ticket` → `done` or `placeholder`, commit noted.
 4. **Send the diff to review** — the ticket goes to `review` in `state.js` first, then the Phase 6 checklist runs, by someone who did not write the code (`phases/6-review.md`). What comes back to you is a verdict and a list of findings. The diff itself does not.
 5. **Run the full test suite**, not just the ticket's own tests — and truncate the output: `<тестовая команда> 2>&1 | tail -30`. You need two things from it, green-or-red and the names of what failed, and both survive the truncation; the other two hundred lines are pure leak. A regression introduced now costs minutes; found eight tickets later it costs the evening.
-6. **Red test, or a finding that has to be fixed → repair** (below): the ticket goes to `repair` and its `repairs` count goes up by one, then re-run 4 and 5 over the repair alone. **Nothing is committed on red**, and nothing is repaired by you.
+6. **Red test, or a finding the reviewer marked `BLOCKING` → repair:** the ticket goes to `repair` and its `repairs` count goes up by one, then re-run 4 and 5 over the repair alone — the re-review sees the fix's diff, not the ticket again. Findings *not* marked blocking do not come here: they go to `concerns` in `state.js` and are triaged once in `phases/8-final.md`. **Nothing is committed on red**, and nothing is repaired by you. The rules — which findings go back to whom, what a дозапрос may contain, when a ticket has failed instead, and what to do when the build proves the plan wrong — are in **`phases/5-repair.md`**, opened now and not before: most tickets return `DONE` and never need it.
 7. **Commit** — one commit per ticket, the ticket number in the subject, and only now does the ticket become `done`. These are the user's rollback points.
 8. **Update the instruments** (`phases/7-instruments.md`) — one line of state, one line of the dashboard: the ticket's `finishedAt`, tests and commit, the `requirements` counts, the `build` and `review` stage notes («3 из 5 тасков готовы»), `updatedAt`.
 9. **Top up the project memory — only if something was discovered.** The real test command, a gotcha that cost time, a new variable in `.env.example`. One line appended between the markers, never a rewrite; the architecture is written once, at the end. Most tickets add nothing, and that is the correct rate. Rules in `phases/9-memory.md`.
 10. **Tell the user one plain-language line**: «Бот принимает заявки — 3 из 8 готово». No diffs, no jargon, no file lists.
 
 Steps 4 through 6 are where the run is usually lost. Done as written, one ticket costs you a verdict, thirty lines of test output and a contract block. Done by hand — «посмотрю дифф сам, тут же немного» — the same ticket costs you the diff, the test log and every file you opened to fix it, and you pay that eight times.
+
+**Ten steps, but not ten writes to `state.js`.** The list is an order of operations, not a count of edits: batch the state changes the way a wave launch is already batched (`phases/0-instruments.md`). Two writes per ticket is the target — one when it goes to `review`, one at the commit that carries `finishedAt`, the tests, the counts and the stage notes together. Every extra write is a turn, and a turn costs the whole of your context re-read; nine tickets at six writes each is a hundred and thirty turns spent on bookkeeping, which on a T3 run is a quarter of everything you do. The user cannot see the difference — the screen follows either way — so the only thing the extra writes buy is the bill.
 
 **Steps 4–7 hold up the commit, not the crew.** The list is the order for *this* ticket; it is not a queue the rest of the flight waits in. The moment a ticket returns, the next launchable ticket goes out — and only then do you walk the list for the one that landed. Its review runs while the next ticket is being written, and the wall-clock cost of reviewing everything drops to roughly nothing.
 
@@ -248,67 +210,8 @@ Process them **one at a time, each through the whole list above**. Two returns a
 - **`interfaces.md` is appended by you, in return order**, one block per ticket. Subagents never write to it — parallel writers collide.
 - **Two returns claiming the same interface is a plan defect, not a merge problem.** It means the zones overlapped: keep the one that fits `interfaces.md`, and re-cut the other rather than reconciling two versions of the same thing by hand.
 
-## Repair — two kinds, two addresses
+## Testing — who checks that the tests are worth anything
 
-A ticket comes back imperfect in two very different ways, and telling them apart is the whole of this section:
+Not you, and not the executor. Reading assertions is the Craft reviewer's job, and the three questions it reads them with are written out in `prompts/craft-review.md` — the file that reviewer is handed by path. It is the review instruction most easily lost on the way down, because it looks like something a pass count already answered; handing over the file is what makes it arrive.
 
-- **Недоделка** — a red test, a review finding, an acceptance criterion met in letter and dodged in substance. The executor *could* have done it and did not.
-- **Отказ** — `BLOCKED`, `NEEDS_CONTEXT`, or a repair that has already failed. The executor tried and could not.
-
-| | Недоделка | Отказ |
-|---|---|---|
-| Goes to | **the same subagent**, by message, its context intact — a **дозапрос** | a **fresh context**, and only with a changed approach |
-| You send | the acceptance criterion, and nothing else | the ticket again, the error, the failing test named, the path now spelled out |
-| Because | it holds why the code is the way it is; a cold reader repairs the symptom and breaks the reason | its context *is* the failure — it is stuck in its own groove, and the same request gets the same answer |
-
-**A дозапрос costs one line.** Do not resend `interfaces.md`, the spec sections or the testing contract — it has seen all three. Send the condition:
-
-```
-Тест `parses empty address` красный:
-<последние 10 строк вывода>
-
-Почини так, чтобы он проходил. Больше ничего не трогай.
-Верни контракт заново.
-```
-
-- **Two дозапроса into one context, then it stops being the cheap option.** By the third the context is no longer the fresh one that made this worth doing, and the repair moves to the right-hand column: new context, changed approach. That is the same rule as for a failed ticket, because by then it is one.
-- **State the finding as a condition, never as «поправь».** «Сделай получше» is an invitation to rewrite what already worked. Every repair names something checkable: this test green, this field visible, this error handled.
-- **The repair returns the contract block again** — new `FILES`, new `TESTS`. A repair that returns nothing is a ticket you cannot honestly commit.
-- **The author repairs; someone else judges.** Sending the finding back to the executor is cheap precisely because it keeps its context — which is also why it cannot review its own repair. Step 4 stays with a subagent that did not write the code.
-- **If continuing a subagent is not available in the harness you are running in**, fall back to a fresh context with the full ticket prompt plus the finding, and accept that it costs more. What is not a fallback is taking the keyboard yourself. That option feels like the cheapest one available and is the most expensive thing in the phase.
-
-## When a ticket fails
-
-The right-hand column above, and its rules are the strict ones.
-
-Retry **once**, in a fresh context, with the error attached and the failing test named. If that fails too, one further attempt is allowed **only with a changed approach** — a different design decision, a different library, a path the ticket now names explicitly. Running the same attempt again with more hope is not a retry, and it is the only version of this that is forbidden.
-
-After that the flight stops: tell the user in plain language what is blocking and what you need from them. Do not improvise around a blocker, and do not silently narrow the ticket to whatever happened to work — a quietly reduced ticket is a lost requirement, and this whole design exists to make that impossible.
-
-Mark it `failed` in `state.js` and `placeholder` in the manifest, with the reason.
-
-One failure does not abort its wave-mates — they are independent by construction, so let them land. What it does stop is everything **downstream**: its dependents stay `pending`, and naming which ones are now blocked is part of the sentence you tell the user.
-
-## When the build contradicts the plan
-
-The plan was written before the code existed, so sometimes the code is right and the plan is wrong: a data model that does not hold, an interface the spec assumed cannot exist, two requirements that turn out to be incompatible in practice. This is ordinary, it is not the executor's error, and it needs a path — because without one what actually happens is worse. The executor quietly builds something else, the spec keeps claiming otherwise, and every check downstream measures the build against a document that stopped being true at ticket four.
-
-A subagent that hits this returns `BLOCKED` or `DONE_WITH_CONCERNS` with what it found. **You decide, in the orchestrator's context — never the executor**, and never by letting it stand. Deciding is yours; the code that follows from the decision is still written below you, by dozapros or by a fresh ticket:
-
-1. **Amend the spec section.** Edit the affected part of `spec.md` in place, keep the story marks, and add one line saying what the code proved and at which ticket. From the first ticket onward the spec is a living document; the brief and the manifest quotes are not.
-2. **Record a `D##` row in the manifest** — *discovered*. Its Основание is the finding, and it names the requirement it serves. This is not a requirement the user made; it is a constraint reality imposed, and it carries a status and appears in the final report like everything else.
-3. **Re-cut only what the change invalidates.** Landed tickets stay landed. Unstarted tickets get their spec references updated; a ticket whose whole point disappeared is cut and its requirements go back to `in-spec` to be re-covered.
-4. **Tell the user one line, in every mode including full:** «Схема из плана не держала два адреса на одну заявку — поправил, требование то же». They do not need the reasoning. They do need to know the plan moved, because a plan that moves silently is how the final report and their memory of the project stop matching.
-
-Two things this is not:
-
-- **Not a way to drop a requirement.** A requirement the code proves impossible is a question for the user — in full mode, an ASSUMPTION plus a placeholder — never a `D##` that quietly retires it.
-- **Not a route for good ideas.** A discovery is something the code demonstrated, not something you thought of while writing it. Ideas are still `A##`, still need a parent and the proportion limit, and at `strict` are still forbidden.
-
-## Testing — what you check when it comes back
-
-The rules themselves went out in the prompt (above). What stays here is the part the executor cannot do for itself: **a green suite is evidence only if the tests could have been red.**
-
-That check reads assertions, so it is not yours either — it belongs to the Craft reviewer, and its three questions are written out in `prompts/craft-review.md`, which is the file that reviewer is given. It is the one review instruction most easily lost on the way down, because it looks like something the pass count already answers; handing over the file is what makes it arrive.
-
-Your part is two moves: see that the file went down with the reviewer (`phases/6-review.md`), and treat what comes back as a Craft finding of kind *silent narrowing*, fixed in this ticket. A bad test is worse than a missing one: the missing one is visible.
+So your part is one move, and it is upstream: see that both files went down — `prompts/executor.md` with the executor, `prompts/craft-review.md` with the reviewer. Everything else about tests happens in those two contexts, not in yours.

@@ -103,7 +103,8 @@ The file itself stays in `.autopilot/<slug>/` as the run's record. It is not del
 
 Currency is the criterion this file fails first and most quietly. So, before the block is written:
 
-1. **Run the commands** it documents — at minimum install, test, and build. A command that fails does not go in.
+1. **Verify the commands** it documents — at minimum install, test, and build. A command that fails does not go in.
+   **Do not re-run what has already been run.** Three subagents plus the orchestrator all reaching for `install` on the same tree is the slowest thing in Phase 8, and installing dependencies is the slowest part of that. The orchestrator ran the full suite before it launched this slot (`phases/5-subagents.md`, step 5) and passes its command and result in the prompt; the blind checker is launching the project in parallel and returns the commands it actually used. **Verify only what neither of them covered** — and take the rest from what you were handed, naming in the block the command that was run, not a command you assume works.
 2. **Check every path** exists.
 3. **Grep the block for secret values** — the redaction gate from `phases/1-manifest.md` applies here as it does everywhere. Variable names, never values.
 4. **Check the length against the tier.** A landing page with a two-page memory file has been padded, and padding is how a reader learns to skim.

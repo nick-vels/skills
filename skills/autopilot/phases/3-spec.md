@@ -67,7 +67,7 @@ The one failure mode worth guarding: depth that **floats free of the brief** —
 | `R##.n` | **deepening** a brief requirement | uncapped — this is the main work of the phase |
 | `G##` | decided in the briefing | the user confirmed it |
 | `A##` | a **new capability** the brief never implied | must name a parent `R##` |
-| `D##` | a constraint the **build** proved, added mid-flight | only from `phases/5-subagents.md`, never from an idea |
+| `D##` | a constraint the **build** proved, added mid-flight | only from `phases/5-repair.md`, never from an idea |
 
 Note the line between the last two, because it is the one that gets blurred: elaborating «принимает заявки» into retry, resume and validation is `R01.n` — the same requirement, understood properly. Adding a loyalty programme is `A`. Depth is not scope creep, and treating it as if it were is how specs end up thin.
 

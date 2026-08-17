@@ -34,6 +34,10 @@ Its brief:
 > где именно это видно (что ты увидел при запуске, или где это в коде,
 > или почему ты решил, что этого нет).
 >
+> Отдельной строкой верни **команды, которыми ты поднимал проект, и их результат** —
+> дословно. Они нужны не тебе: рядом с тобой работает агент, который пишет память
+> проекта, и без этого он поставит тот же `install` во второй раз.
+>
 > Не оценивай качество кода. Не предлагай улучшений. Не ищи оправданий
 > отсутствию — просто зафиксируй факт. Если требование выполнено формально,
 > но по сути не работает (данные сохраняются, но пользователю не показываются) —
@@ -54,6 +58,22 @@ Every 🔴 goes in the report **and** in `state.js` under `blind`. A drift found
 If there are no tickets (tier T0), this check still runs. Small builds drift too, and it is one subagent.
 
 **A build that was never run is a build nobody has seen work.** The tests were written by the same process that wrote the code, so they agree with it by construction; the first time this project meets a user must not be the first time it is launched. If it genuinely cannot be run here — no credentials, a service that needs an account, a platform this machine is not — that goes in the report as an open item under «что нужно от тебя», not silently into the accepted column.
+
+## 1a. The deferred findings — triaged once, here
+
+Through the build, every Craft finding that was not blocking went into `state.js` under `concerns` instead of into a дозапрос (`phases/6-review.md`). **This is where that list gets its one reader.** A deferred-findings list nobody opens is not a deferral, it is a silent discard — and the whole loosening that produced it was justified on the promise that this pass happens.
+
+Read the list — it is `concerns`, in `state.js`, on disk, not from memory — and sort it in one pass:
+
+| Verdict | What it means | What happens |
+|---|---|---|
+| **Fix now** | it will cost more to leave than to close, and the fix is bounded | a ticket, cut and flown and reviewed like any other — `phases/5-subagents.md` |
+| **Report** | real, but not worth holding delivery for | one line in «что пошло не по плану», in the user's language |
+| **Drop** | it was a matter of taste, or the code it pointed at no longer exists | struck, with the reason kept in `concerns` |
+
+Two rules keep this honest. **Never fix one yourself** — a concern repaired by the orchestrator skips review and puts a diff into the one context that cannot afford it; it is a ticket or it is a line in the report. And **anything repeated across three or more tickets is promoted to «fix now» regardless of how small it looked** — the same judgement call landing that often is not a judgement call, it is a convention the project never settled, and the next session will meet it on its first day.
+
+At tier T0 there was one context and no tickets, so `concerns` is short and this pass takes a minute. It still runs: the list exists either way.
 
 ## 2. What outlives the run — memory and decisions
 

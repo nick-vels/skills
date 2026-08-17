@@ -403,9 +403,15 @@ function tick(){
   });
   document.querySelectorAll('[data-ago]').forEach(el => {
     el.textContent = agoText(el.dataset.ago);
-    // Пять минут без обновления при незавершённой сборке — повод присмотреться.
-    el.classList.toggle('stale', !(window.STATE && window.STATE.finishedAt)
-      && spanMs(el.dataset.ago, null) > 300000);
+    // Молчание — повод присмотреться, но только когда никто не работает.
+    // Пока хотя бы один таск идёт, записей внутри него нет по устройству
+    // процесса: оркестратор пишет на границах, а таск живёт десятки минут.
+    // Порог тогда — не пять минут, а заметно дольше самого долгого таска.
+    const S = window.STATE || {};
+    const busy = (S.tickets || []).some(t =>
+      t.status === 'in-progress' || t.status === 'review' || t.status === 'repair');
+    el.classList.toggle('stale', !S.finishedAt
+      && spanMs(el.dataset.ago, null) > (busy ? 2700000 : 300000));
   });
 }
 
