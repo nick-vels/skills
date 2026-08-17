@@ -4,6 +4,14 @@ Landing. Two things happen here, and the first one is the reason this framework 
 
 ## 1. Blind acceptance — gate G4
 
+Re-confirm fresh-subagent model and effort capabilities for the current caller before routing
+Phase 8 agents. When available, blind acceptance uses the `flagship` model role at
+`engineering`, raised to `critical` when the brief or built system touches a critical domain and
+to `maximum` for an irreversible/historical release audit. The memory agent uses `balanced` at
+`working`; the ADR agent uses `flagship` at `engineering`. Apply only the model/effort dimensions
+the current caller confirmed. These settings do not change what each agent may receive or the
+independence rules below.
+
 Every check so far has measured the build against the **spec**. But the spec is your own paraphrase of the brief, written several phases ago. If a requirement was lost on the way into it, everything downstream has been faithfully confirming that loss.
 
 So the last check does not use the spec.

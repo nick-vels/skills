@@ -28,16 +28,16 @@ This file is the orchestrator: modes, phase order, gates. The rules for each pha
 
 **Twice only where the table says twice** — `7-instruments.md` in Phase 4, `9-memory.md` in Phases 5 and 8, legitimate there because the run has usually been compacted in between. Everywhere else, re-reading because «details have faded» buys a copy of what is still in the context.
 
-**After a compaction, re-read the state, not the phases.** `state.js` (it holds `skillDir`, the reviewers and the tickets), `manifest.md`, `interfaces.md`, and the file of the phase you are actually in — those four and nothing else. The pull is to reopen `5-subagents.md` to recover the thread; that spends eight thousand tokens re-reading rules you are already executing, and the thread was never in them.
+**After a compaction, re-read the state, not the phases.** `state.js` (it holds `skillDir`, the reviewers and the tickets), `manifest.md`, `interfaces.md`, and the file of the phase you are actually in — those four and nothing else. The one capability exception is `0-compute.md`: re-read it before the first routing-dependent action so the current caller is probed instead of trusting stale state. The pull is to reopen `5-subagents.md` to recover the thread; that spends eight thousand tokens re-reading rules you are already executing, and the thread was never in them.
 
 | Phase | Read | Produces |
 |---|---|---|
-| 0 Preflight | `phases/0-modes.md`, `phases/0-preflight.md`, then `0-instruments.md` and `0-memory.md` | mode announced, repo configured, `.autopilot/` created |
+| 0 Preflight | `phases/0-modes.md`, `phases/0-preflight.md`, then `0-instruments.md`, `0-compute.md` and `0-memory.md` | mode announced, repo configured, `.autopilot/` created |
 | 1 Manifest | `phases/1-manifest.md` | `brief.md`, `manifest.md` |
 | 2 Briefing | `phases/2-briefing.md` | answers recorded into the manifest |
 | 3 Spec | `phases/3-spec.md` | `spec.md` |
 | 4 Plan | `phases/4-plan.md` | `tickets/NN-*.md` (or none — see tiers), `interfaces.md` seeded |
-| 5 Subagents | `phases/5-subagents.md` | code, commits, `interfaces.md` grown |
+| 5 Subagents | `phases/5-compute.md`, then `5-subagents.md` | code, commits, `interfaces.md` grown |
 | 6 Review | `phases/6-review.md` | per-ticket review |
 | 7 Instruments | `phases/7-instruments.md` — **in Phase 4**, when the tickets are cut | `state.js`, `dashboard.html` (opened for the user) |
 | 8 Final | `phases/8-final.md` | blind acceptance, final report |

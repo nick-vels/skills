@@ -1,5 +1,15 @@
 # Phase 6 — Checklist
 
+## Compute floor
+
+Re-confirm fresh-subagent model and effort capabilities for the current caller before the first
+review routing action. When available, start the two long-lived reviewers with the `flagship`
+model role at `engineering`, applying only the confirmed dimensions.
+For a `critical` or `maximum` ticket, its review must run at least at the ticket's effort band;
+if an existing reviewer is below that floor, use a fresh independent reviewer configured at the
+required role/band rather than assuming the orchestrator's continuation capability applies to a
+child agent. Never ask the author to compensate for a cheaper review.
+
 Review of each ticket's diff along three axes. Not sequential — it runs inside Phase 5, after every ticket.
 
 Three axes, because a change can pass one and fail another:
