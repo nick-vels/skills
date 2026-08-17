@@ -11,7 +11,8 @@
     python3 tools/measure-run.py ~/Documents/VScode/EDU/share
 
 Каталог логов вычисляется из пути проекта так же, как это делает Claude Code:
-слэши заменяются дефисами внутри ~/.claude/projects/.
+разделители пути заменяются дефисами внутри ~/.claude/projects/
+(на Windows — обратные слэши и двоеточие диска тоже).
 
 Нормировка стоимости — относительно входного токена:
     output ×5 · cache_write ×1.25 · cache_read ×0.1
@@ -32,7 +33,11 @@ CEILING_HINT = 120_000      # потолок из phases/5-subagents.md, для 
 
 def logs_dir_for(project_path):
     p = os.path.abspath(os.path.expanduser(project_path))
-    return os.path.join(os.path.expanduser("~/.claude/projects"), p.replace("/", "-"))
+    # Все три разделителя, а не только «/»: на Windows путь приходит как C:\Users\x,
+    # и «C:\...» осталось бы абсолютным — os.path.join тогда отбрасывает первый аргумент
+    # и замер молча уходит искать логи в самой папке проекта.
+    slug = p.replace("\\", "-").replace("/", "-").replace(":", "-")
+    return os.path.join(os.path.expanduser("~/.claude/projects"), slug)
 
 
 def parse_ts(s):
@@ -46,7 +51,7 @@ def parse_ts(s):
 
 def load(path):
     rows = []
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -123,6 +128,12 @@ def analyse(path, label):
 
 
 def main():
+    # Отчёт — кириллица и «█»; на Windows консоль по умолчанию не utf-8,
+    # и печать полосы расхода падала бы UnicodeEncodeError на готовых цифрах.
+    # stderr — потому что подсказки и «нет логов» уходят туда через sys.exit.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     d = logs_dir_for(sys.argv[1])
@@ -155,7 +166,7 @@ def main():
 
     metas = {}
     for mf in glob.glob(os.path.join(sub_dir, "subagents", "*.meta.json")):
-        with open(mf) as f:
+        with open(mf, encoding="utf-8") as f:
             metas[os.path.basename(mf)[:-10]] = json.load(f)
 
     results = [analyse(main_log, "Оркестратор")]
