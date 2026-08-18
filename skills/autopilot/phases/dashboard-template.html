@@ -785,6 +785,11 @@ function render(lang){
     <span>${L.filesIn} <code>.autopilot/${esc(S.slug)}/</code></span>
   </footer>`;
 
+  // Вкладка и карточка предпросмотра подписаны проектом, а не словом «autopilot»:
+  // когда репозиторий дорабатывают второй раз, это единственное место, где с одного
+  // взгляда видно, что на экране прошлый прогон, а не начавшийся.
+  document.title = S.title ? `${S.title} — autopilot` : 'autopilot';
+
   document.querySelectorAll('.seg button[data-lang]').forEach(b =>
     b.addEventListener('click', () => {
       try { localStorage.setItem('autopilot-lang', b.dataset.lang); } catch(e) {}

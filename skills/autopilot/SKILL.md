@@ -142,7 +142,8 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 │   └── tickets/NN-<slug>.md
 ├── README.md            how to read this folder — for the human, written once in Phase 0
 ├── state.js             the run state, and the only file you update: stages, tickets, timings, debt
-└── dashboard.html       the human view — copied once in Phase 0, then reads state.js by itself
+├── dashboard.html       the human view — copied once in Phase 0, then reads state.js by itself
+└── index.html           a symlink onto dashboard.html, so the pane's `/` is the dashboard
 
 CLAUDE.md | AGENTS.md   the project memory — what the next session reads first
 docs/adr/               decisions worth outliving the run — written in Phase 9, tier T2+

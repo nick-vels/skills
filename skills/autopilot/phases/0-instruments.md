@@ -16,12 +16,17 @@ The page loads `state.js` from beside it and re-loads that file every ten second
 ```bash
 TPL=$(find -L ~/.claude/skills ~/.agents/skills ~/.claude/plugins .claude/skills .agents/skills \
         -maxdepth 6 -name dashboard-template.html 2>/dev/null | head -1)
-cp "$TPL" .autopilot/dashboard.html && echo "skillDir = ${TPL%/phases/*}"
+cp "$TPL" .autopilot/dashboard.html && ln -sf dashboard.html .autopilot/index.html \
+  && echo "skillDir = ${TPL%/phases/*}"
 ```
 
 **`find -L`, and no `*` anywhere in it** — both parts are load-bearing, and each was measured on 2026-08-17. Skills are installed as symlinks (`~/.claude/skills/autopilot` → `~/.agents/skills/autopilot`), and a plain `find` does not follow one, so it reports nothing while the file sits right there. A `plugins/*/` glob is worse: in zsh an unmatched glob aborts the whole command before it runs, so the search never happens and `skillDir` comes out empty — in bash the same line works, which is exactly what makes it hard to notice.
 
 Empty output means the skill lives somewhere none of those five roots cover: widen the search once, by hand, and carry on. Never regenerate the template, never read it into context, never edit it after the copy.
+
+**`index.html` is not a second dashboard — it is the name under which the server hands the same file out at `/`.** `python3 -m http.server` answers a directory without one with a *listing*, and the pane in §3 can only be pointed at an origin, never at a path: drop the follow-up navigation and the user spends the run looking at a list of file names. Measured on 2026-08-18 — with the symlink `http://localhost:PORT/` is the dashboard itself. A symlink and not a copy: a copy is a second dashboard that ages. If `ln` refuses (Windows without developer mode), nothing is lost — §3 navigates to `/dashboard.html` anyway.
+
+**On a new flight in a configured repo (`phases/0-preflight.md`, third case) this block runs again, unchanged.** «Copied once» is a rule about the flight, not about the folder: `cp` and `ln -sf` are both idempotent, the copy picks up whatever the skill has learned since the last build, and a `.autopilot/` from before 2026-08-18 has no `index.html` at all until this line puts one there.
 
 ## 2. Write `.autopilot/state.js`
 
@@ -97,17 +102,26 @@ The user should not have to be told where a file is and then go find it. **Open 
 So serve the directory and point the pane at http — measured on the same day, `window.STATE` loads and the ten-second poll keeps repainting the page:
 
 ```bash
-PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
-python3 -m http.server "$PORT" --bind 127.0.0.1 --directory .autopilot >/dev/null 2>/tmp/autopilot-serve.log &
-SRV=$!
-curl -sf --retry 5 --retry-delay 1 --retry-connrefused "http://localhost:$PORT/dashboard.html" >/dev/null \
-  && printf '%s %s\n' "$PORT" "$SRV" > /tmp/autopilot-serve.pid \
-  || echo "сервер не поднялся — иду по Path B"
+PIDF=/tmp/autopilot-serve-$(printf %s "$PWD" | cksum | cut -d' ' -f1).pid
+PORT=$(cut -d' ' -f1 "$PIDF" 2>/dev/null)
+curl -sf "http://localhost:$PORT/state.js" | cmp -s - .autopilot/state.js || PORT=
+if [ -z "$PORT" ]; then
+  PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
+  python3 -m http.server "$PORT" --bind 127.0.0.1 --directory .autopilot >/dev/null 2>/tmp/autopilot-serve.log &
+  SRV=$!
+  curl -sf --retry 5 --retry-delay 1 --retry-connrefused "http://localhost:$PORT/dashboard.html" >/dev/null \
+    && printf '%s %s\n' "$PORT" "$SRV" > "$PIDF" \
+    || echo "сервер не поднялся — иду по Path B"
+fi
 ```
 
-**The `curl` is the whole reason this block is three lines and not two.** The port was free when it was measured and can be taken by the time the server binds it; a sandbox may refuse the socket outright; `python3` may be too old for `--directory`. All three fail the same way — instantly, into `/dev/null` — and without the check the run writes a pid file for a process that is already dead and points the pane at nothing. **Checking is not retrying**: the rule below says do not try a second launcher, and this does not; it says which path you are on. The pid file goes to `/tmp` because `.autopilot/` is committed, and a dead pid in the user's repository is litter with a plausible-looking name. `stderr` goes to a log file rather than to `/dev/null` or to your terminal: `http.server` logs every request, so a run that leaves it attached pays for one line of noise per poll for the rest of the flight, and a run that discards it has nothing to read when the `curl` comes back empty.
+**The first three lines ask one question — is a server already up, and is it serving *this* run?** They are here because the answer used to be assumed. The pid file was one name for the whole machine, so a second project on it read the first project's port, «reused» it, and the user watched a dashboard of somebody else's build for the entire flight — measured on 2026-08-18, and the visible tell was a directory listing with a foreign slug directory in it. Naming the file after the project's path fixes the collision but proves nothing about the process: a pid outlives the port it held, and the port can be taken by anything. So the check is on **content** — the `state.js` the server hands out is compared with the one on disk right now, which §2 has already written. Equal means it is this directory (and therefore this flight, freshly written). Anything else — empty, stale, refused — clears `PORT` and a server of our own goes up.
+
+**The second `curl` is the whole reason the launch is three lines and not two.** The port was free when it was measured and can be taken by the time the server binds it; a sandbox may refuse the socket outright; `python3` may be too old for `--directory`. All three fail the same way — instantly, into `/dev/null` — and without the check the run writes a pid file for a process that is already dead and points the pane at nothing. **Checking is not retrying**: the rule below says do not try a second launcher, and this does not; it says which path you are on. The pid file goes to `/tmp` because `.autopilot/` is committed, and a dead pid in the user's repository is litter with a plausible-looking name — but it carries the project's path in its own name, so two Autopilots on one machine never read each other's port and Phase 8 never kills the other one's server. `stderr` goes to a log file rather than to `/dev/null` or to your terminal: `http.server` logs every request, so a run that leaves it attached pays for one line of noise per poll for the rest of the flight, and a run that discards it has nothing to read when the `curl` comes back empty.
 
 Run it **in the background** — a foreground server blocks the whole build. Then open the pane at `http://localhost:$PORT` and go to `/dashboard.html`. In Claude Code that is `preview_start({url: "http://localhost:PORT"})` followed by a `navigate` to `/dashboard.html`: a bare `navigate` to a localhost port **without** `preview_start` first is refused by pane policy, and `127.0.0.1` in the URL is refused where `localhost` is accepted.
+
+**The `navigate` is the second half of one move, not a tidy-up.** `preview_start` only accepts an origin, so it lands on `/` — with the symlink from §1 that is already the dashboard, and without it that is a file listing. Whichever it is, the pane must end on `/dashboard.html`, because the address the user copies out of it has to be the address they can reopen. And a pane that was already open from an earlier flight comes back showing the **previous** run's port: re-point it at this run's address rather than trusting the window that is on screen. Glance at what the pane ended up showing — a stage list and a running clock, not a list of file names and not somebody else's project title — and if it is not that, re-point it once and move on.
 
 **Path B — the system browser.** No in-app viewer, or no `python3` → hand the file to the OS, no server involved:
 
@@ -122,11 +136,12 @@ A real browser opens `file://` as a page and lets it load `state.js` from the sa
 
 **Rules for both paths:**
 
-- **Opened exactly once.** Both paths keep themselves current. Neither ever opens a second window or tab, and neither is ever re-pointed.
-- **Never on resume into a window that is already open.** On a resume, open it again only if the previous session ended (`finishedAt` was set). If `/tmp/autopilot-serve.pid` names a live process, reuse that port instead of starting a second server.
+- **Opened exactly once per flight.** Both paths keep themselves current. Within one flight neither ever opens a second window or tab.
+- **A new feature in a configured repo is a new flight** — the third case in `phases/0-preflight.md`, and the one this whole section keeps getting wrong. Its `state.js` is written fresh in §2 *before* anything is opened, and the dashboard is opened again for it. Open it first and the user is shown the run that already shipped: the stages all green, the previous project's title in the header, and no sign that anything new started.
+- **Never on resume into a window that is already open.** On a resume, open it again only if the previous session ended (`finishedAt` was set). A server left behind by the interrupted session is reused only if the check above says it is serving this directory — never on the strength of the pid file alone.
 - **A failure is not an error.** Headless machine, no default browser, no pane — print the path in one line and carry on. Do not retry, do not install anything, do not try a second launcher.
 - **Do not open it in a remote session.** If `$SSH_CONNECTION` or `$CI` is set, skip opening entirely and print the path — a browser window on someone else's machine helps nobody, and neither does a port.
-- **One static server, and only for the pane.** `python3 -m http.server` over `.autopilot`, bound to `127.0.0.1` and nothing wider, started once and killed in Phase 8 (`phases/8-final.md`). It serves the run's own directory — briefs, tickets, manifest — so binding it to `0.0.0.0` would publish them to the network. No build step, no bundler, no second file: the dashboard stays one static page that a browser can also open directly.
+- **One static server, and only for the pane.** `python3 -m http.server` over `.autopilot`, bound to `127.0.0.1` and nothing wider, started once and killed in Phase 8 (`phases/8-final.md`). It serves the run's own directory — briefs, tickets, manifest — so binding it to `0.0.0.0` would publish them to the network. No build step, no bundler, no second page to maintain — `index.html` is a symlink onto the same file: the dashboard stays one static page that a browser can also open directly.
 
 Say it in one line, once, inside the opening block — Path A names the address, since the user may want it in a real browser too:
 

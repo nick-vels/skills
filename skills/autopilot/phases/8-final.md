@@ -219,7 +219,10 @@ The open page picks this up by itself within ten seconds — this is the picture
 **Last means after the report reaches the user, not in the same breath as `finishedAt`.** The page polls every ten seconds; killing the server in the same turn that wrote the final state means it never fetches it, and the picture the user is left staring at says «в работе» forever — the exact failure this whole section exists to prevent, arriving from the other side. Writing the report is what buys the time, so put the kill after it:
 
 ```bash
-[ -f /tmp/autopilot-serve.pid ] && kill "$(cut -d' ' -f2 /tmp/autopilot-serve.pid)" 2>/dev/null; rm -f /tmp/autopilot-serve.pid
+PIDF=/tmp/autopilot-serve-$(printf %s "$PWD" | cksum | cut -d' ' -f1).pid
+[ -f "$PIDF" ] && kill "$(cut -d' ' -f2 "$PIDF")" 2>/dev/null; rm -f "$PIDF"
 ```
+
+**The pid file is named after this project's path** (`phases/0-instruments.md` §3) — a single machine-wide name is how one run's ending takes down another run's dashboard mid-flight, and how the next flight then adopts a port that answers with a stranger's `.autopilot/`.
 
 The pane keeps the final picture on screen — it is already rendered and no longer polling. Nothing is lost with the port: `dashboard.html` is a static file, and a double-click reopens it in a real browser with every number intact. Say nothing about any of this; the shutdown is not news. If доводка is running (`phases/polish.md`), the run is not over — the server stays up until the доводка closes too.

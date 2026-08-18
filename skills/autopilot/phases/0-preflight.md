@@ -12,6 +12,8 @@ Configure the repo and raise the instruments. What runs here depends on what is 
 
 In that case: derive a new slug (step 1) and create its directory (step 3); **archive the finished run** — move `state.js` to `.autopilot/<previous-slug>/state.js`, write a fresh one for this flight and re-open the dashboard (step 3, rules in `phases/0-instruments.md`); top up the memory file rather than rewriting it (step 5); close the stage (step 7). Skip the conventions note and the git setup — they are already there, and `.autopilot/README.md` describes the folder, not the run.
 
+**The order inside that sentence is the whole of it: archive, write, then open.** Opening first shows the user the run that already shipped — eight green stages and last month's project name — and it looks exactly like a dashboard that works, so nobody goes looking. The same trap has a second door: a pane or an HTTP server left over from another flight, possibly in another repository on this machine, that answers on a port this run never started. Both are closed by the checks in `phases/0-instruments.md` §3, and neither is closed by looking at the screen.
+
 **Nothing here is a question for the user.** These are process decisions, not product ones. No mode buys the user a say in where ticket files live; asking about it is exactly the kind of question Autopilot exists to remove.
 
 ## 1. Name the flight
@@ -40,7 +42,8 @@ Read what is already here; assume nothing:
 │   ├── interfaces.md
 │   └── tickets/
 ├── state.js
-└── dashboard.html
+├── dashboard.html
+└── index.html          → dashboard.html, symlinked so the pane's `/` is the dashboard
 ```
 
 The brief carries **the date it was dictated in its filename** — `2026-08-07-brief.md`. A slug directory outlives one conversation: the user comes back a month later with «доделай», a second brief gets appended, and a file called `brief.md` gives no way to tell which sitting is which. The date is the cheapest possible answer, and it sorts.
@@ -62,6 +65,8 @@ Write `.autopilot/README.md` — a short note for the human, not for the agent:
 
 - `dashboard.html` — открывается сам в начале сборки; можно и двойным кликом.
   Этапы, прогресс, время, что осталось. Обновляется сам, пока сборка идёт.
+  `index.html` рядом — тот же файл под другим именем, чтобы дашборд открывался
+  по короткому адресу. Отдельно его открывать не нужно.
 - `<проект>/<дата>-brief.md` — твоя изначальная задача, слово в слово. Не редактируется.
 - `<проект>/manifest.md` — список требований и что с каждым стало.
 - `<проект>/spec.md` — спецификация.
@@ -105,7 +110,7 @@ Leaving any phase means the same two marks, here and everywhere after: the stage
 
 1. Read the project memory file first (`memoryFile` in `state.js` — `CLAUDE.md` or `AGENTS.md`), then `state.js`, `manifest.md`, `interfaces.md`. Do **not** re-read the whole dialogue; the files are the memory. The brief is `<slug>/*-brief.md` — the newest one if there is more than one.
 2. Tell the user in one line where things stand: «Продолжаю: 7 из 12 тасков готовы, следующий — корзина».
-   Reopen the dashboard unless the interrupted session left a server still serving it: `/tmp/autopilot-serve.pid` naming a live process → reuse that port and say the address. Otherwise raise it again exactly as in Phase 0 — a tab does not outlive the session that opened it, and assuming it did leaves the user watching nothing for the rest of the run.
+   Reopen the dashboard unless the interrupted session left a server still serving **this** directory — the content check in `phases/0-instruments.md` §3 answers that, and a pid file on its own does not. Reused → say the address; otherwise raise it again exactly as in Phase 0. A tab does not outlive the session that opened it, and assuming it did leaves the user watching nothing for the rest of the run.
 3. A ticket marked `in-progress` in `state.js` with no commit behind it was interrupted mid-flight. Reset it to `pending` and run it again from scratch — a half-applied ticket is worse than a fresh one.
    **Unless its `handoffs` is above zero.** Then the work has a written seam: read `.autopilot/<slug>/handoff-<NN>-*.md`, oldest first, and launch the successor from the last one instead of starting over. That file exists precisely so an interruption costs the current context and not the whole ticket — throwing it away is the most expensive mistake available on a resume, because a relayed ticket is by definition one of the long ones. Check the tree first (`git status`, then the full suite): uncommitted edits from the interrupted context are the successor's starting material, and if the suite is red, say so in the successor's prompt so it does not read the breakage as its own.
 4. Re-run the Phase 6 checklist over the whole diff since the last green commit before continuing. Something may have been left broken.
