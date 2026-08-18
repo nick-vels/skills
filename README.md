@@ -397,7 +397,7 @@ skills/autopilot/
 ├── SKILL.md                    ← оркестратор: режимы, фазы, гейты
 ├── phases/                    ← правила фаз, читаются по одной, в момент фазы
 │   ├── 0-preflight.md          подготовка репозитория
-│   ├── 0-compute.md            optional native model/effort routing, graceful fallback
+│   ├── 0-compute.md            host-aware model/effort routing, next-request confirmation
 │   ├── 0-instruments.md        поднять дашборд: шаблон, стартовое состояние, ритуал
 │   ├── 0-memory.md             выбрать файл памяти проекта и написать скелет
 │   ├── 1-manifest.md           бриф → требования, фильтр секретов
