@@ -19,6 +19,14 @@ window.STATE =
   "title": "Телеграм-бот для заявок на ремонт",
   "mode": "semi",
   "depth": "normal",
+  "computeRouting": {
+    "orchestratorEffortMode": "next-request",
+    "subagentModel": true,
+    "subagentEffort": true,
+    "values": ["low", "medium", "high", "xhigh", "max"],
+    "confirmedEffortBand": "engineering",
+    "pendingEffortTransition": null
+  },
   "tier": "T2",
   "briefFile": "2026-08-07-brief.md",
   "memoryFile": "AGENTS.md",
@@ -48,6 +56,7 @@ window.STATE =
       "blockedBy": ["01", "02"],
       "wave": 2,
       "zone": ["src/bot/"],
+      "compute": { "modelRole": "balanced", "effortBand": "engineering" },
       "status": "done",
       "startedAt": "2026-08-07T14:35:31+03:00",
       "finishedAt": "2026-08-07T14:53:26+03:00",
@@ -84,6 +93,14 @@ Ticket `status`: `pending` · `in-progress` · `review` · `repair` · `done` ·
 `repairs` counts the дозапросы this ticket needed, the way `retries` counts restarts. Two is the ceiling by rule, and a ticket carrying two is a signal about the cut, not about the executor. `repairFindings` holds what each one was **for**, one line apiece: a repair condition exists nowhere else on disk, so a ticket that gets handed off mid-repair loses the finding while the counter that paid for it stays spent (`phases/5-subagents.md`).
 
 `concerns` at the top level is the deferred Craft findings — the list `phases/8-final.md` triages once, and the reason the loosening in `phases/6-review.md` was affordable. It sits beside the tickets rather than inside them because tier T0 has no tickets and defers findings all the same. `reviewers` holds the two long-lived reviewers' handles (`phases/6-review.md`), and `skillDir` the path the subagent contracts travel by (`phases/0-instruments.md`) — both are things the orchestrator cannot rebuild from the repository after a compaction, which is the only reason they are written down at all.
+
+`computeRouting` carries the last session's diagnostic capabilities, current abstract effort band,
+and any next-request transition still awaiting a distinct request identity, while each ticket's
+`compute` carries only the role and band chosen at launch (`phases/0-compute.md`,
+`phases/5-compute.md`). Fresh, compacted and resumed agent sessions re-probe before relying on
+those capabilities. Provider-specific model IDs do not belong in portable run state except inside
+the temporary `pendingEffortTransition`, where the exact native model and effort are required to
+verify the next execution and are cleared immediately afterward.
 
 `handoffs` counts the times the ticket outgrew a context and was relayed to a fresh one (`phases/5-subagents.md`). **It is not a defect count and must not be shown as one** — nothing was found wrong; the ticket was long. The status stays `in-progress` across a handoff, so the user sees one ticket still being written rather than a ticket that failed and restarted. Two is the ceiling here as well, and a ticket carrying two says the same thing `repairs` does: the cut was too coarse.
 

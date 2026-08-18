@@ -37,6 +37,14 @@ window.STATE =
   "mode": "semi",
   "depth": "normal",
   "polish": null,
+  "computeRouting": {
+    "orchestratorEffortMode": null,
+    "subagentModel": false,
+    "subagentEffort": false,
+    "values": [],
+    "confirmedEffortBand": null,
+    "pendingEffortTransition": null
+  },
   "tier": null,
   "briefFile": "2026-08-07-brief.md",
   "memoryFile": "AGENTS.md",
@@ -70,9 +78,10 @@ window.STATE =
 }
 ```
 
-Three of those fields exist because the orchestrator's context does not survive a compaction and these are the things it cannot rebuild from the repository:
+Four of those fields exist because the orchestrator's context does not survive a compaction and these are the things it cannot rebuild from the repository:
 
 - **`skillDir`** — resolved in §1. Without it the two subagent contracts stop travelling and the run quietly degrades into ordinary vibecoding.
+- **`computeRouting`** — the last native capability result from `phases/0-compute.md`. It is diagnostic state only; a fresh, compacted or resumed agent session re-probes because capabilities belong to the current caller. A non-null `pendingEffortTransition` is a resume boundary, not proof that the visible selector already changed the running request.
 - **`concerns`** — the deferred Craft findings, at the top level and not only inside a ticket: at tier T0 there are no tickets, and the triage in `phases/8-final.md` was the entire justification for deferring them.
 - **`reviewers`** — the handles of the two long-lived reviewers (`phases/6-review.md`). Lose them and every ticket gets a fresh reviewer, which is affordable; what is not is that the cross-ticket findings then never happen at all.
 
