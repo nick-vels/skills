@@ -39,7 +39,7 @@ This file is the orchestrator: modes, phase order, gates. The rules for each pha
 | 4 Plan | `phases/4-plan.md` | `tickets/NN-*.md` (or none — see tiers), `interfaces.md` seeded |
 | 5 Subagents | `phases/5-subagents.md` | code, commits, `interfaces.md` grown |
 | 6 Review | `phases/6-review.md` | per-ticket review |
-| 7 Instruments | `phases/7-instruments.md` — **in Phase 4**, when the tickets are cut | `state.js`, `dashboard.html` (opened for the user) |
+| 7 Instruments | `phases/7-instruments.md` — **in Phase 4**, when the tickets are cut | `state.js`, `dashboard.html` + `index.html` (opened for the user) |
 | 8 Final | `phases/8-final.md` | blind acceptance, final report |
 | 9 Memory | `phases/9-memory.md` — **in Phase 5 and Phase 8** | `CLAUDE.md` / `AGENTS.md`, `docs/adr/` — the project as the next session will find it |
 | — | `phases/5-repair.md` — when a ticket comes back anything other than `DONE` | the repair path, retries, spec amendments |

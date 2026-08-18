@@ -23,7 +23,7 @@ A mode decides two separate things — how much the user is asked about the *pro
 
   ```
   Режим: полуавтомат · глубина: обычная — спрошу только то, что в задаче не определено, дальше соберу сам.
-  Дашборд открыл — обновляется сам.
+  Дашборд открыл — обновляется сам: http://localhost:PORT/dashboard.html
   Память проекта — AGENTS.md (+ CLAUDE.md со ссылкой). Скажи, если нужен другой.
 
   Можно переключить в любой момент, просто скажи:
@@ -35,6 +35,8 @@ A mode decides two separate things — how much the user is asked about the *pro
   ```
 
   With `polish` on, the first line names it and its ceiling: «Режим: полуавтомат · глубина: обычная · доводка: до трёх кругов».
+
+  **The dashboard line carries the address whenever there is one** (`phases/0-instruments.md` §3, Path A). Depending on the client the page may open beside the chat or arrive as a card with an «Open» button, and in the second case this line is the only way to the dashboard that does not depend on finding the button. Without a server (Path B) the line names the file instead: «Дашборд открыл — `.autopilot/dashboard.html`, обновляется сам.»
 
   One short block, once, at the start. **It is a hint, not a question** — say it and go straight into Phase 1; waiting for a reply to it is exactly the pause this skill exists to remove. Do not repeat it later, do not restate it after a mid-run switch (one line is enough there: «Понял, дальше ручной режим»).
 - **Ambiguity resolves to semi.** A mode word contradicting the rest of the sentence («ручной режим, но не спрашивай») → the explicit mode word wins; two mode words → ask which one, in one line.

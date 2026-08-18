@@ -5,8 +5,11 @@ Configure the repo and raise the instruments. What runs here depends on what is 
 | On disk | Case | What Phase 0 does |
 |---|---|---|
 | no `.autopilot/` | **new repo** | everything below, in order |
-| `.autopilot/state.js` with `finishedAt: null` | **resume** | none of the steps — go to *Resuming an interrupted flight* at the end of this file |
-| `.autopilot/` exists, last run has `finishedAt` set | **new feature in a configured repo** | steps 1, 3, 5, 7 only |
+| `.autopilot/state.js` with `finishedAt: null` | **resume** | step 3a only — then *Resuming an interrupted flight* at the end of this file |
+| `.autopilot/` exists, last run has `finishedAt` set | **new feature in a configured repo** | steps 1, 3, 3a, 5, 7 only |
+| the same, but `updatedAt` is **under five minutes old** and a live server is on this `.autopilot/` | **the run is going on in another window** | none — say so and ask which window carries on |
+
+**The fourth case is not a resume, and it is the expensive one to misread.** Both marks have to be there: a `state.js` written in the last five minutes *and* a server still answering for this directory (the check in `phases/0-instruments.md` §3). One without the other is an ordinary interruption — a session that died three minutes ago is a resume, not a second window, and stopping to ask about it wastes the user's time. Two sessions writing one `state.js` overwrite each other's tickets, and the first one to reach Phase 8 sets `finishedAt`, which freezes the other one's dashboard mid-build. Nothing here is recoverable by being clever: say what you see in one line, ask which window should carry on, and stop until the user answers.
 
 **The third case is the one that gets missed**, and missing it is silent. The repo is configured, so the settings work is done — but this flight still needs its own slug directory, its own dated brief, its own manifest and its own fresh instruments. Reuse the previous run's `state.js` and the user spends this build watching a dashboard that describes a project which already shipped.
 
@@ -94,9 +97,10 @@ If there is no git repo, `git init` **now**, not in Phase 5 — the first commit
 node_modules/
 __pycache__/
 .DS_Store
+.autopilot/serve.*
 ```
 
-`.autopilot/` is **not** ignored. It is the record of what was promised.
+`.autopilot/` is **not** ignored. It is the record of what was promised. The one exception is the last line — the running server's pid and log, which describe this machine at this minute and nothing else; §3 of `phases/0-instruments.md` adds it too, so a repo configured before 2026-08-19 gets it on the next flight.
 
 If a repo already exists and its working tree is dirty, say so in one line and continue — do not stash, reset, or clean the user's uncommitted work.
 
@@ -110,7 +114,7 @@ Leaving any phase means the same two marks, here and everywhere after: the stage
 
 1. Read the project memory file first (`memoryFile` in `state.js` — `CLAUDE.md` or `AGENTS.md`), then `state.js`, `manifest.md`, `interfaces.md`. Do **not** re-read the whole dialogue; the files are the memory. The brief is `<slug>/*-brief.md` — the newest one if there is more than one.
 2. Tell the user in one line where things stand: «Продолжаю: 7 из 12 тасков готовы, следующий — корзина».
-   Reopen the dashboard unless the interrupted session left a server still serving **this** directory — the content check in `phases/0-instruments.md` §3 answers that, and a pid file on its own does not. Reused → say the address; otherwise raise it again exactly as in Phase 0. A tab does not outlive the session that opened it, and assuming it did leaves the user watching nothing for the rest of the run.
+   **Re-open the dashboard — always**, which means running **both** §1 and §3 of `phases/0-instruments.md`, not only the second: §1 is what puts `index.html` beside the dashboard, and a `.autopilot/` created before 2026-08-19 does not have one, so the pane lands on a directory listing exactly as it used to. A tab does not outlive the session that opened it, so on a resume there is never a window to preserve; assuming there is leaves the user watching nothing for the rest of the run. What *is* conditional is the server: the content check in `phases/0-instruments.md` §3 reuses the port when the interrupted session left a server on **this** directory, and raises a new one when it did not. Then point the pane at it and say the address, exactly as on a first flight.
 3. A ticket marked `in-progress` in `state.js` with no commit behind it was interrupted mid-flight. Reset it to `pending` and run it again from scratch — a half-applied ticket is worse than a fresh one.
    **Unless its `handoffs` is above zero.** Then the work has a written seam: read `.autopilot/<slug>/handoff-<NN>-*.md`, oldest first, and launch the successor from the last one instead of starting over. That file exists precisely so an interruption costs the current context and not the whole ticket — throwing it away is the most expensive mistake available on a resume, because a relayed ticket is by definition one of the long ones. Check the tree first (`git status`, then the full suite): uncommitted edits from the interrupted context are the successor's starting material, and if the suite is red, say so in the successor's prompt so it does not read the breakage as its own.
 4. Re-run the Phase 6 checklist over the whole diff since the last green commit before continuing. Something may have been left broken.

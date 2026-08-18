@@ -4,7 +4,7 @@ The user's live view of the build. Not a phase in sequence — raised in Phase 0
 
 **Phase 0's share of this file is not here — it is `phases/0-instruments.md`**: copying the template, the state at the moment it is created, opening the page, and the update ritual that carries the rest of the run. This file is read **when the tickets are cut in Phase 4**, and afterwards only when a detail is actually needed. Reading it in Phase 0 costs six thousand characters in the one context that is never refreshed, to answer questions that arrive four phases later.
 
-The split is the one Phase 0 set up: `state.js` is the truth and the only thing you write, `dashboard.html` was copied once and is never touched again, and the page re-reads `state.js` by itself every ten seconds.
+The split is the one Phase 0 set up: `state.js` is the truth and the only thing you write, `dashboard.html` was copied from the template and is never hand-edited (Phase 0 re-copies it on a later flight, which is not the same thing), and the page re-reads `state.js` by itself every ten seconds.
 
 ## state.js — the full shape
 
