@@ -166,11 +166,105 @@ def serve(state):
     return "сервер не ответил — дашборд открывается файлом: %s" % PAGE
 
 
+ORDER = ["preflight", "manifest", "briefing", "spec", "plan", "build", "review", "final"]
+
+
+def close_passed(state):
+    """Закрывает этапы, которые прогон уже прошёл. Возвращает список закрытых.
+
+    Инвариант, а не событие: раньше активного этапа не может быть другого
+    активного. Поэтому агент только открывает следующий — предыдущий
+    закрывается здесь, временем открытия нового, тем самым, что он и получил бы
+    вручную. Половина ритуала перестала быть работой агента, а вместе с ней —
+    класс ошибок, где переход записан наполовину (2026-08-19: spec простоял
+    активным два с половиной часа рядом с готовым планом и идущей сборкой).
+
+    Одно исключение, и оно в самой модели работы: ревью идёт по таскам внутри
+    сборки, поэтому review не закрывает build. Всё, что позже review, закрывает
+    обоих.
+
+    Не трогает ничего, кроме active: skipped и failed — осознанные состояния,
+    и превратить их в done значило бы стереть сказанное о прогоне.
+    """
+    rank = {v: i for i, v in enumerate(ORDER)}
+    stages = state.get("stages") or []
+    live = [s for s in stages if s.get("status") == "active" and s.get("id") in rank]
+    if len(live) < 2:
+        return []
+    closed = []
+    for s in live:
+        # Что идёт следом. Ревью не считается «следующим» для сборки: оно живёт
+        # внутри неё, поэтому не закрывает её и не даёт ей времени закрытия.
+        later = [o for o in live if rank[o["id"]] > rank[s["id"]]
+                 and not (s["id"] == "build" and o["id"] == "review")]
+        if not later:
+            continue
+        # Закрываем моментом, когда прогон ушёл дальше, — открытием ближайшего
+        # следующего этапа, а не самого дальнего: иначе спецификация получила бы
+        # время начала ревью и час чужой работы в свой счёт.
+        marks = sorted(o["startedAt"] for o in later if o.get("startedAt"))
+        when = marks[0] if marks else state.get("updatedAt")
+        if not when:
+            continue
+        s["status"] = "done"
+        s["finishedAt"] = when
+        closed.append("%s закрыт автоматически (%s)" % (s["id"], when[11:19]))
+    return closed
+
+
+def save(state):
+    raw = open(STATE, encoding="utf-8").read()
+    head = raw.split("=", 1)[0]
+    tmp = STATE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(head + "=\n" + json.dumps(state, ensure_ascii=False, indent=2) + "\n")
+    os.replace(tmp, STATE)
+
+
+def audit(state):
+    """Молчит, пока состояние сходится само с собой. Не чинит: называет.
+
+    Ловит один класс ошибок — переход, записанный наполовину. Стадию оставили
+    active и ушли дальше; таск запустили без startedAt; закрыли без finishedAt.
+    Каждая такая живёт до тех пор, пока её не увидит человек: 2026-08-19 spec
+    простоял активным два с половиной часа рядом с готовым планом и идущей
+    сборкой, и заметил это пользователь, а не прогон.
+    """
+    out = []
+    stages = state.get("stages") or []
+    rank = {v: i for i, v in enumerate(ORDER)}
+    live = [s["id"] for s in stages if s.get("status") == "active" and s.get("id") in rank]
+    # Этап, до которого прогон дошёл, но который так и не отметили ни пройденным,
+    # ни пропущенным: close_passed его не трогает — «пропущен» требует причины,
+    # а её знает только агент. На экране он иначе читается как «сборка застряла».
+    if live:
+        edge = max(rank[i] for i in live)
+        for s in stages:
+            if s.get("status") == "pending" and rank.get(s.get("id"), 99) < edge:
+                out.append("этап %s остался pending, а прогон ушёл дальше — пометь skipped с причиной" % s.get("id"))
+    for s in stages:
+        if s.get("status") == "done" and not s.get("finishedAt"):
+            out.append("этап %s закрыт без finishedAt" % s.get("id"))
+    for t in state.get("tickets") or []:
+        if t.get("status") in ("in-progress", "review", "repair") and not t.get("startedAt"):
+            out.append("таск %s в работе без startedAt" % t.get("id"))
+        if t.get("status") == "done" and not t.get("finishedAt"):
+            out.append("таск %s закрыт без finishedAt" % t.get("id"))
+    return out
+
+
 def main():
     state = read_state()
+    passed = close_passed(state)
+    if passed:
+        save(state)                    # updatedAt не двигаем: пульс принадлежит агенту
     snap = write_snapshot(state)
     srv = "сервер не проверялся" if "--no-serve" in sys.argv else serve(state)
     print("%s · %s · обновлено %s" % (snap, srv, (state.get("updatedAt") or "?")[11:19]))
+    for line in passed:
+        print("  · " + line)
+    for line in audit(state)[:5]:
+        print("  ! " + line)
 
 
 if __name__ == "__main__":

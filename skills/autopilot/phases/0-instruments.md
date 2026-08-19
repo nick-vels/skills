@@ -169,7 +169,7 @@ This is here rather than in `phases/7-instruments.md` because **you will need it
 
 | When | What |
 |---|---|
-| entering a phase | that stage → `active` + `startedAt`; the one you left → `done` + `finishedAt` |
+| entering a phase | that stage → `active` + `startedAt`. **The one you left closes itself** — see below |
 | launching a ticket (or a whole wave) | those tickets → `in-progress` + `startedAt` **before** the subagent goes out |
 | a ticket returns, review starts | that ticket → `review` |
 | a finding goes back for repair | → `repair`, and `repairs` + 1 |
@@ -177,6 +177,12 @@ This is here rather than in `phases/7-instruments.md` because **you will need it
 | committed | → `done` + `finishedAt` + tests + commit |
 
 Every one of them, two moves and no more: **edit the affected rows** of `state.js` and move `updatedAt`, then `python3 .autopilot/sync.py`. The edit is roughly thirty tokens — never a rewrite of the file — and the screen follows within ten seconds wherever it is open. The second move costs one short call and buys three things at once: the state is proved to parse, the snapshot inside the page catches up, and a server that died since the last update comes back on its old address. Nothing else to re-open, nothing to mirror by hand.
+
+**Opening a stage is the whole of a transition — `sync.py` closes what the run has passed.** The rule is an invariant, not an event: nothing earlier than the active stage may also be active. So the stage you left is closed at the moment the next one opened — the very timestamp you would have written by hand — and the lines it prints with `·` say which. The one exception is in the model of the work itself: **review does not close build**, because reviews run per ticket inside the build; anything later closes both. `skipped` and `failed` are never touched — turning a conscious state into `done` would erase what was said about the run.
+
+This is here because on 2026-08-19 `spec` stayed `active` for two and a half hours beside a finished plan and a running build, and the person who noticed was the user, looking at the dashboard. Half a ritual performed by hand is a ritual that will be half-performed.
+
+**Lines starting with `!` are the ones left for you, and they are fixed in the same turn.** What cannot be derived is not guessed: a stage the run walked past but never marked — `pending` behind an active one — needs `skipped` **and a reason**, and only you know it. Same for a ticket in flight with no `startedAt`. A wrong guess about what you meant is worse than the inconsistency it would paper over.
 
 **Skipping `sync.py` degrades, it does not break.** The page on http is fed by `state.js` either way; what goes stale is only what the page shows to someone who opens the file with no server behind it. So if a stretch of the build is one edit after another, syncing on the stage transition rather than on every single row is a judgement call you are allowed to make — but end every phase synced.
 

@@ -111,7 +111,8 @@ Eight ids, fixed, in this order: `preflight` · `manifest` · `briefing` · `spe
 | `failed` | the phase stopped on a blocker the user has to resolve |
 
 - **`note` is one short human phrase**, not a log line: «6 вопросов», «ярус T0 — без разбивки на таски», «полный автомат — самобрифинг», «проверено 3 из 5».
-- **`build` and `review` may both be `active`.** Reviews run per ticket inside the build, and pretending otherwise would make the timings lie.
+- **`build` and `review` may both be `active`.** Reviews run per ticket inside the build, and pretending otherwise would make the timings lie. This is also the one exception to the closing rule below.
+- **You open stages; `sync.py` closes them.** Nothing earlier than the active stage stays `active`: the one you left is set to `done` at the moment the next one opened. Write `startedAt` on entry and nothing else — no `finishedAt` on the stage you are leaving, no second edit, no cleanup pass later.
 - **`skipped` is normal and must be visible.** Briefing in full mode, `plan` at tier T0 — a stage silently left `pending` forever reads as «сборка застряла».
 
 ## Tickets appear when they are cut, not when they start
