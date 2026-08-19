@@ -6,8 +6,8 @@ Four files describe this project and they are not interchangeable. Confusing the
 
 | File | Question it answers | Lifetime |
 |---|---|---|
-| `.autopilot/<slug>/` | what was promised and what was delivered **in this run** | forever, but it is history |
-| `.autopilot/<slug>/interfaces.md` | what the previous tickets built, for the tickets still to come | **dies with the run** |
+| `.autopilot/<dir>/` | what was promised and what was delivered **in this run** | forever, but it is history |
+| `.autopilot/<dir>/interfaces.md` | what the previous tickets built, for the tickets still to come | **dies with the run** |
 | `CLAUDE.md` / `AGENTS.md` | what an agent needs to work in this repo **tomorrow** | forever, and it is the present tense |
 | `docs/adr/` | **why** it is the way it is, and what was considered instead | forever, and it is past tense on purpose |
 
@@ -97,7 +97,7 @@ The file scales with the project, exactly like the ticket tiers do.
 
 `interfaces.md` is a working contract between tickets, and its life ends with the run. Its durable content — public signatures, schemas, event formats, module ownership — becomes the Архитектура and Ключевые файлы sections. What does not survive: the per-ticket framing («Из таска 03…»), anything already obvious from the code, and any instruction addressed to a subagent.
 
-The file itself stays in `.autopilot/<slug>/` as the run's record. It is not deleted and it is not maintained.
+The file itself stays in `.autopilot/<dir>/` as the run's record. It is not deleted and it is not maintained.
 
 ### Before writing — verify
 

@@ -4,7 +4,7 @@ Turn the manifest and the briefing answers into a specification. **This phase do
 
 One exception, and it is narrow: a genuine fork the briefing missed, where the two branches are different projects and a placeholder would only defer the same question to the build. Ask it, once, in one line, with a recommended answer. In **full** mode there is no exception — decide it and record the `ASSUMPTION`.
 
-Write to `.autopilot/<slug>/spec.md`. What the user sees in the dialogue is a two-line summary; the file is the spec.
+Write to `.autopilot/<dir>/spec.md`. What the user sees in the dialogue is a two-line summary; the file is the spec.
 
 ## Depth
 
@@ -239,6 +239,6 @@ Record the result in `state.js` under `coverage` — the count of findings and w
 
 **full, semi and interview** — two lines in the chat: what will be built, and what deliberately will not. Then move on.
 
-In **interview** that is easy to get wrong, because the user has just spent twenty answers on this and it feels like they are owed the document. They are not — they chose the mode that buys questions, not gates, and stopping here to wait for approval is the pause the mode was picked to avoid. Two lines, plus one saying where it is: «Спецификация — `.autopilot/<slug>/spec.md`, если захочешь посмотреть. Начинаю.» Then start.
+In **interview** that is easy to get wrong, because the user has just spent twenty answers on this and it feels like they are owed the document. They are not — they chose the mode that buys questions, not gates, and stopping here to wait for approval is the pause the mode was picked to avoid. Two lines, plus one saying where it is: «Спецификация — `.autopilot/<dir>/spec.md`, если захочешь посмотреть. Начинаю.» Then start.
 
 **manual** — the spec is a gate. Show it in full, stop, wait for an explicit «ок». Rewrite on every objection and ask again. Silence is not agreement, and neither is work already started.

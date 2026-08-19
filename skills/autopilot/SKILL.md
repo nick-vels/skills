@@ -132,7 +132,8 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 
 ```
 .autopilot/
-├── <feature-slug>/
+├── <YYYY-MM-DD>-<feature-slug>--wip/   one run; the date is the day it started,
+│   │                    the suffix means it has not landed yet and goes in Phase 8
 │   ├── <YYYY-MM-DD>-brief.md   the user's original words, redacted, never edited again
 │   ├── manifest.md      R01…Rnn — requirements and their status
 │   ├── reference.md     what the result should be like — the user's comparables, never yours
@@ -140,7 +141,8 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 │   ├── interfaces.md    the boundaries from the spec, then what finished tickets built
 │   ├── handoff-NN-1.md  only when a ticket outgrew one context — what the successor needs
 │   └── tickets/NN-<slug>.md
-├── README.md            how to read this folder — for the human, written once in Phase 0
+├── README.md            how to read this folder, and the register of runs — for the human:
+│                        written in Phase 0, one row added per run and closed in Phase 8
 ├── state.js             the run state, and the only file you update: stages, tickets, timings, debt
 ├── dashboard.html       the human view — copied once in Phase 0, then reads state.js by itself
 └── index.html           a symlink onto dashboard.html, so the pane's `/` is the dashboard
@@ -149,7 +151,7 @@ CLAUDE.md | AGENTS.md   the project memory — what the next session reads first
 docs/adr/               decisions worth outliving the run — written in Phase 9, tier T2+
 ```
 
-The brief is dated in its filename because a slug directory outlives one sitting. The dashboard is opened for the user, not described to them: it shows the eight stages of the cycle, where the run is now, and a live clock on the run, the current stage and the current ticket.
+The brief is dated in its filename because a run directory outlives one sitting — the directory's date is the day the run started, the brief's is the day that brief was dictated. The dashboard is opened for the user, not described to them: it shows the eight stages of the cycle, where the run is now, and a live clock on the run, the current stage and the current ticket.
 
 `.autopilot/` is the record of **this** run; the memory file at the root is the project as it stands, for whoever opens the repo next; `docs/adr/` is why it stands that way. Autopilot's content in the memory file lives between `<!-- autopilot:start -->` markers — everything the user wrote outside them is untouchable. See `phases/9-memory.md`.
 

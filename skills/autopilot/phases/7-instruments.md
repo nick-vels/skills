@@ -16,6 +16,7 @@ This is the file mid-build, with everything filled in. The starting shape — wh
 window.STATE =
 {
   "slug": "telegram-repair-bot",
+  "dir": "2026-08-07-telegram-repair-bot--wip",
   "title": "Телеграм-бот для заявок на ремонт",
   "mode": "semi",
   "depth": "normal",
@@ -165,6 +166,10 @@ At T0 there are no tickets by design, and a dashboard that shows only a running 
 ## What the dashboard shows
 
 Everything, from `STATE`: progress and brief coverage, the stage strip, live clocks per stage and per ticket, waves and their width, the debt, the retries and repairs, the chips for «пишутся · на ревью · в ремонте». You supply the facts and it does the arithmetic — there is no metric here for you to compute, and none worth repeating in the chat.
+
+**The clocks show working time, not the calendar, and this costs you nothing.** A run that a person left for a day should not report a day of work. The page has no need of extra records to know that: `state.js` is full of timestamps — the run's start, every stage, every ticket, `updatedAt` — and a gap between two of them longer than **45 minutes** is a person being away, not the build being slow. Each gap is counted up to that ceiling and no further, so an overnight pause adds 45 minutes and a two-day one adds the same. Measured on the runs of 2026-08-19: working intervals between marks fit inside an hour, real pauses ran 444, 4207 and 7814 minutes, so the crude ceiling lands within about a tenth of the truth. The same subtraction applies to each ticket's duration, hence to the median and the estimate. The header carries both numbers — «в работе 6:01», and under it «календарных 10:22» — and while the clock is stopped it says so, so a frozen timer never reads as a broken page.
+
+Nothing about this is your job: **do not adjust timestamps, do not record pauses, do not explain the difference in the chat.** Write the marks you already write. (If a run ever wants exact accounting, the page also reads an optional `beats` array — a list of ISO stamps — and the page itself remembers every `updatedAt` it has seen, which is what keeps the counter from stepping backwards when you return from a pause.)
 
 One number is worth knowing, because it is the one you might be tempted to improve on: **«осталось» is the median of finished tickets times the remaining critical path, shown as a range**, and below two finished tickets it says «рано считать» instead of guessing. Do not offer the user a sharper number than the dashboard's. A precise-looking wall-clock prediction is a fabrication; a range built from what already happened is not.
 

@@ -42,6 +42,7 @@ This is the whole file at the moment it is created — copy it and fill in what 
 window.STATE =
 {
   "slug": "telegram-repair-bot",
+  "dir": "2026-08-07-telegram-repair-bot--wip",
   "title": "Телеграм-бот для заявок на ремонт",
   "mode": "semi",
   "depth": "normal",
@@ -78,6 +79,8 @@ window.STATE =
   "blind": null
 }
 ```
+
+**`dir` is the run's directory, `slug` is the run's name, and they stopped being the same string.** The directory is `<YYYY-MM-DD>-<slug>--wip` while the flight is in the air and loses the suffix when it lands (`phases/0-preflight.md` step 1, `phases/8-final.md`). Every path goes through `dir`; `slug` is what the dashboard and the report call the run out loud. Rebuilding one from the other is wrong for the whole life of the run — which is exactly when paths are being written.
 
 Three of those fields exist because the orchestrator's context does not survive a compaction and these are the things it cannot rebuild from the repository:
 
@@ -194,6 +197,7 @@ Every one of them: **edit the affected rows** of `state.js` and move `updatedAt`
 - **`startedAt` on a ticket is that ticket's own launch time** — not the run's, not the build stage's. Copying the run's `startedAt` into a ticket is the one mistake that looks harmless and makes every per-ticket duration on the dashboard wrong from the first row.
 - **`startedAt` goes in when the thing starts, not when it ends.** An interval with a start and no end is what makes the timer run; filling both in at the end means the user watched a frozen clock while the work was happening.
 - **`updatedAt` moves on every write.** The dashboard shows «обновлено N назад» from it and turns the line warning-coloured when the silence runs long — that is the user's only way to tell «идёт работа» from «агент умер». The template knows that a ticket in flight means no writes for tens of minutes and holds the warning back until three quarters of an hour; between tickets it goes back to five. So the warning means what it says, and you do not need to invent keep-alive writes to silence it.
+- **The clocks subtract idle time by themselves.** A gap between marks longer than 45 minutes is counted as 45 and no more, so a night or a weekend away does not inflate the run's hours; the header shows working time with the calendar figure under it. You write nothing extra for this, you correct nothing, and you never explain the difference in the chat — see `phases/7-instruments.md`.
 - **Never touch `dashboard.html` after copying it**, and never hand-maintain a progress table in prose.
 
 That is all of Phase 0's business with the instruments. When the tickets are cut, read `phases/7-instruments.md` for the ticket shape and the rest of the reasoning.

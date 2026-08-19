@@ -10,7 +10,7 @@ So the last check does not use the spec.
 
 **Spawn a subagent that receives:**
 
-- `.autopilot/<slug>/<дата>-brief.md` — the user's own words (the path is `briefFile` in `state.js`)
+- `.autopilot/<dir>/<дата>-brief.md` — the user's own words (the directory is `dir` in `state.js`, the filename `briefFile`)
 - the repository as it now stands
 - how to run the project and its tests
 
@@ -100,6 +100,27 @@ If the run has the `polish` parameter, the loop goes **here**: after the blind a
 Read `phases/polish.md` now — and only now. On a run without the parameter, skip this section entirely and do not read the file.
 
 Without `polish`, nothing changes: the blind checker's findings go into the report as open items, exactly as below.
+
+## 2b. The `--wip` comes off
+
+The flight has landed, so the directory stops saying it has not. `.autopilot/<YYYY-MM-DD>-<slug>--wip/` loses its suffix and becomes the canonical name it keeps forever (`phases/0-preflight.md` step 1):
+
+```bash
+A=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P)/.autopilot
+D=2026-08-07-telegram-repair-bot--wip          # `dir` из state.js, дословно
+git -C "$A" mv "$D" "${D%--wip}"
+```
+
+**`git mv`, not `mv`.** The directory is committed — a plain rename shows up as a wholesale deletion plus an untracked twin, and the run's record loses its history in the one commit that was supposed to seal it.
+
+**Here, and not after the report.** The report names paths inside that directory (`## Где что лежит`), and a path that stops existing a minute after the user reads it is a broken path. The rename also has to be inside the final commit, so it goes before the memory file is committed, not after.
+
+Then two writes, both small:
+
+- `dir` in `state.js` → the new name. It is the field every path is built from, and the next session — a доводка, a «доделай» a month later — resolves nothing without it.
+- the run's row in `.autopilot/README.md` → status «сдан», and the `Итог` cell filled with **one line of what it delivered**, in the user's language. Not a stage count, not «готово»: what now exists that did not before. Once the dashboard moves on to the next flight, that row is the only place this run says what it was.
+
+**If the rename fails, the run is not undone by it.** A name already taken by an earlier flight of the same slug, or a dirty index inside the directory — say it in one line, leave the directory as it is, and make `dir` in `state.js` match whatever it is actually called. A landed run wearing a `--wip` is a cosmetic defect; a `dir` pointing at a directory that does not exist breaks every path the next session builds.
 
 ## 3. The final report
 
@@ -193,9 +214,10 @@ npm install && npm run dev
 - Описание проекта для следующего раза — `AGENTS.md` в корне
 - Почему сделано именно так — `docs/adr/` (если проект крупный)
 - Прогресс и цифры — `.autopilot/dashboard.html`
-- Твоя изначальная задача — `.autopilot/<slug>/<дата>-brief.md`
-- Требования и их судьба — `.autopilot/<slug>/manifest.md`
-- Спецификация — `.autopilot/<slug>/spec.md`
+- Твоя изначальная задача — `.autopilot/<дата>-<проект>/<дата>-brief.md`
+- Требования и их судьба — `.autopilot/<дата>-<проект>/manifest.md`
+- Спецификация — `.autopilot/<дата>-<проект>/spec.md`
+- Список всех сборок этого проекта — `.autopilot/README.md`
 ```
 
 ## Rules for the report

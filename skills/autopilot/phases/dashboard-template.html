@@ -188,6 +188,8 @@
     padding:14px 18px;font-size:13px;color:var(--dim)}
   .note b{color:var(--ink);font-weight:600}
   .stale{color:var(--warn)}
+  /* Часы, остановленные простоем: цифры гаснут, чтобы стоящий таймер не читался как поломка. */
+  .paused{opacity:.5}
   table{width:100%;border-collapse:collapse;font-size:13px;background:var(--panel);
     border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
   th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);
@@ -287,7 +289,8 @@ const I18N = {
     overall:"Прогресс проекта",overallStages:(a,b)=>`${a} из ${b} этапов пройдено`,
     overallTickets:(a,b)=>`${a} из ${b} тасков`,
     tickets:"Таски",ticketsDone:p=>`${p}% готово`,retries:n=>` · ${n} повтор.`,
-    elapsed:"Прошло времени",median:m=>`медиана на таск — ${m} мин`,tooEarly:"рано считать",
+    elapsed:"В работе",median:m=>`медиана на таск — ${m} мин`,tooEarly:"рано считать",
+    calendar:c=>`календарных ${c}`,paused:"пауза — часы стоят",
     left:"Осталось (оценка)",needTwo:"нужно 2+ готовых таска",
     critpath:n=>`критический путь: ${n} ${plural(n,'таск','таска','тасков')} в цепочке`,
     stagesTitle:"Этапы",stage:"Этап сейчас",stageOf:(a,b)=>`${a} из ${b} этапов`,
@@ -326,7 +329,8 @@ const I18N = {
     overall:"Project progress",overallStages:(a,b)=>`${a} of ${b} stages done`,
     overallTickets:(a,b)=>`${a} of ${b} tickets`,
     tickets:"Tickets",ticketsDone:p=>`${p}% done`,retries:n=>` · ${n} retries`,
-    elapsed:"Elapsed",median:m=>`median per ticket — ${m} min`,tooEarly:"too early to tell",
+    elapsed:"Working time",median:m=>`median per ticket — ${m} min`,tooEarly:"too early to tell",
+    calendar:c=>`${c} on the calendar`,paused:"paused — the clock is stopped",
     left:"Remaining (estimate)",critpath:n=>`critical path: ${n} tickets deep`,needTwo:"needs 2+ finished tickets",
     stagesTitle:"Stages",stage:"Current stage",stageOf:(a,b)=>`${a} of ${b} stages`,
     stages:{preflight:"Preflight",manifest:"Requirements",briefing:"Briefing",spec:"Spec",
@@ -376,6 +380,60 @@ const spanMs = (from, to) => {
   const b = to ? new Date(to).getTime() : Date.now();
   return Math.max(0, b - a);
 };
+// ——— активное время ——————————————————————————————————————————————
+// Часы прогона показывают работу, а не календарь: ушёл человек на сутки — часы стоят.
+// Никаких дополнительных записей для этого не нужно. state.js и так усеян метками —
+// старт, стадии, таски, updatedAt, — и промежуток между соседними метками длиннее порога
+// это простой, а не работа. Порог тот же, что у «молчания» ниже: сорок пять минут.
+// Замерено на реальных прогонах 2026-08-19: между метками работа укладывается в час,
+// а простои идут часами и сутками (444 минуты, 4207, 7814), так что грубая обрезка
+// ошибается на единицы процентов и при этом не требует от агента ни одной новой правки.
+const IDLE_CAP_MS = 2700000;
+let MARKS = [];
+// `updatedAt` — единственная скользящая метка: агент перезаписывает её, и прошлый пульс
+// из файла пропадает. Поэтому страница запоминает каждое значение, которое видела: без
+// этого счётчик прыгал назад на величину порога в тот момент, когда агент возвращался
+// после простоя (проверено 2026-08-19). Хранится по прогону, переживает перезагрузку.
+function rememberBeats(S){
+  const key = 'autopilot-beats:' + (S.slug || '') + ':' + (S.startedAt || '');
+  try {
+    const seen = JSON.parse(localStorage.getItem(key) || '[]');
+    if (S.updatedAt && seen.indexOf(S.updatedAt) === -1) {
+      seen.push(S.updatedAt);
+      localStorage.setItem(key, JSON.stringify(seen.slice(-600)));
+    }
+    return seen;
+  } catch (e) { return []; }
+}
+function collectMarks(S){
+  const out = [];
+  const push = v => { const t = v ? new Date(v).getTime() : NaN; if (!isNaN(t)) out.push(t); };
+  push(S.startedAt); push(S.updatedAt); push(S.finishedAt);
+  (S.beats || []).forEach(push);                    // журнал пульса, если прогон его ведёт
+  rememberBeats(S).forEach(push);                   // и то, что страница видела своими глазами
+  (S.stages || []).forEach(x => { push(x.startedAt); push(x.finishedAt); });
+  (S.tickets || []).forEach(x => { push(x.startedAt); push(x.finishedAt); });
+  ((S.polish || {}).rounds || []).forEach(x => push(x.finishedAt));
+  return Array.from(new Set(out)).sort((a, b) => a - b);
+}
+// Сумма промежутков между метками; каждый обрезан по порогу простоя.
+function activeMs(from, to){
+  const a = from ? new Date(from).getTime() : NaN;
+  if (isNaN(a)) return null;
+  const b = to ? new Date(to).getTime() : Date.now();
+  if (b <= a) return 0;
+  const pts = [a].concat(MARKS.filter(t => t > a && t < b), [b]);
+  let s = 0;
+  for (let i = 1; i < pts.length; i++) s += Math.min(pts[i] - pts[i-1], IDLE_CAP_MS);
+  return s;
+}
+// Стоят ли часы прямо сейчас — то есть тянется ли простой дольше порога.
+function idleNow(){
+  const S = window.STATE || {};
+  if (!S || S.finishedAt) return false;
+  const last = MARKS.length ? MARKS[MARKS.length - 1] : null;
+  return last != null && Date.now() - last > IDLE_CAP_MS;
+}
 const fmtClock = ms => {
   if (ms == null) return '—';
   const s = Math.floor(ms/1000), h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = s%60;
@@ -384,7 +442,7 @@ const fmtClock = ms => {
 };
 // Открытый интервал получает data-live — его каждую секунду обновляет tick().
 function timerHTML(from, to){
-  const ms = spanMs(from, to);
+  const ms = activeMs(from, to);
   if (ms == null) return '—';
   return to ? `<span>${fmtClock(ms)}</span>`
             : `<span data-live data-from="${from}">${fmtClock(ms)}</span>`;
@@ -398,8 +456,13 @@ function agoText(iso){
   return m < 60 ? CUR.agoMin(m) : CUR.agoHr(Math.floor(m/60), m%60);
 }
 function tick(){
+  const stopped = idleNow();
   document.querySelectorAll('[data-live][data-from]').forEach(el => {
-    el.textContent = fmtClock(spanMs(el.dataset.from, null));
+    el.textContent = fmtClock(activeMs(el.dataset.from, null));
+    el.classList.toggle('paused', stopped);          // часы стоят — видно, что это не поломка
+  });
+  document.querySelectorAll('[data-idle-note]').forEach(el => {
+    el.hidden = !stopped;
   });
   document.querySelectorAll('[data-ago]').forEach(el => {
     el.textContent = agoText(el.dataset.ago);
@@ -468,6 +531,7 @@ function render(lang){
   const L = I18N[lang] || I18N.ru;
   CUR = L;
   const S = STATE, T = S.tickets || [], R = S.requirements || {};
+  MARKS = collectMarks(S);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   // Таск живёт в трёх активных состояниях, а не в одном: пишется — проверяется —
   // чинится. Ревью и ремонт идут, пока летит следующий таск, поэтому «готово 2 из 8»
@@ -483,7 +547,7 @@ function render(lang){
   const live = Math.max(0, (R.total || 0) - (R.dropped || 0));
 
   const mins = t => (t.startedAt && t.finishedAt)
-    ? Math.max(1, Math.round((new Date(t.finishedAt) - new Date(t.startedAt)) / 60000)) : null;
+    ? Math.max(1, Math.round(activeMs(t.startedAt, t.finishedAt) / 60000)) : null;
   const durations = done.map(mins).filter(Boolean).sort((a,b) => a-b);
   const median = durations.length ? durations[Math.floor(durations.length/2)] : null;
   const fmtDur = m => m == null ? '—'
@@ -514,7 +578,7 @@ function render(lang){
     if (t.status === 'review') return full * 0.2;
     if (t.status === 'repair') return full * 0.5;
     if (t.status === 'in-progress' && t.startedAt) {
-      const elapsed = (spanMs(t.startedAt, null) || 0) / 60000;
+      const elapsed = (activeMs(t.startedAt, null) || 0) / 60000;
       return Math.max(1, full - elapsed);          // уже идёт — осталось меньше
     }
     return full;
@@ -544,7 +608,7 @@ function render(lang){
   const t0 = String(S.tier).toUpperCase() === 'T0';
   const buildStage = stages.find(s => s.id === 'build');
   const buildMs = buildStage && buildStage.startedAt && buildStage.finishedAt
-    ? spanMs(buildStage.startedAt, buildStage.finishedAt) : null;
+    ? activeMs(buildStage.startedAt, buildStage.finishedAt) : null;
 
   // Прогресс проекта целиком. Веса — это доли времени, а не «этап = 1/8»: разработка идёт
   // часами, подготовка минуты. Внутри разработки шкала дробится по готовым таскам, поэтому
@@ -729,7 +793,9 @@ function render(lang){
     </div>
     <div class="card"><div class="k">${L.elapsed}</div>
       <div class="v">${S.startedAt ? timerHTML(S.startedAt, S.finishedAt) : '—'}</div>
-      <div class="sub">${median ? L.median(median) : (buildMs != null ? L.buildTook(fmtClock(buildMs)) : L.tooEarly)}</div>
+      <div class="sub">${S.startedAt ? L.calendar(fmtClock(spanMs(S.startedAt, S.finishedAt))) + ' · ' : ''}${
+        median ? L.median(median) : (buildMs != null ? L.buildTook(fmtClock(buildMs)) : L.tooEarly)}</div>
+      <div class="sub stale" data-idle-note hidden>${L.paused}</div>
     </div>
     <div class="card"><div class="k">${L.left}</div>
       <div class="v">${eta ? fmtDur(eta[0]) : '—'}${eta ? `<small> … ${fmtDur(eta[1])}</small>` : ''}</div>
@@ -782,7 +848,7 @@ function render(lang){
     <span>${L.updated}: <span data-ago="${esc(S.updatedAt || '')}"
       title="${S.updatedAt ? esc(new Date(S.updatedAt).toLocaleString(L.lang==='en'?'en-GB':'ru-RU')) : ''}"
       >${S.updatedAt ? agoText(S.updatedAt) : '—'}</span></span>
-    <span>${L.filesIn} <code>.autopilot/${esc(S.slug)}/</code></span>
+    <span>${L.filesIn} <code>.autopilot/${esc(S.dir || S.slug)}/</code></span>
   </footer>`;
 
   // Вкладка и карточка предпросмотра подписаны проектом, а не словом «autopilot»:

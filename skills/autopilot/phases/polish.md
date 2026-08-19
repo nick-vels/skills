@@ -41,8 +41,8 @@ Four steps, and the shape of them is the same as an ordinary ticket's — becaus
 
 **1. The critic.** One subagent, fresh, per round. It receives:
 
-- `.autopilot/<slug>/<дата>-brief.md` — the user's own words
-- `.autopilot/<slug>/reference.md` — the comparables
+- `.autopilot/<dir>/<дата>-brief.md` — the user's own words
+- `.autopilot/<dir>/reference.md` — the comparables
 - the repository, and how to run it
 - what previous rounds already fixed — titles only, so it does not re-report them
 

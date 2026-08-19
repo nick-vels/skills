@@ -101,7 +101,7 @@ In priority order. Ask only what is actually unresolved for *this* brief; skip a
 
 The manifest records *what* to build. Nothing yet records **what it should be like**, and for anything with a surface — a page, an app, a piece of copy — that gap is where «сделал по требованиям, а выглядит не так» comes from. The brief almost never says it, and the user almost always has it in their head.
 
-So: **whatever the user hands you that a finished result could be measured against goes into `.autopilot/<slug>/reference.md`.** Reference sites, a competitor, screenshots, a text whose tone they like, a number they want beaten, «как в приложении банка». One line each, verbatim after redaction, with where it came from.
+So: **whatever the user hands you that a finished result could be measured against goes into `.autopilot/<dir>/reference.md`.** Reference sites, a competitor, screenshots, a text whose tone they like, a number they want beaten, «как в приложении банка». One line each, verbatim after redaction, with where it came from.
 
 ```markdown
 # Эталон
