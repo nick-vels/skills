@@ -134,7 +134,7 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 .autopilot/
 ├── <YYYY-MM-DD>-<feature-slug>--wip/   one run; the date is the day it started,
 │   │                    the suffix means it has not landed yet and goes in Phase 8
-│   ├── <YYYY-MM-DD>-brief.md   the user's original words, redacted, never edited again
+│   ├── <YYYY-MM-DD>-brief.md   the user's original words, redacted; later changes appended
 │   ├── manifest.md      R01…Rnn — requirements and their status
 │   ├── reference.md     what the result should be like — the user's comparables, never yours
 │   ├── spec.md          the specification
@@ -143,8 +143,9 @@ Credentials are the user's to hold, not the agent's to handle. This section bind
 │   └── tickets/NN-<slug>.md
 ├── README.md            how to read this folder, and the register of runs — for the human:
 │                        written in Phase 0, one row added per run and closed in Phase 8
-├── state.js             the run state, and the only file you update: stages, tickets, timings, debt
-├── dashboard.html       the human view — copied once in Phase 0, then reads state.js by itself
+├── state.js             the run state, and the only file you edit: stages, tickets, timings, debt
+├── dashboard.html       the human view — copied in Phase 0; carries a snapshot of the state inside it
+├── sync.py              one call after each update: snapshot into the page, server back up if it died
 └── index.html           a symlink onto dashboard.html, so the pane's `/` is the dashboard
 
 CLAUDE.md | AGENTS.md   the project memory — what the next session reads first
@@ -167,7 +168,7 @@ The rules below are the same kind of thing. Each one is here because it was paid
 
 **Five rules are not calibration and do not lose.** They hold in every mode, at every depth, at every tier:
 
-1. **A requirement is removed only by the user**, in their own words, quoted into the manifest.
+1. **A requirement is removed only by the user**, in their own words, quoted into the manifest — and appended to the brief, where the independent gates can see it. The same holds for one they add mid-flight.
 2. **A secret is never requested, echoed, or written** — not into a file, a prompt, a commit, or a report.
 3. **A fact about the user is never invented.** Prices, texts, addresses, accounts stay visible placeholders until they supply them.
 4. **An irreversible or outward-facing action is a question** — deploy, publish, pay, message a third party, delete data, rewrite history.

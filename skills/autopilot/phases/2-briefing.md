@@ -138,8 +138,20 @@ After each answer, update the manifest row immediately — not at the end of the
 
 - Answer resolves a requirement → note the decision in Основание.
 - Answer **cancels** a requirement → `dropped`, with the user's own words quoted. This is the only path to `dropped`, and it is why the answers are recorded verbatim (after redaction).
-- Answer raises something new → **a new row**, `G##`, quoting the user's phrasing. This is the only phase where the manifest grows on the user's words. Afterwards it grows for exactly one reason — a `D##` row for something the build proved, per `phases/5-subagents.md` — and never for an idea of yours.
+- Answer raises something new → **a new row**, `G##`, quoting the user's phrasing.
 - Answer is «не знаю» → `placeholder`, and the build gets a stub with a visible label.
+
+And every answer that **cancels, adds or reverses** something is also appended to the brief file under `## Дополнения` — dated, verbatim, per `phases/1-manifest.md` §2. Not instead of the manifest row: as well as it. The row records what happened to a requirement; the brief records what was asked for, and the two independent checks are given only the second one.
+
+## When the задача changes after this phase
+
+The interview ends; the user does not. «Убери SMS» at ticket four, «а добавь ещё экспорт» while a review is running — this is ordinary, not a failure of the briefing, and it has one procedure wherever in the flight it arrives:
+
+1. **The brief file first** — their words, verbatim and dated, under `## Дополнения`. First because it is the step that gets skipped: updating the manifest feels like having recorded the change, and the manifest is the one file the gates may not read.
+2. **The manifest** — `dropped` with the quote, or a new `G##` row. `G##` is the form for anything the user asked for, in **any** phase; what the briefing's end changes is not who may create one, but what one costs.
+3. **The plan** — a new `G##` becomes a ticket, a `deferred` row, or a line in the report, decided exactly as it would have been at that point in the run (`phases/4-plan.md`). Say which, in one line, and say what it does to everything else: «Беру, но лендинг тогда сдвигается». A requirement accepted silently mid-flight is a schedule the user never agreed to.
+
+The three marks stay distinct, and nothing here blurs them: **`G##` is the user's words, `A##` is your idea, `D##` is what the build proved.** A wish of theirs filed as `D##` quietly retires a requirement nobody cancelled; an idea of yours filed as `G##` puts your taste into the one file meant to hold only theirs.
 
 ## Full mode — the self-briefing
 

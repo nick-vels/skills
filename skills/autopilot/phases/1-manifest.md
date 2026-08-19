@@ -41,17 +41,27 @@ The redacted brief, **word for word**, into `.autopilot/<dir>/<YYYY-MM-DD>-brief
 ```markdown
 # Изначальная задача
 
-> Записано <дата>. Этот файл не редактируется — он эталон, с которым
-> сверяется готовый результат.
+> Записано <дата>. Текст задачи не редактируется — он эталон, с которым
+> сверяется готовый результат. Всё, что сказано позже, дописывается
+> в «Дополнения» ниже.
 
 <весь текст пользователя, дословно, после редактирования секретов>
+
+## Дополнения
+
+- <дата> — «SMS не надо, только телега»
+- <дата> — «и чтобы заявку можно было отменить в течение часа»
 ```
 
 Rules that make this file worth having:
 
 - **No paraphrase, no cleanup, no reordering.** Bad grammar, contradictions, half-sentences and duplicated thoughts all stay. A tidied brief is already a spec, and a spec is the thing you cannot check against.
 - **Everything counts as brief** — the idea, the asides, the constraints, the "и ещё хорошо бы", the stack preference, the deadline mentioned in passing.
-- **Never edited again.** Later thoughts from the same sitting are appended under `## Дополнения`, dated, never merged into the original text. A brief dictated on a **later day** is a new file with that day's date — appending it to an older one erases the fact that the project was asked for twice.
+- **The text above is never edited — but the file goes on growing.** Everything the user says after it, for as long as the run lasts, is appended under `## Дополнения`: dated, word for word, never merged into the text above. A cancellation, an addition, a decision reversed at ticket four — all of it, not only the afterthoughts of the first sitting.
+
+  This is the rule the rest of the framework leans on, and the easiest one to skip, because the manifest row does get updated and that feels like enough. It is not. **The manifest is your reading of the задача, and both independent gates are forbidden to read it** — G2 gets the brief and the spec, G4 gets the brief and the repository, and neither is allowed anything else (`phases/3-spec.md`, `phases/8-final.md`). A change that reaches the manifest and not this file is a change the two checks capable of catching a loss will never hear about: the cancelled requirement comes back as a false «не реализовано», and the thing the user asked for at ticket four is either reported as scope you invented or — if it never got built — noticed by nobody at all.
+
+  A brief dictated on a **later day** is a new file with that day's date — appending it to an older one erases the fact that the project was asked for twice.
 
 ## 3. Atomise into requirements
 
@@ -102,7 +112,7 @@ These are the most dangerous items in the whole flight: too obvious to state, to
 
 Mark with `D` (`D01`, `D02`) anything the **build** proved that the plan did not know — a data model that does not hold, an assumed interface that cannot exist, two requirements that collide in practice. Its Основание is the finding itself, and it names the requirement it serves.
 
-A `D##` row is the only thing allowed to enter the manifest after the briefing, and only from `phases/5-repair.md`. It is not a requirement the user made and it never replaces one: a requirement the code proves impossible is a question for the user, not a `D##` that quietly retires it. An idea you had while building is not a discovery either — that is an `A##`, and it lives in the spec under the usual parent-and-proportion rules.
+After the briefing, a `D##` row is the only thing **you** may add to the manifest, and only from `phases/5-repair.md` — the one other way it can grow is a `G##` the user themselves asked for, per `phases/2-briefing.md`. A `D##` is not a requirement the user made and it never replaces one: a requirement the code proves impossible is a question for the user, not a `D##` that quietly retires it. An idea you had while building is not a discovery either — that is an `A##`, and it lives in the spec under the usual parent-and-proportion rules.
 
 ### How fine to cut
 
@@ -138,7 +148,7 @@ This is the gate that would have caught every drift you have ever seen, and the 
 
 ## Keeping it current
 
-The manifest is updated at exactly five moments, never continuously:
+The manifest is updated at exactly six moments, never continuously:
 
 | When | What changes |
 |---|---|
@@ -147,5 +157,8 @@ The manifest is updated at exactly five moments, never continuously:
 | after tickets are cut | `in-spec` → `in-ticket`, ticket number noted |
 | after each ticket lands | `in-ticket` → `done` / `placeholder`, commit noted |
 | when the build contradicts the plan | a new `D##` row, and the affected rows re-pointed at the amended spec section |
+| when the user changes something mid-flight | the affected row moves — `dropped` with the quote, or a new `G##` — **and the same words go into the brief's `## Дополнения`** |
+
+The last row is the only one that touches a second file, and that is the point: it is the moment when this table and the brief would otherwise start describing different projects. The procedure for it — all three steps, in order — is in `phases/2-briefing.md`.
 
 Each update is an edit of the affected rows, never a rewrite of the table. The table is short-lived context and long-lived truth; treat it as data, not prose.

@@ -65,7 +65,7 @@ The one failure mode worth guarding: depth that **floats free of the brief** —
 |---|---|---|
 | `R##` | straight from the brief | untouchable |
 | `R##.n` | **deepening** a brief requirement | uncapped — this is the main work of the phase |
-| `G##` | decided in the briefing | the user confirmed it |
+| `G##` | **the user's own words**, in the briefing or later | untouchable, like `R##` — a `G##` raised mid-flight is a change to the задача, not an idea |
 | `A##` | a **new capability** the brief never implied | must name a parent `R##` |
 | `D##` | a constraint the **build** proved, added mid-flight | only from `phases/5-repair.md`, never from an idea |
 
@@ -209,6 +209,10 @@ Its brief:
 >
 > Прочитай два файла. Первый — задача, как её поставил заказчик своими словами.
 > Второй — спецификация, написанная по этой задаче.
+>
+> В брифе может быть раздел «Дополнения» — то, что заказчик сказал позже.
+> Это часть задачи наравне с основным текстом, и при расхождении верно
+> более позднее: отменённого там требовать не нужно, добавленное — нужно.
 >
 > Найди всё, что заказчик просил, а спецификация не покрывает. По каждому: цитата
 > из брифа и одна строка, чего именно нет.

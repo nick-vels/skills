@@ -4,7 +4,7 @@ The user's live view of the build. Not a phase in sequence — raised in Phase 0
 
 **Phase 0's share of this file is not here — it is `phases/0-instruments.md`**: copying the template, the state at the moment it is created, opening the page, and the update ritual that carries the rest of the run. This file is read **when the tickets are cut in Phase 4**, and afterwards only when a detail is actually needed. Reading it in Phase 0 costs six thousand characters in the one context that is never refreshed, to answer questions that arrive four phases later.
 
-The split is the one Phase 0 set up: `state.js` is the truth and the only thing you write, `dashboard.html` was copied from the template and is never hand-edited (Phase 0 re-copies it on a later flight, which is not the same thing), and the page re-reads `state.js` by itself every ten seconds.
+The split is the one Phase 0 set up: `state.js` is the truth and the only thing you write by hand, `dashboard.html` was copied from the template and is never hand-edited (Phase 0 re-copies it on a later flight, which is not the same thing), and the page re-reads `state.js` by itself every ten seconds. The page also carries a snapshot of the state inside it, written by `python3 .autopilot/sync.py` after each update — that is what the dashboard shows when it is opened with no server behind it.
 
 ## state.js — the full shape
 
@@ -140,7 +140,9 @@ Every percentage and every clock is derived from the fields above: nothing is st
 
 The ritual itself is in `phases/0-instruments.md`. What belongs here is what to do when the page disagrees with you — neither of these loses a run:
 
-- **The page says «дашборд ещё не прочитал состояние».** `state.js` is missing or does not parse. If the run is young, this is just Phase 0 not having written it yet and the page will fill itself in on its own. If the build has been going a while, the file got mangled — rewrite it whole from what you know; the page is waiting and needs nothing from you.
+- **The page says «дашборд ещё не прочитал состояние».** Neither the snapshot nor `state.js` gave it anything — on a live run that means Phase 0 has not written the state yet, and the page will fill itself in on its own. Mid-build it means the file got mangled *and* was never synced: rewrite `state.js` whole from what you know and run `sync.py`, which says on the spot whether it parses. You will normally hear about a mangled file from `sync.py` long before the page can show this.
+
+- **The page shows data but the clock is not moving.** The state it is showing came from the snapshot: no server behind the page, or it was opened as a file. Nothing is broken and nothing is lost — the next `sync.py` puts the server back on its old address, and the numbers were true as of `updatedAt`, which the page states out loud.
 - **A write caught mid-flight.** If the poll reads the file while you are writing it, the load simply fails and the last good state stays on screen until the next poll ten seconds later. Nothing to handle, nothing to announce.
 
 ## Tier T0 — the dashboard still has to say something

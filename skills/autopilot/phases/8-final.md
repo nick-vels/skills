@@ -10,7 +10,7 @@ So the last check does not use the spec.
 
 **Spawn a subagent that receives:**
 
-- `.autopilot/<dir>/<дата>-brief.md` — the user's own words (the directory is `dir` in `state.js`, the filename `briefFile`)
+- `.autopilot/<dir>/<дата>-brief.md` — the user's own words (the directory is `dir` in `state.js`, the filename `briefFile`). **The whole file, `## Дополнения` included** — what they said at ticket four is as much the задача as what they said at the start, and this file is the only place the checker can learn it
 - the repository as it now stands
 - how to run the project and its tests
 
@@ -22,6 +22,10 @@ Its brief:
 
 > Прочитай приложенный файл брифа — это задача, которую поставил заказчик. Затем изучи
 > репозиторий и определи, что из этого действительно реализовано.
+>
+> Если в брифе есть раздел «Дополнения» — это то, что заказчик сказал уже по ходу
+> работы, и оно часть задачи наравне с основным текстом. При расхождении верно
+> более позднее: отменённое там не требуется, добавленное требуется.
 >
 > **Запусти проект** — команды в приложенном описании — и пройди основной сценарий так,
 > как прошёл бы его заказчик. Чтение кода показывает намерение, запуск показывает результат.
@@ -51,7 +55,7 @@ Its brief:
 | `done` | **частично / нет** | 🔴 **drift** — the manifest is wrong. Report it; the fix is a ticket or a line in the report, never an edit of your own (§1a) |
 | `placeholder` | частично | expected — confirm the placeholder is visible, not an invented fact |
 | `dropped` / `deferred` | нет | expected — must appear in the report as not built |
-| — | реализовано, но не из брифа | scope that grew without a parent; report it |
+| — | реализовано, но не из брифа | scope that grew without a parent; report it. With the brief kept current (`phases/2-briefing.md`), a `G##` never lands here — anything that still does is genuinely unordered |
 
 Every 🔴 goes in the report **and** in `state.js` under `blind`. A drift found here is not a failure of the run — it is the run working. Hiding it is the failure.
 
@@ -236,6 +240,8 @@ The open page picks this up by itself within ten seconds — this is the picture
 
 `finishedAt` also stops the clocks and the ten-second polling: the page freezes on the final numbers instead of counting time nobody is spending. Leave it `null` on a finished run and the user's total keeps growing overnight.
 
+**Sync once more right after writing it** — `python3 .autopilot/sync.py`. This is the write that decides what a landed run looks like six months later: the snapshot inside `dashboard.html` freezes on the final numbers, so the page opens from the archive with the whole flight intact, long after the server is gone. `sync.py` sees `finishedAt` and does not raise a server for a run that has landed, so this cannot resurrect what the next block is about to kill.
+
 **Then, and only then, put out the server** — the one Phase 0 started for the pane (`phases/0-instruments.md`). It goes last because the page has to fetch the final state first, and it goes at all because a run that ends leaving an HTTP server on the user's machine has left something running that nobody will ever think to stop.
 
 **Last means after the report reaches the user, not in the same breath as `finishedAt`.** The page polls every ten seconds; killing the server in the same turn that wrote the final state means it never fetches it, and the picture the user is left staring at says «в работе» forever — the exact failure this whole section exists to prevent, arriving from the other side. Writing the report is what buys the time, so put the kill after it:
@@ -254,4 +260,4 @@ A=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P)/.autopilot
 
 **The pid file is the run's own** — `.autopilot/serve.pid`, addressed from the git root (`phases/0-instruments.md` §3), never a machine-wide name: a shared one is how one run's ending takes down another run's dashboard mid-flight. **The loop is over every server on this directory, not just the recorded pid** — a session that raised two of them (a restart, a lost pid file) records only the last, and the others outlive the run. **The `ps` check is not ceremony.** A pid file proves nothing about the process alive under that number today, and the pattern is `-m http\.server`, not `http.server`, because the loose form also matches the unrelated `http-server` from npm — measured 2026-08-19, with a user's dev server as the casualty.
 
-The pane keeps the final picture on screen — it is already rendered and no longer polling. Nothing is lost with the port: `dashboard.html` is a static file, and a double-click reopens it in a real browser with every number intact. Say nothing about any of this; the shutdown is not news. If доводка is running (`phases/polish.md`), the run is not over — the server stays up until the доводка closes too.
+The pane keeps the final picture on screen — it is already rendered and no longer polling. Nothing is lost with the port: `dashboard.html` carries the final state inside itself, so a double-click reopens it with every number intact — in a real browser, in a pane, on another machine, with no server and no `state.js` anywhere near it. Say nothing about any of this; the shutdown is not news. If доводка is running (`phases/polish.md`), the run is not over — the server stays up until the доводка closes too.
