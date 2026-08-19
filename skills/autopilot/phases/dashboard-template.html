@@ -8,12 +8,14 @@
   :root, :root[data-theme="light"]{
     --bg:#fbfbfa; --panel:#fff; --ink:#16150f; --dim:#6b6a63; --line:#e4e3dd;
     --accent:#111; --ok:#1f7a4d; --warn:#a8700a; --bad:#b3352b; --ghost:#eeede8; --info:#2f6690;
+    --fix:#6f4a9e;
     --radius:14px; --logo-light:block; --logo-dark:none; --glow:rgba(168,112,10,.38);
   }
   @media (prefers-color-scheme:dark){
     :root:not([data-theme]){
       --bg:#141412; --panel:#1c1c19; --ink:#f2f1ea; --dim:#918f86; --line:#2e2e29;
       --accent:#f2f1ea; --ok:#4bbd84; --warn:#d9a341; --bad:#e0685c; --ghost:#262622; --info:#7aa8d4;
+      --fix:#b18ad9;
       --glow:rgba(217,163,65,.45);
       --logo-light:none; --logo-dark:block;
     }
@@ -21,6 +23,7 @@
   :root[data-theme="dark"]{
     --bg:#141412; --panel:#1c1c19; --ink:#f2f1ea; --dim:#918f86; --line:#2e2e29;
     --accent:#f2f1ea; --ok:#4bbd84; --warn:#d9a341; --bad:#e0685c; --ghost:#262622; --info:#7aa8d4;
+    --fix:#b18ad9;
     --logo-light:none; --logo-dark:block;
   }
   *{box-sizing:border-box}
@@ -123,6 +126,7 @@
   .chip.run{border-color:var(--warn);color:var(--warn)}
   .chip.info{border-color:var(--info);color:var(--info)}
   .chip.bad{border-color:var(--bad);color:var(--bad)}
+  .chip.fix{border-color:var(--fix);color:var(--fix)}
   /* фаза таска прямо на плашке: «ревью» и «ремонт» — состояния, которых до
      этого не существовало, и по одному цвету их не различить */
   .fill .nm{overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -653,9 +657,12 @@ function render(lang){
         stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-pct/100)}"
         transform="rotate(-90 40 40)"/></svg>`;
   };
+  // Ремонт — не «ещё немного разработки»: таск уже написан, вернулся с ревью и
+  // переписывается. Пока он делил цвет с in-progress, различала их только
+  // подпись, и волна возвратов на экране читалась как обычная работа.
   const statusColor = s => s === 'done' ? 'var(--ok)' : s === 'failed' ? 'var(--bad)'
-    : s === 'review' ? 'var(--info)'
-    : (s === 'in-progress' || s === 'repair') ? 'var(--warn)' : 'var(--line)';
+    : s === 'review' ? 'var(--info)' : s === 'repair' ? 'var(--fix)'
+    : s === 'in-progress' ? 'var(--warn)' : 'var(--line)';
 
   const waves = [...new Set(T.map(t => t.wave ?? 1))].sort((a,b) => a-b);
   // Полоса показывает СОСТОЯНИЕ, а не долю. Раньше её ширина была длительностью
@@ -688,14 +695,15 @@ function render(lang){
       <span class="chip ok">${L.chipDone(done.length)}</span>
       <span class="chip run">${L.chipRun(writing.length)}</span>
       ${inReview.length ? `<span class="chip info">${L.chipReview(inReview.length)}</span>` : ''}
-      ${inRepair.length ? `<span class="chip run">${L.chipRepair(inRepair.length)}</span>` : ''}
+      ${inRepair.length ? `<span class="chip fix">${L.chipRepair(inRepair.length)}</span>` : ''}
       <span class="chip">${L.chipWait(Math.max(0, waiting))}</span>
       ${failedT.length ? `<span class="chip bad">${L.chipFailed(failedT.length)}</span>` : ''}
     </div>` : '';
   const tlNow = !T.length ? '' : running.length
     ? `<div class="tlnow"><span class="lbl">${L.nowLbl}</span> ` + running.map(t =>
         `<b>${esc(t.id)}</b> ${esc(t.title)} <span class="lbl">— ${
-          esc((L.phase||{})[t.status] || '')}</span> <span class="nowclock">${
+          esc((L.phase||{})[t.status] || '')}</span> <span class="nowclock" style="color:${
+          statusColor(t.status)}">${
           t.startedAt ? timerHTML(t.startedAt, null) : '—'}</span>`).join(' · ') + '</div>'
     : (S.finishedAt || done.length === T.length ? '' : `<div class="tlnow lbl">${L.nowIdle}</div>`);
 
@@ -721,7 +729,7 @@ function render(lang){
     <td>${(t.requirements||[]).map(r => `<span class="tag">${esc(r)}</span>`).join('') || '<span class="empty">—</span>'}</td>
     <td class="mins">${t.startedAt ? timerHTML(t.startedAt, t.finishedAt) : '—'}</td>
     <td class="mins">${t.retries ? t.retries : ''}${
-      t.repairs ? `<span style="color:var(--info)"> +${t.repairs}</span>` : ''}</td>
+      t.repairs ? `<span style="color:var(--fix)"> +${t.repairs}</span>` : ''}</td>
     <td class="mins">${t.tests ? (t.tests.failed ? `<span style="color:var(--bad)">${t.tests.failed} ✗</span>` : t.tests.passed + ' ✓') : '—'}</td>
     <td class="mins">${t.commit ? `<code>${esc(t.commit).slice(0,7)}</code>` : '—'}</td>
   </tr>`).join('');

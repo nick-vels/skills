@@ -129,7 +129,7 @@ None of that is a template bug — the dashboard shows what it was given. Publis
 
 The build block earns its place only if the rows are true at a glance, which takes three fields and no more:
 
-- **`status`** — a filled bar is a ticket that has started, coloured by status: green done, amber being written, blue in review, amber again in repair, red failed, dashed outline for what has not begun. Review and repair also carry the phase as a word on the bar, because colour alone cannot separate «пишется» from «чинится». A ticket left `pending` while its subagent is flying shows as «не начат» and makes the screen a lie — and a ticket left `in-progress` through its whole review does the same thing more quietly.
+- **`status`** — a filled bar is a ticket that has started, coloured by status: green done, amber being written, blue in review, purple in repair, red failed, dashed outline for what has not begun. Review and repair also carry the phase as a word on the bar — the colour says a ticket is not ordinary work, the word says which kind. A ticket left `pending` while its subagent is flying shows as «не начат» and makes the screen a lie — and a ticket left `in-progress` through its whole review does the same thing more quietly.
 - **`startedAt` at launch, `finishedAt` at return** — that is where every per-ticket duration comes from, live for the running ones. The header line («Сейчас: 04 …») is built from the same marks.
 - **`wave`** — rows group by wave, and a wave with more than one ticket is labelled «2 таска параллельно». This is the user's only view of parallelism actually happening.
 
