@@ -23,7 +23,17 @@ A `deep` spec for a landing page is a long document about one page: still T0. Cr
 - Groundwork that makes later tickets easy goes early. Tickets closing `R` go before tickets closing only `A`.
 - Number from `01` in dependency order; each ticket names what it depends on.
 - **The payback test:** would its executor spend more flying in than building? Merge it into its neighbour. **The neighbour test:** under three acceptance criteria and the same files as an adjacent ticket? It is a checklist item there.
-- **The merge pass**, mandatory, before any file is written: merge adjacent tickets on the same files, thin tickets with a natural parent, and chains where A alone demos nothing. A draft of 14 that merges to 7 was T2 pretending to be T3.
+- **The merge pass**, mandatory, before any file is written: merge adjacent tickets on the same files, thin tickets with a natural parent, and chains where A alone demos nothing. A draft of 14 that merges to 7 was T2 pretending to be T3. A wide change below is the one chain the merge pass leaves alone.
+
+## A wide change — new beside old
+
+In existing code a requirement can change **one shared thing that many zones use**: rename a field, change the type of money, split a name, swap a library. A vertical slice never turns green on it — the first ticket changes the shared thing, every zone it did not touch breaks, and the check stays red. One ticket for all of it overflows its executor. Cut it in three steps, each green on its own:
+
+1. **Expand** — the new thing appears **next to** the old one, and the old one keeps working: both fields, with the data copied and kept in sync; the new function, with the old one delegating to it. `Ревью: да — фундамент`, `сильная`.
+2. **Migrate** — one ticket per zone moves its callers to the new thing. The old one is still there, so the zones not yet moved stay green; tickets on different zones fly in one wave. Criterion: «в `<зона>` не осталось обращений к `<старое>`».
+3. **Contract** — once nothing calls the old thing, it is removed. Dropping a column with user data in it is `Ревью: да — удаление данных`.
+
+Every ticket of the chain carries the same requirement. It applies when the change crosses more zones than one ticket owns; a shared thing used in one zone is an ordinary ticket. In a project built from scratch there is nothing to migrate — this never comes up.
 
 ## Waves and zones
 

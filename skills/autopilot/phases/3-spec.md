@@ -53,7 +53,7 @@ Elaborating «принимает заявки» into retry, resume and validatio
 
 Several executors in fresh contexts build one project only if the **boundaries between modules are already decided**. Leave them open and ticket 01 decides them, having seen an eighth of the задача, and everything after it obeys that shape or quietly builds a second one.
 
-For every unit the build will have: **what it owns**, **what it exposes** (signatures other units call — names and shapes, not implementations), **what it hides**. Then the **test seams** — a subset of those same boundaries, the fewer the better, existing ones preferred. Boundaries follow the depth pass, not the requirement list; a boundary no ticket crosses is not a boundary; a few deep modules beat many shallow ones.
+For every unit the build will have: **what it owns**, **what it exposes** (signatures other units call — names and shapes, not implementations; names in English, never transliterated Russian, unless the existing code does otherwise), **what it hides**. Then the **test seams** — a subset of those same boundaries, the fewer the better, existing ones preferred. Boundaries follow the depth pass, not the requirement list; a boundary no ticket crosses is not a boundary; a few deep modules beat many shallow ones.
 
 **Write this straight into `.autopilot/<dir>/interfaces.md`** under «Границы, решённые в спецификации» — it is the file every executor reads first — and keep in the spec only a pointer to it. In manual this is the part of the spec gate worth discussing: it is the one decision expensive to change later.
 
