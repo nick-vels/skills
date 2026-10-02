@@ -26,7 +26,7 @@
     python3 .autopilot/ap.py reopen                     # второй бриф в сданном прогоне
     python3 .autopilot/ap.py                            # просто синхронизировать
 
-После каждой команды: updatedAt = сейчас, счётчики требований — из manifest.md,
+После каждой команды: updatedAt = сейчас (и метка в журнале beats), счётчики требований — из manifest.md,
 пройденные этапы закрыты, снимок вписан в dashboard.html, сервер жив. Время
 ставит сам скрипт, с секундами и поясом, — агент его не пишет никогда.
 
@@ -64,6 +64,7 @@ WIN = os.name == "nt"
 REPO = "nick-vels/skills"
 REMOTE_SKILL = "https://raw.githubusercontent.com/%s/main/skills/autopilot/SKILL.md" % REPO
 STOP_DELAY = 12
+BEATS_KEPT = 2000
 ORDER = ["preflight", "manifest", "briefing", "spec", "plan", "build", "review", "final"]
 # Этап, чей результат лежит на диске, пройден — даже если его забыли отметить.
 ARTIFACT = {"manifest": "manifest.md", "spec": "spec.md", "plan": "tickets/*.md"}
@@ -103,6 +104,17 @@ def save(state):
     os.replace(tmp, STATE)
 
 
+def beat(state):
+    """Журнал пульса: каждое событие оставляет метку. updatedAt перезаписывается,
+    и без журнала дашборд знал о прошлых событиях, только если сам их видел, —
+    уснул экран или упал сервер, и рабочее время между редкими метками
+    обрезалось как простой."""
+    beats = state.setdefault("beats", [])
+    if state["updatedAt"] not in beats:
+        beats.append(state["updatedAt"])
+    del beats[:-BEATS_KEPT]
+
+
 def run_dir(state):
     return os.path.join(A, state.get("dir") or "")
 
@@ -125,7 +137,7 @@ def fresh_state(a):
                          "placeholder": 0, "deferred": 0, "dropped": 0},
         "tickets": [], "tests": None,
         "debt": {"placeholders": [], "assumptions": [], "emptyEnv": []},
-        "additions": [], "coverage": None, "concerns": [], "blind": None,
+        "additions": [], "coverage": None, "concerns": [], "blind": None, "beats": [t],
     }
 
 
@@ -460,8 +472,15 @@ def http_ok(port):
 
 
 def free_port(prefer):
+    """Прежний порт — в первую очередь: открытая вкладка опрашивает именно его и
+    оживает сама, когда сервер вернулся. Убитый сервер оставляет порт в TIME_WAIT,
+    и без SO_REUSEADDR проверка считала его занятым — сервер уезжал на новый порт,
+    а вкладка оставалась мёртвой. http.server сам ставит этот флаг, так что порт
+    ему достанется. На Windows флаг значит другое (захват чужого порта) — там без него."""
     for p in ([prefer] if prefer else []) + [0]:
         s = socket.socket()
+        if not WIN:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             s.bind(("127.0.0.1", p))
             return s.getsockname()[1]
@@ -896,6 +915,7 @@ def main():
             die("неизвестная команда %s — список в начале ap.py" % cmd)
         if cmd not in ("", "sync"):
             state["updatedAt"] = now()
+            beat(state)
     recount(state)
     notes = close_passed(state) + notes
     save(state)

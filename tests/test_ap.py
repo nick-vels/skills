@@ -273,6 +273,19 @@ class Run(unittest.TestCase):
         self.assertEqual(s["report"], ["два формата даты", "лишний отступ"])
         self.assertEqual(s["blind"], {"checked": 4, "matched": 3, "mismatches": ["R02 — не видно"]})
 
+    def test_every_event_leaves_a_beat(self):
+        # updatedAt перезаписывается; журнал хранит каждое событие, чтобы рабочее
+        # время считалось и тогда, когда дашборд их не видел (сон, мёртвый сервер)
+        self.init()
+        first = self.state()["beats"]
+        self.assertEqual(first, [self.state()["startedAt"]])
+        self.ap("add", "report", "раз")
+        self.ap()                                   # синхронизация — не событие
+        s = self.state()
+        self.assertEqual(s["beats"][-1], s["updatedAt"])
+        self.assertLessEqual(len(s["beats"]), 2)
+        self.assertEqual(s["beats"], sorted(set(s["beats"])))
+
     # ── finish ─────────────────────────────────────────────────────────────
     def test_finish_lands_the_run(self):
         self.plan()

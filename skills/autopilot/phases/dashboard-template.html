@@ -42,6 +42,11 @@
   .seg button:hover{color:var(--ink)}
   .seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
   .seg svg{width:13px;height:13px;display:block}
+  /* «Обновить сейчас»: пока state.js грузится, стрелка крутится — нажатие видно */
+  .seg button.busy svg{animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.seg button.busy svg{animation:none;opacity:.5}}
+  #link{margin-bottom:14px;color:var(--warn);border-color:var(--warn)}
   header{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;margin-bottom:22px}
   h1{font-size:17px;font-weight:600;margin:0;letter-spacing:-.01em}
   .badges{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
@@ -244,6 +249,8 @@
 </style>
 </head>
 <body>
+<!-- Плашка о потере связи живёт вне #app: render() переписывает #app целиком. -->
+<div class="wrap"><div class="note" id="link" role="status" hidden></div></div>
 <div class="wrap" id="app"></div>
 
 <!-- Состояние приходит двумя путями, и порядок этих двух тегов — весь смысл.
@@ -253,9 +260,9 @@
      перекрывает снимок там, где у страницы есть адрес, и он же подгружается
      заново каждые десять секунд, чтобы часы шли без перезагрузки.
      Разойтись в противоположные стороны им нечем: файл пишется на каждой
-     правке, снимок — на каждом вызове .autopilot/sync.py, и он же вписывает
+     правке, снимок — на каждом вызове .autopilot/ap.py, и он же вписывает
      файл в страницу, так что снимок либо равен файлу, либо старше его.
-     Между маркерами правит только sync.py; руками — никогда. -->
+     Между маркерами правит только ap.py; руками — никогда. -->
 <script>/*STATE-BEGIN*/window.STATE=null;/*STATE-END*/</script>
 <script src="state.js"></script>
 
@@ -314,7 +321,8 @@ const I18N = {
     noTicketsTier:"без разбивки",notCut:"таски ещё не нарезаны",
     t0note:(n)=>`Ярус T0 — собрано за один заход, без разбивки на таски.${n?' '+n:''}`,
     t0files:n=>`Файлов: ${n}.`,noEta:"ярус T0 — оценка не нужна",wrapUp:"таски готовы, идёт приёмка",
-    auto:"Автообновление",autoOn:"Автообновление включено",autoOff:"Автообновление выключено",
+    refresh:"Обновить сейчас",
+    lost:"Связь с дашбордом пропала — на экране последнее, что он успел получить. Так бывает, когда компьютер засыпает. Скажи агенту «подними дашборд»: страница подхватит сама, перезагружать не нужно. Сборку это не трогает.",
     agoSec:s=>`${s} сек назад`,agoMin:m=>`${m} мин назад`,agoHr:(h,m)=>`${h} ч ${m} мин назад`,
     debt:"Долг",debtSub:(a,b,c)=>`заглушки ${a} · допущения ${b} · переменные ${c}`,
     tests:"Тесты",testsSub:"после последнего таска",testsSubOne:"последний полный прогон",failed:n=>`${n} упало`,
@@ -354,7 +362,8 @@ const I18N = {
     noTicketsTier:"no split",notCut:"tickets not cut yet",
     t0note:(n)=>`Tier T0 — built in a single pass, no tickets.${n?' '+n:''}`,
     t0files:n=>`Files: ${n}.`,noEta:"tier T0 — no estimate needed",wrapUp:"tickets done, acceptance running",
-    auto:"Auto-refresh",autoOn:"Auto-refresh on",autoOff:"Auto-refresh off",
+    refresh:"Refresh now",
+    lost:"The dashboard lost its connection — the screen shows the last state it received. This happens when the computer sleeps. Ask the agent to bring the dashboard back up: the page will pick it up by itself, no reload needed. The build is unaffected.",
     agoSec:s=>`${s}s ago`,agoMin:m=>`${m} min ago`,agoHr:(h,m)=>`${h}h ${m}m ago`,
     debt:"Debt",debtSub:(a,b,c)=>`placeholders ${a} · assumptions ${b} · env vars ${c}`,
     tests:"Tests",testsSub:"after the last ticket",testsSubOne:"last full run",failed:n=>`${n} failed`,
@@ -383,9 +392,12 @@ const I18N = {
 };
 
 let CUR = I18N.ru;                 // язык, на котором сейчас отрисовано — нужен тикающим таймерам
-let autoOn = true;
-try { autoOn = (localStorage.getItem('autopilot-auto') || 'on') !== 'off'; } catch(e) {}
+// Выключателя автообновления больше нет: стрелку нажимали как «обновить», а она
+// молча выключала опрос — и запоминала это, так что дашборд замирал навсегда.
+try { localStorage.removeItem('autopilot-auto'); } catch(e) {}
 let pollT = null;
+let pulling = false;
+let misses = 0;                    // неудачных подгрузок state.js подряд
 let lastStamp = null;              // метка отрисованного состояния — против лишних перерисовок
 
 // ——— живые таймеры ———————————————————————————————————————————————
@@ -528,20 +540,60 @@ function applyState(){
   window.scrollTo(0, y);
 }
 
+// Связь проверяется только там, где она вообще бывает: по http. Из data: файл не
+// грузится никогда — там снимок и тишина; file:// читается с диска без сервера.
+const SERVED = /^https?:$/.test(location.protocol);
+function showLink(){
+  const el = document.getElementById('link');
+  if (!el) return;
+  const lost = SERVED && misses >= 2 && !(window.STATE && window.STATE.finishedAt);
+  el.hidden = !lost;
+  if (lost) el.textContent = CUR.lost;
+}
+
+// Одна подгрузка state.js; done(ok) — когда она закончилась.
+function pullState(done){
+  if (pulling) return;
+  pulling = true;
+  const s = document.createElement('script');
+  // Метка времени в запросе — иначе file:// отдаст скрипт из кеша.
+  s.src = 'state.js?t=' + Date.now();
+  // Ошибка — обычное дело: файл могли поймать в момент записи. Старое состояние
+  // остаётся на экране, следующий круг через десять секунд подберёт целое.
+  // Две подряд — уже не запись, а мёртвый сервер: тогда страница говорит об этом.
+  const end = ok => {
+    s.remove();
+    pulling = false;
+    misses = ok ? 0 : misses + 1;
+    if (ok) applyState();
+    showLink();
+    if (done) done(ok);
+  };
+  s.onload = () => end(true);
+  s.onerror = () => end(false);
+  document.head.appendChild(s);
+}
+
 function pollState(){
   clearTimeout(pollT);
-  if (!autoOn || (window.STATE && window.STATE.finishedAt)) return;
-  pollT = setTimeout(() => {
-    const s = document.createElement('script');
-    // Метка времени в запросе — иначе file:// отдаст скрипт из кеша.
-    s.src = 'state.js?t=' + Date.now();
-    // Ошибка — обычное дело: файл могли поймать в момент записи. Старое состояние
-    // остаётся на экране, следующий круг через десять секунд подберёт целое.
-    const next = () => { s.remove(); applyState(); pollState(); };
-    s.onload = next;
-    s.onerror = next;
-    document.head.appendChild(s);
-  }, POLL_MS);
+  if (window.STATE && window.STATE.finishedAt) return;
+  pollT = setTimeout(() => pullState(pollState), POLL_MS);
+}
+
+// Стрелка сверху: подтянуть state.js сейчас, не дожидаясь круга опроса.
+function refreshNow(btn){
+  clearTimeout(pollT);
+  if (btn) btn.classList.add('busy');
+  const started = Date.now();
+  pullState(ok => {
+    if (!ok) misses = Math.max(misses, 2);         // нажал и не получил — сказать сразу
+    showLink();
+    // Крутится хотя бы полсекунды: мгновенный ответ иначе не отличить от «не нажалось».
+    setTimeout(() => {
+      document.querySelectorAll('.seg button[data-refresh]').forEach(b => b.classList.remove('busy'));
+    }, Math.max(0, 500 - (Date.now() - started)));
+    pollState();
+  });
 }
 
 function render(lang){
@@ -780,9 +832,8 @@ function render(lang){
     <img class="logo l" src="${LOGO_LIGHT}" alt="autopilot">
     <img class="logo d" src="${LOGO_DARK}" alt="autopilot">
     <div class="segs">
-      ${S.finishedAt ? '' : `<div class="seg" role="group" aria-label="${L.auto}">
-        <button type="button" data-auto title="${autoOn ? L.autoOn : L.autoOff}"
-          aria-label="${L.auto}" aria-pressed="${autoOn}">${SYNC}</button>
+      ${S.finishedAt ? '' : `<div class="seg">
+        <button type="button" data-refresh title="${L.refresh}" aria-label="${L.refresh}">${SYNC}</button>
       </div>`}
       <div class="seg" role="group" aria-label="${L.themeLabel}">
         <button type="button" data-theme="light" title="${L.themeLight}" aria-label="${L.themeLight}"
@@ -905,17 +956,12 @@ function render(lang){
         x.setAttribute('aria-pressed', String(x.dataset.theme === t)));
     }));
 
-  document.querySelectorAll('.seg button[data-auto]').forEach(b =>
-    b.addEventListener('click', () => {
-      autoOn = !autoOn;
-      try { localStorage.setItem('autopilot-auto', autoOn ? 'on' : 'off'); } catch(e) {}
-      b.setAttribute('aria-pressed', String(autoOn));
-      b.title = autoOn ? L.autoOn : L.autoOff;
-      pollState();
-    }));
+  document.querySelectorAll('.seg button[data-refresh]').forEach(b =>
+    b.addEventListener('click', () => refreshNow(b)));
 
   tick();
-  pollState();
+  showLink();
+  if (!pulling) pollState();
 }
 
 let savedLang = 'ru';
@@ -960,7 +1006,9 @@ if (typeof STATE === 'undefined' || !STATE || typeof STATE !== 'object') {
 setInterval(tick, 1000);
 
 // Возврат на вкладку — повод не ждать очередного круга опроса.
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); pollState(); } });
+// После сна компьютера — тоже: таймеры страницы стояли вместе с ним.
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); refreshNow(); } });
+window.addEventListener('pageshow', e => { if (e.persisted) { tick(); refreshNow(); } });
 
 // Пока пользователь не выбрал тему явно, дашборд следует за системной.
 try {

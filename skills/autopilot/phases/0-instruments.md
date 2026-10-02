@@ -51,6 +51,7 @@ Immediately after `init`, before Phase 1 asks anything.
 - `$SSH_CONNECTION` or `$CI` set → print the path, open nothing.
 - A failure to open is not an error: print the path in one line and carry on.
 - The server binds `127.0.0.1` only — it serves the run's own files.
+- **«Дашборд отвалился», «подними дашборд»** — the machine slept or the server died. One bare `python3 .autopilot/ap.py`: it raises the server on the same port, and the open tab comes back by itself. Re-point the pane only if the printed address changed. One line in the chat, no investigation.
 
 ## 4. One call per event
 
