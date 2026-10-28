@@ -246,6 +246,20 @@ class Run(unittest.TestCase):
         t = {x["id"]: x for x in self.state()["tickets"]}
         self.assertEqual(t["03"]["blockedBy"], ["01", "02"])
 
+    def test_a_lettered_dependency_is_not_turned_into_a_number(self):
+        # E35 зависит от E34 из той же волны; таск 34 из первой волны тут ни при чём.
+        self.plan()
+        self.write("tickets/34-a.md", ticket("34", "A", "R02", "—", ["a/"], 1))
+        self.write("tickets/E34-b.md", ticket("E34", "B", "R02", "—", ["b/"], 2))
+        self.write("tickets/E35-c.md", ticket("E35", "C", "R02", "E34", ["c/"], 2))
+        self.write("tickets/E36-d.md", ticket("E36", "D", "R02", "X7", ["d/"], 3))
+        code, out = self.ap("check-plan")
+        t = {x["id"]: x for x in self.state()["tickets"]}
+        self.assertEqual(t["E35"]["blockedBy"], ["E34"])
+        self.assertIn("таск E35 в волне 2, но его зависимости позволяют не раньше 3", out)
+        self.assertIn("таск E36 зависит от несуществующего X7", out)
+        self.assertFalse(self.state()["gates"]["G3"]["ok"])
+
     def test_empty_tickets_dir_does_not_pass_the_plan(self):
         self.init()
         self.write("manifest.md", MANIFEST)
@@ -348,6 +362,38 @@ class Run(unittest.TestCase):
         self.assertTrue(g["G2"]["ok"])
         self.assertTrue(g["G3"]["ok"])
         self.assertEqual((g["G4"]["ok"], g["G4"]["matched"], g["G4"]["checked"]), (False, 3, 4))
+
+    def test_gate_numbers_are_required(self):
+        self.init()
+        self.ap("coverage", "found=2", "fixed=1", "deferred=0")
+        self.ap("blind", "checked=4", "matched=3", "--mismatch", "R02 — не видно")
+        before = read(os.path.join(self.a, "state.js"))
+        for args in (["coverage"], ["coverage", "fixed=1"], ["coverage", "found=1", "fixed=1"],
+                     ["coverage", "found=two", "fixed=1", "deferred=1"], ["coverage", "found=1", "fixed=1", "deferred=0", "extra=1"],
+                     ["blind"], ["blind", "checked=4"], ["blind", "checked=3", "matched=4"]):
+            code, out = self.ap(*args)
+            self.assertNotEqual(code, 0, args)
+            self.assertIn("ошибка", out, args)
+        self.assertEqual(read(os.path.join(self.a, "state.js")), before)
+        g = self.state()["gates"]
+        self.assertFalse(g["G2"]["ok"])
+        self.assertFalse(g["G4"]["ok"])
+        self.assertEqual(self.state()["blind"]["mismatches"], ["R02 — не видно"])
+
+    def test_help_touches_nothing(self):
+        code, out = self.ap("--help")
+        self.assertEqual(code, 0)
+        self.assertIn("Учёт прогона Autopilot", out)
+        self.assertFalse(os.path.exists(os.path.join(self.a, "state.js")))
+        self.init()
+        self.ap("coverage", "found=2", "fixed=1", "deferred=0")
+        before = read(os.path.join(self.a, "state.js"))
+        for args in (["--help"], ["-h"], ["help"], ["coverage", "--help"], ["blind", "-h"], ["stage", "final", "--help"]):
+            code, out = self.ap(*args)
+            self.assertEqual(code, 0, args)
+            self.assertIn("ap.py coverage found=", out, args)
+        self.assertEqual(read(os.path.join(self.a, "state.js")), before)
+        self.assertFalse(self.state()["gates"]["G2"]["ok"])
 
     def test_requirements_carry_the_users_words(self):
         self.init()

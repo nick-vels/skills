@@ -98,7 +98,7 @@ Every ticket of the chain carries the same requirement. It applies when the chan
 - **The verbatim brief quotes are not decoration** — they are the last thing standing between a fresh context and a plausible reinterpretation, and the point reviewer judges the Manifest axis from them.
 - **Every criterion is checkable and false at the commit the executor starts from.** A criterion already true tests nothing; the executor proves each one red before building it (`prompts/executor.md`).
 - No file paths or code snippets except a structure prose states worse — a schema, a state machine.
-- `Зависит от` lists ticket numbers only — `01, 02`, or `—`.
+- `Зависит от` lists ticket numbers only — `01, 02`, or `—`. A reference that is not a ticket's id fails `check-plan`.
 
 ## Before the first ticket flies
 

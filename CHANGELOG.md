@@ -6,6 +6,13 @@ The skill's version is the `metadata.version` field in `skills/autopilot/SKILL.m
 npx skills update autopilot -g
 ```
 
+## 2.2.1 — 2026-10-29
+
+**Fixes in `ap.py`**
+- `--help` (or `-h`, or `help`) prints the usage and touches nothing. It used to rewrite `state.js`; `coverage --help` replaced the recorded result with an empty one and marked G2 passed.
+- `coverage` and `blind` refuse to record without all their numbers — `found`, `fixed`, `deferred` and `checked`, `matched` — and on anything they do not understand; nothing is written then. A missing count used to become zero: `coverage fixed=1` passed G2 as `0 <= 1`, and `blind` with no numbers wiped the recorded mismatches and passed G4.
+- `Зависит от` no longer pulls digits out of a reference: `E34` used to become ticket `34`, so a ticket depending on another from its own wave passed `check-plan`. `01`, `2` and `T2` still mean the numbered ticket; a reference that is another ticket's id is checked against that ticket; anything else is named as a missing ticket.
+
 ## 2.2.0 — 2026-10-21
 
 **Size by volume, review without waiting**
