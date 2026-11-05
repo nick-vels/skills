@@ -47,6 +47,7 @@
 - A process question outside manual — which tracker, which memory file, ticket granularity.
 - A requirement quietly narrowed to whatever worked, or the spec amended with no `D##`.
 - «STOP» written, then the next attempt launched; a refusal of `ap.py` routed around — a `reset` without the user's words, a new ticket with the old goal, a third blind check.
+- A ticket marked `done` with no commit, a commit hash made up to pass, or `--by-user` with words the user never said.
 - A ticket that only checks — «подтвердить готовность», «прогнать всё перед установкой»; an environment failure — a timeout, a native module, a port — repaired as a code defect.
 - Two tickets in one context or one commit; a commit that took files outside the ticket's zone, or swept in work the user had in the tree.
 - The orchestrator editing a file outside `.autopilot/`, the memory files, `.gitignore` and `.env.example`.

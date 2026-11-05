@@ -28,6 +28,8 @@ The first case needs both marks: two sessions writing one `state.js` overwrite e
 
 No repo → `git init` now. Write `.gitignore` before anything else is created, with at least `.env`, `.env.*`, `!.env.example`, `node_modules/`, `__pycache__/`, `.DS_Store`. `.autopilot/` is **committed**, not ignored — it is the user's record of what was promised and delivered; only its `serve.*` files are ignored, and `init` adds that line. The first commit happens at the end of Phase 4 (`phases/4-plan.md`).
 
+**Git must be able to write here, and that is checked now, not at the first ticket:** `git add -- .gitignore`. A refusal — `.git/index.lock: Permission denied`, a sandbox saying no — stops the run before the briefing: `ap.py ask stop --note "git не пишет: <что ответил>"` and one plain sentence to the user. Every rollback point and the blind checker's clean clone depend on commits. Never turn a sandbox off or widen a permission on your own to get past it.
+
 A dirty working tree → say so in one line and continue; never stash, reset or clean the user's work, and never commit it: every commit this skill makes names its paths.
 
 ## 3. Project memory

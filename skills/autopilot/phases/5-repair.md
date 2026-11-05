@@ -45,7 +45,7 @@ After that the flight stops for this ticket: `ap.py ticket NN fail --note "чт�
 
 **A failed ticket flies again only on the user's word**: they fixed what blocked it, or chose a different way — `ap.py ticket NN reset --by-user "<их слова>"`, which also zeroes its counters. «STOP», then a fresh attempt in the next message, is not a stop.
 
-**Fail early when the cause is the machine, not the code** — a timeout, a native module that will not load, a port, a service that is not running, a path that exists only on this computer. An executor cannot repair an environment; each attempt only moves the failure. One such red is `fail` with the cause named, not a дозапрос.
+**Fail early when the cause is the machine, not the code** — a timeout, a native module that will not load, a port, a service that is not running, a path that exists only on this computer, git refusing to write. An executor cannot repair an environment; each attempt only moves the failure. One such red is `fail` with the cause named, not a дозапрос.
 
 ## When the build contradicts the plan
 

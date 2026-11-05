@@ -107,7 +107,7 @@ class Run(unittest.TestCase):
     def test_init_archives_finished_run(self):
         self.init()
         first = self.state()["dir"]
-        self.ap("finish", "--result", "готово")
+        self.ap("finish", "--result", "готово", "--by-user", "«сдавай»")
         code, out = self.ap("init", "--slug", "second")
         self.assertEqual(code, 0, out)
         self.assertTrue(os.path.exists(os.path.join(self.a, first.replace("--wip", ""), "state.js")))
@@ -264,7 +264,7 @@ class Run(unittest.TestCase):
         self.assertNotEqual(code, 0)
         self.assertIn("третьего круга нет", out)
         self.assertEqual(self.state()["blind"]["mismatches"], ["R02 — всё ещё"])
-        self.ap("finish", "--result", "готово")
+        self.ap("finish", "--result", "готово", "--by-user", "«сдавай»")
         self.ap("reopen")                                       # новый бриф — новая приёмка
         self.assertEqual(self.ap("blind", "checked=4", "matched=4")[0], 0)
 
@@ -404,6 +404,14 @@ class Run(unittest.TestCase):
         self.write("manifest.md", MANIFEST)
         self.ap("stage", "spec", "done")
         self.assertTrue(self.state()["gates"]["G1"]["ok"])
+        self.write("manifest.md", MANIFEST.replace("| R02 | «складывает в таблицу» | in-spec",
+                                                   "| R02 | «складывает в таблицу» | open"))
+        self.ap("sync")                                     # манифест правят и после спецификации
+        g = self.state()["gates"]["G1"]
+        self.assertEqual((g["ok"], g["open"]), (False, 1))
+        self.write("manifest.md", MANIFEST)
+        self.ap("sync")
+        self.assertTrue(self.state()["gates"]["G1"]["ok"])
         self.ap("coverage", "found=2", "fixed=1", "deferred=1")
         self.ap("check-plan")
         self.ap("blind", "checked=4", "matched=3", "--mismatch", "R02 — не видно")
@@ -463,11 +471,26 @@ class Run(unittest.TestCase):
         self.assertEqual(self.state()["rev"], r + 1)
 
     # ── finish ─────────────────────────────────────────────────────────────
-    def test_finish_lands_the_run(self):
+    def ready(self):
+        """Прогон, которому нечего скрывать: гейты зелёные, таски сданы настоящими коммитами."""
         self.plan()
+        self.ap("tickets")
+        self.ap("stage", "spec", "done")
+        self.ap("check-plan")
+        self.ap("coverage", "found=0", "fixed=0", "deferred=0")
         self.git("add", "-A")
         self.git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "run")
+        sha = self.git("rev-parse", "--short", "HEAD").stdout.strip()
+        self.ap("ticket", "01", "02", "start")
+        self.ap("ticket", "01", "02", "done", "--commit", sha)
+        self.git("add", "-A")
+        self.git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "books")
+
+    def test_finish_lands_the_run(self):
+        self.ready()
+        self.ap("blind", "checked=4", "matched=4")
         code, out = self.ap("finish", "--result", "Бот принимает заявки")
+        self.assertEqual(code, 0, out)
         s = self.state()
         self.assertTrue(s["finishedAt"])
         self.assertFalse(s["dir"].endswith("--wip"))
@@ -475,11 +498,71 @@ class Run(unittest.TestCase):
         self.assertTrue(all(x["status"] in ("done", "skipped") for x in s["stages"]))
         self.assertIn("| сдан | Бот принимает заявки |", read(os.path.join(self.a, "README.md")))
         self.assertEqual(s["result"], "Бот принимает заявки")
+        self.assertNotIn("landedWith", s)
         self.assertIn("R", self.git("status", "--short").stdout)    # переименование через git mv
+
+    def assertRefused(self, *needles):
+        code, out = self.ap("finish", "--result", "готово")
+        self.assertNotEqual(code, 0, out)
+        for n in needles:
+            self.assertIn(n, out)
+        s = self.state()
+        self.assertIsNone(s["finishedAt"])
+        self.assertTrue(s["dir"].endswith("--wip"))
+
+    def test_finish_refuses_an_open_requirement(self):
+        self.ready()
+        self.ap("blind", "checked=4", "matched=4")
+        self.write("manifest.md", self.manifest().replace("| R05 | «цвета студии» | done", "| R05 | «цвета студии» | open"))
+        self.assertRefused("G1")
+
+    def test_finish_refuses_a_check_that_never_ran(self):
+        self.ready()
+        self.assertRefused("G4")
+
+    def test_finish_refuses_an_unfinished_ticket(self):
+        self.ready()
+        self.ap("blind", "checked=4", "matched=4")
+        self.ap("ticket", "02", "reset")
+        self.assertRefused("таск 02")
+
+    def test_finish_refuses_a_commit_that_is_not_in_history(self):
+        self.ready()
+        self.ap("blind", "checked=4", "matched=4")
+        self.ap("ticket", "02", "done", "--commit", "abc1234")
+        self.assertRefused("таск 02", "abc1234")
+
+    def test_finish_refuses_a_drift_while_a_second_look_is_left(self):
+        self.ready()
+        self.ap("blind", "checked=4", "matched=3", "--mismatch", "R02 — нет таблицы")
+        self.assertRefused("G4")
+
+    def test_a_drift_after_both_looks_lands_with_a_caveat(self):
+        self.ready()
+        self.ap("blind", "checked=4", "matched=3", "--mismatch", "R02 — нет таблицы")
+        self.ap("blind", "checked=1", "matched=0", "--mismatch", "R02 — нет таблицы")
+        code, out = self.ap("finish", "--result", "готово")
+        self.assertEqual(code, 0, out)
+        s = self.state()
+        self.assertTrue(s["finishedAt"])
+        self.assertIn("G4", s["landedWith"]["problems"][0])
+        self.assertNotIn("byUser", s["landedWith"])
+        self.assertIn("| сдан с оговорками | готово |", read(os.path.join(self.a, "README.md")))
+
+    def test_finish_by_user_lands_and_keeps_what_was_wrong(self):
+        self.ready()
+        code, out = self.ap("finish", "--result", "готово", "--by-user", "«сдавай как есть»")
+        self.assertEqual(code, 0, out)
+        s = self.state()
+        self.assertTrue(s["finishedAt"])
+        self.assertEqual(s["landedWith"]["byUser"], "«сдавай как есть»")
+        self.assertIn("G4", s["landedWith"]["problems"][0])
+        self.ap("reopen")
+        self.assertNotIn("landedWith", self.state())
 
     def test_reopen_puts_wip_back(self):
         self.init()
-        self.ap("finish", "--result", "готово")
+        self.ap("finish", "--result", "готово", "--by-user", "«сдавай»")
         self.ap("reopen")
         s = self.state()
         self.assertTrue(s["dir"].endswith("--wip"))
@@ -487,6 +570,18 @@ class Run(unittest.TestCase):
         self.assertEqual(self.stage("manifest")["status"], "active")
         self.assertEqual(self.stage("final")["status"], "pending")
         self.assertNotIn("finishedAt", self.stage("final"))
+
+    def test_done_needs_a_commit(self):
+        self.plan()
+        self.ap("tickets")
+        self.ap("ticket", "01", "start")
+        code, out = self.ap("ticket", "01", "done", "--tests", "3/0")
+        self.assertNotEqual(code, 0)
+        self.assertIn("нет --commit", out)
+        self.assertEqual(self.state()["tickets"][0]["status"], "in-progress")
+        self.ap("ticket", "01", "done", "--commit", "abc1234")
+        self.ap("ticket", "01", "review")
+        self.assertEqual(self.ap("ticket", "01", "done")[0], 0)   # после ревью коммит уже есть
 
     def test_commits_flags_a_done_ticket_whose_commit_left_history(self):
         self.plan()

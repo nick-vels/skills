@@ -26,6 +26,7 @@
     python3 .autopilot/ap.py ask briefing --note "три вопроса в чате"   # ждём пользователя
     python3 .autopilot/ap.py answered                   # ответил (stage/ticket закрывают сами)
     python3 .autopilot/ap.py finish --result "Бот принимает заявки и пишет их в таблицу"
+    python3 .autopilot/ap.py finish --result "…" --by-user "«сдавай как есть»"   # если finish отказал
     python3 .autopilot/ap.py reopen                     # второй бриф в сданном прогоне
     python3 .autopilot/ap.py commits                    # коммиты сданных тасков ещё в истории?
     python3 .autopilot/ap.py                            # просто синхронизировать
@@ -137,7 +138,7 @@ def log(state, event, **kw):
 
 
 def set_gate(state, g, ok, **kw):
-    """Гейт решается событием, которое его проверяет: G1 — открытием спецификации,
+    """Гейт решается событием, которое его проверяет: G1 — манифестом (refresh_g1),
     G2 — coverage, G3 — check-plan, G4 — blind. Повторная проверка перезаписывает."""
     rec = {"ok": bool(ok), "at": state["updatedAt"]}
     rec.update({k: v for k, v in kw.items() if v is not None})
@@ -226,10 +227,28 @@ def manifest_rows(state):
     return None if rows is None else [(r["id"], r["status"]) for r in rows]
 
 
+def refresh_g1(state, create=False):
+    """G1 решает манифест, а его правят и после спецификации: гейт идёт за таблицей,
+    иначе остаётся красным про вопросы, которых давно нет, — или зелёным про закрытые,
+    которые открылись снова."""
+    g = (state.get("gates") or {}).get("G1")
+    if g is None and not create:
+        return
+    rows = [r for r in manifest_table(state) or [] if not r["id"].startswith("D")]
+    if not rows:
+        return
+    n = sum(1 for r in rows if r["status"] == "open")
+    if g is None or (g["ok"], g.get("open")) != (n == 0, n):
+        set_gate(state, "G1", n == 0, open=n, total=len(rows))
+    else:
+        g["total"] = len(rows)
+
+
 def recount(state):
     table = manifest_table(state)
     if table is None:
         return
+    refresh_g1(state)
     # Список для страницы — слова пользователя и что с ними стало. Основание нужно
     # только там, где требование не сделано как написано.
     state["reqList"] = [dict({"id": r["id"], "text": r["text"], "status": r["status"]},
@@ -821,10 +840,7 @@ def cmd_stage(state, pos, opt):
     if isinstance(opt.get("note"), str):
         s["note"] = opt["note"]
     if sid == "spec" and action in ("start", "done"):
-        rows = [r for r in manifest_table(state) or [] if not r["id"].startswith("D")]
-        if rows:
-            n = sum(1 for r in rows if r["status"] == "open")
-            set_gate(state, "G1", n == 0, open=n, total=len(rows))
+        refresh_g1(state, create=True)
     log(state, "stage", id=sid, act=action,
         note=opt["note"] if action in ("skip", "fail") and isinstance(opt.get("note"), str) else None)
 
@@ -849,7 +865,7 @@ def close_requirements(state, tk, opt, t):
 CAP = 2      # дозапросов и свежих перезапусков на таск — phases/5-repair.md
 
 
-def refuse_ticket(tk, act, by_user):
+def refuse_ticket(tk, act, by_user, commit):
     """Лимиты ремонта — не совет, а отказ: оркестратор долгого прогона забывает
     текст правила, а отказ команды забыть нельзя. Упавший таск снова пускает
     в работу только пользователь — его словами в --by-user."""
@@ -865,6 +881,9 @@ def refuse_ticket(tk, act, by_user):
     if act == "repair" and tk.get("repairs", 0) >= CAP:
         die("таск %s: два дозапроса уже были — дальше свежий контекст (ticket %s retry) "
             "или fail с вопросом пользователю" % (i, i))
+    if act == "done" and not commit and not tk.get("commit"):
+        die("таск %s: нет --commit — сдан только закоммиченный таск. Git отказал — это сбой машины, "
+            "не ремонт: ticket %s fail --note \"что ответил git\" и вопрос пользователю" % (i, i))
 
 
 def cmd_ticket(state, pos, opt):
@@ -880,7 +899,7 @@ def cmd_ticket(state, pos, opt):
         tk = known.get(i)
         if tk is None:
             die("таска %s нет — сначала `ap.py tickets`" % i)
-        refuse_ticket(tk, act, by_user)
+        refuse_ticket(tk, act, by_user, opt.get("commit") if isinstance(opt.get("commit"), str) else None)
     for i in ids:
         tk = known[i]
         tk["status"] = TICKET_STATUSES[act]
@@ -991,7 +1010,45 @@ def cmd_ask(state, pos, opt):
     log(state, "ask", kind=kind, note=note)
 
 
+def landing_problems(state):
+    """Что мешает назвать сборку сданной: (отказ, оговорка). Отказ останавливает finish;
+    оговорка — расхождение, оставшееся после обеих приёмок: чинить его больше нечем,
+    сборка сдаётся, но не зелёной."""
+    refuse, caveat = [], []
+    gates = state.get("gates") or {}
+    g = gates.get("G1")
+    if g is None:
+        refuse.append("G1: манифест не проверен")
+    elif not g["ok"]:
+        refuse.append("G1: открытых требований — %s" % g.get("open"))
+    for gid, what in (("G2", "спецификация не сверена с брифом"), ("G3", "трасса манифест ↔ таски не сверена")):
+        if gid not in gates:
+            refuse.append("%s: %s" % (gid, what))
+        elif not gates[gid]["ok"]:
+            refuse.append("%s: не пройден" % gid)
+    g = gates.get("G4")
+    if g is None:
+        refuse.append("G4: слепой приёмки не было")
+    elif not g["ok"]:
+        line = "G4: расхождений с брифом — %d" % len((state.get("blind") or {}).get("mismatches") or [])
+        (caveat if state.get("blindRounds", 0) >= BLIND_ROUNDS else refuse).append(line)
+    for tk in state.get("tickets") or []:
+        if tk.get("status") != "done":
+            refuse.append("таск %s: %s" % (tk["id"], tk.get("status")))
+        elif not tk.get("commit"):
+            refuse.append("таск %s: сдан без коммита" % tk["id"])
+    refuse += ["таск %s: коммита %s нет в истории" % pair for pair in lost_commits(state)]
+    return refuse, caveat
+
+
 def cmd_finish(state, opt):
+    refresh_g1(state, create=True)
+    refuse, caveat = landing_problems(state)
+    by_user = opt.get("by-user") if isinstance(opt.get("by-user"), str) else None
+    if refuse and not by_user:
+        die("сборка не сдана:\n  ! %s\nПочини это. Починить нельзя — скажи пользователю, что не так; "
+            "сдать как есть можно только по его словам: finish --result \"…\" --by-user \"<цитата>\""
+            % "\n  ! ".join(refuse))
     t = now()
     notes = []
     for s in state.get("stages") or []:
@@ -1002,9 +1059,10 @@ def cmd_finish(state, opt):
             s["status"], s["finishedAt"] = "done", t
         elif s.get("status") == "pending":
             s["status"], s["note"], s["finishedAt"] = "skipped", s.get("note") or "не понадобился", t
-    for tk in state.get("tickets") or []:
-        if tk.get("status") in ("in-progress", "review", "repair", "pending"):
-            notes.append("! таск %s закрыт незавершённым (%s)" % (tk["id"], tk["status"]))
+    problems = refuse + caveat
+    if problems:
+        state["landedWith"] = dict({"problems": problems}, **({"byUser": by_user} if refuse else {}))
+        notes += ["! сдано с оговоркой — " + p for p in problems]
     d = state.get("dir") or ""
     if d.endswith("--wip"):
         new = d[: -len("--wip")]
@@ -1017,8 +1075,8 @@ def cmd_finish(state, opt):
             notes.append("! не смог переименовать %s — оставляю как есть" % d)
     state["finishedAt"] = t
     state["result"] = opt.get("result") if isinstance(opt.get("result"), str) else None
-    register_row(state, "сдан", state["result"])
-    log(state, "finish", result=state["result"])
+    register_row(state, "сдан с оговорками" if problems else "сдан", state["result"])
+    log(state, "finish", result=state["result"], problems=len(problems))
     return notes
 
 
@@ -1037,16 +1095,15 @@ def cmd_reopen(state):
             s["status"] = "pending"
     stage(state, "manifest").update(status="active", startedAt=now())
     state["result"] = None
+    state.pop("landedWith", None)
     state["gates"] = {}
     register_row(state, "в работе", None)
     log(state, "reopen")
 
 
-def cmd_commits(state):
-    """Возобновление верит state.js, а история могла уйти из-под него: reset, rebase,
-    другая ветка. Сданный таск, чьего коммита нет в HEAD, — строка «!»; сбрасывает
-    его оркестратор, потому что код после rebase может лежать на месте под другим sha."""
-    notes = []
+def lost_commits(state):
+    """[(таск, sha)] — сданные таски, чьего коммита нет в HEAD."""
+    lost = []
     for tk in state.get("tickets") or []:
         c = tk.get("commit")
         if tk.get("status") != "done" or not c:
@@ -1054,9 +1111,16 @@ def cmd_commits(state):
         r = subprocess.run(["git", "-C", ROOT, "merge-base", "--is-ancestor", c, "HEAD"],
                            capture_output=True)
         if r.returncode:
-            notes.append("! таск %s: коммита %s нет в истории — `ap.py ticket %s reset`"
-                         % (tk["id"], c, tk["id"]))
-    return notes or ["коммиты сданных тасков на месте"]
+            lost.append((tk["id"], c))
+    return lost
+
+
+def cmd_commits(state):
+    """Возобновление верит state.js, а история могла уйти из-под него: reset, rebase,
+    другая ветка. Сданный таск, чьего коммита нет в HEAD, — строка «!»; сбрасывает
+    его оркестратор, потому что код после rebase может лежать на месте под другим sha."""
+    return (["! таск %s: коммита %s нет в истории — `ap.py ticket %s reset`" % (i, c, i)
+             for i, c in lost_commits(state)] or ["коммиты сданных тасков на месте"])
 
 
 def main():

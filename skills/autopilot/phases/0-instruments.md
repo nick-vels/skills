@@ -67,7 +67,7 @@ Immediately after `init`, before Phase 1 asks anything.
 | a ticket goes to point review | `ticket 02 review` |
 | a blocking finding goes back | `ticket 02 repair --note "условие одной строкой"` |
 | a failed ticket restarts | `ticket 02 retry` |
-| committed | `ticket 02 done --tests 34/0 --commit <sha>` (+ `--placeholder R05` for a stubbed row) — closes the manifest rows whose tickets are all done |
+| committed | `ticket 02 done --tests 34/0 --commit <sha>` — refused without a commit (+ `--placeholder R05` for a stubbed row) — closes the manifest rows whose tickets are all done |
 | failed for good | `ticket 02 fail --note "что блокирует"` — after it the ticket refuses every command but the next row |
 | the user unblocked a failed ticket | `ticket 02 reset --by-user "их слова"` — counters back to zero |
 | a deferred finding | `add concerns "файл:строка — что не так"` |
@@ -79,7 +79,8 @@ Immediately after `init`, before Phase 1 asks anything.
 | a full check outside a ticket | `tests 34/0` |
 | the run waits for the user — a briefing round, the manual spec or plan gate, a yes/no before an irreversible action, a stop condition | `ask briefing\|spec\|plan\|action\|stop --note "что ждём, одной строкой"` — chained with nothing: the message goes out after it |
 | the answer came | `answered` — or nothing, when the next call is a `stage` or `ticket`: those close the wait themselves |
-| the run lands | `finish --result "одна строка: что теперь есть"` |
+| the run lands | `finish --result "одна строка: что теперь есть"` — refused while a gate is red or unrun, or a ticket is unfinished or has no commit in `HEAD` (`phases/8-final.md`) |
+| the user lands it as it is | `finish --result "…" --by-user "их слова"` — «Сдано с оговорками», what stayed open is recorded |
 | a resume, before anything relaunches | `commits` — every `done` ticket's commit still in `HEAD`; a `!` line is a ticket to reset (`phases/0-resume.md`) |
 
 All are `python3 .autopilot/ap.py …`, and `add` takes several values in one call. **Chain a call with the command it belongs to**, so one event is one turn — the commit of a ticket and its `done` go together (`phases/5-subagents.md`, step 7). Never chain a commit after a check whose result you have not read: `| tail` always exits 0.

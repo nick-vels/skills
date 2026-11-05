@@ -128,7 +128,7 @@
   .hero.ask .live{background:#1A0D06;outline:0}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,107,53,.6)}70%{box-shadow:0 0 0 9px rgba(255,107,53,0)}100%{box-shadow:0 0 0 0 rgba(255,107,53,0)}}
   .badge-ic{width:26px;height:26px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center}
-  .hero.won .badge-ic{color:#17864A}.hero.bad .badge-ic{color:#C81E1E}
+  .hero.won .badge-ic{color:#17864A}.hero.bad .badge-ic{color:#C81E1E}.hero.ask .badge-ic{color:#C2410C}
   .stripes{background-image:linear-gradient(135deg,rgba(255,255,255,.28) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.28) 50%,rgba(255,255,255,.28) 75%,transparent 75%,transparent);background-size:22px 22px;animation:stripes 1.1s linear infinite}
   .hero.ask .stripes{background-image:linear-gradient(135deg,rgba(255,107,53,.5) 25%,transparent 25%,transparent 50%,rgba(255,107,53,.5) 50%,rgba(255,107,53,.5) 75%,transparent 75%,transparent)}
   @keyframes stripes{to{background-position:22px 0}}
@@ -431,6 +431,7 @@ const I18N = {
     waitHint:"Ответ — в чате. Дальше сборка пойдёт сама",waitBig:"ждём ответа · часы сборки стоят",
     failState:"Сборка остановилась",failH2:n=>`Этап «${n}» не прошёл`,
     doneState:"Сдано",doneDefault:"Сборка сдана",
+    doneWarnState:"Сдано с оговорками",doneWarn:p=>`Не закрыто: ${p}.`,doneWarnMore:n=>`и ещё ${n}`,doneByUser:w=>`Сдано по твоим словам: ${w}.`,
     doneNeed:(k,p)=>`Для настоящего запуска ${[k ? `впиши <b>${k} ${plural(k,'ключ','ключа','ключей')}</b> в .env` : '', p ? `замени <b>${p} ${plural(p,'заглушку','заглушки','заглушек')}</b> своими данными` : ''].filter(Boolean).join(' и ')}.`,
     doneNothing:"От тебя ничего не нужно — можно пользоваться.",
     doneBig:t=>`в работе · сдано в ${t}`,
@@ -533,6 +534,7 @@ const I18N = {
     waitHint:"Answer in the chat. The build carries on by itself",waitBig:"waiting for you · the build clock is stopped",
     failState:"The build has stopped",failH2:n=>`Stage “${n}” failed`,
     doneState:"Done",doneDefault:"The build is done",
+    doneWarnState:"Done with caveats",doneWarn:p=>`Still open: ${p}.`,doneWarnMore:n=>`and ${n} more`,doneByUser:w=>`Landed on your word: ${w}.`,
     doneNeed:(k,p)=>`To run it for real, ${[k ? `put <b>${k} ${en(k,'key','keys')}</b> into .env` : '', p ? `replace <b>${p} ${en(p,'placeholder','placeholders')}</b> with your data` : ''].filter(Boolean).join(' and ')}.`,
     doneNothing:"Nothing is needed from you — it is ready to use.",
     doneBig:t=>`working time · done at ${t}`,
@@ -935,11 +937,18 @@ function render(lang){
   const names = list => list.map(t => q(esc(t.title), L.lang)).join(', ');
   let heroCls = '', stateLine, h2, lead = '', big = '', bigSub = '', hint = '';
   if (fin) {
-    heroCls = 'won';
+    // Зелёная шапка — только чистая сдача: finish записывает, что осталось не закрытым.
+    const W = S.landedWith;
+    heroCls = W ? 'ask' : 'won';
     const k = (S.debt?.emptyEnv || []).length, p = (S.debt?.placeholders || []).length;
-    stateLine = `<span class="badge-ic">${ic('check','xs')}</span>${L.doneState}`;
+    stateLine = `<span class="badge-ic">${ic(W ? 'alert' : 'check','xs')}</span>${W ? L.doneWarnState : L.doneState}`;
     h2 = esc(S.result || L.doneDefault);
-    lead = k || p ? L.doneNeed(k, p) : L.doneNothing;
+    lead = k || p ? L.doneNeed(k, p) : W ? '' : L.doneNothing;
+    if (W) {
+      const shown = W.problems.slice(0, 3).map(esc).join('; ');
+      const more = W.problems.length > 3 ? ' ' + L.doneWarnMore(W.problems.length - 3) : '';
+      lead = [L.doneWarn(shown + more), W.byUser ? L.doneByUser(esc(W.byUser)) : '', lead].filter(Boolean).join(' ');
+    }
     big = fmtClock(activeMs(S.startedAt, S.finishedAt));
     bigSub = L.doneBig(hhmm(S.finishedAt));
   } else if (waiting) {

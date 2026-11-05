@@ -176,6 +176,8 @@ In this order, so the report names paths that exist:
 
 1. The memory file (or its proposal), the ADRs, the glossary and the progress file are written.
 2. `python3 .autopilot/ap.py finish --result "<одна строка: что теперь есть>"` — closes every stage, sets `finishedAt`, renames `<dir>--wip` to `<dir>` with `git mv`, closes the run's row in `.autopilot/README.md`, and puts the server out twelve seconds later, after the page has fetched the final picture. A `!` line about the rename means the name was taken or the index dirty: leave it, the run is not undone by a cosmetic suffix.
+
+   **`finish` refuses a run that is not done**: a gate red or never run, a ticket not `done`, a ticket with no commit or a commit not in `HEAD`. Each line of the refusal is work: fix what can be fixed and call it again. What cannot be fixed is the user's call, in every mode, `full` included: `ap.py ask stop --note "…"`, the lines in plain words, and only on their answer `finish --result "…" --by-user "<их слова>"`. The dashboard then reads «Сдано с оговорками», never green, and the report says the same. A drift left after both blind looks needs no `--by-user`: it lands with the same caveat, already in the report.
 3. **The final commit** — exactly what this skill wrote since the plan commit, never the rest of the tree, where the user may have work of their own:
 
    ```bash

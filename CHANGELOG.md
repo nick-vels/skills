@@ -6,6 +6,18 @@ The skill's version is the `metadata.version` field in `skills/autopilot/SKILL.m
 npx skills update autopilot -g
 ```
 
+## 2.2.3 — 2026-11-05
+
+**«Done» now means done.** From a real run on Codex: a green «Done» with G1 failed and no commits at all.
+- `ap.py finish` refuses a run with a red or unrun gate, an unfinished task, a task without a commit, or a commit that is not in `HEAD`. It used to close the run whatever the checks said. The refusal lists every reason.
+- If something cannot be fixed, only the user's words land the run: `finish --by-user "their words"`. The dashboard header turns orange, «Done with caveats», and names what stayed open. The run's row in `.autopilot/README.md` says the same.
+- A drift left after both blind checks needs no `--by-user`: nothing more can fix it, so it lands with the same caveat.
+- G1 now follows the manifest. It was counted only when the spec stage opened and closed, so it stayed red about questions long since answered.
+- `ticket NN done` refuses to record a task without `--commit`.
+- Git is checked before the briefing: a repository the agent cannot write to stops the run there, not after an hour of building. Git refusing a commit is a machine failure — the task fails with the cause named, and the agent does not turn the sandbox off by itself.
+
+This does not fix the Codex sandbox on Windows (`helper_unknown_error: setup refresh had errors`, [openai/codex#58854](https://github.com/openai/codex/issues/58854)): that is Codex's bug. Autopilot now stops on it and says so instead of finishing without commits.
+
 ## 2.2.2 — 2026-11-05
 
 **A build that cannot finish now stops instead of circling.** From a real run: 19 hours, one task restarted five times over 8½ hours, each attempt ending in «STOP» and followed by the next.

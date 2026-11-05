@@ -4,7 +4,7 @@ description: Builds an app, site, bot, or feature end-to-end from a dictated ide
 disable-model-invocation: true
 argument-hint: "[full|semi|interview|manual] [strict|deep] что нужно построить или путь к brief.md"
 metadata:
-  version: "2.2.2"
+  version: "2.2.3"
 ---
 
 # Autopilot
@@ -71,7 +71,7 @@ Two dials, decided once in Phase 0 (`phases/0-modes.md`): **the mode** — `full
 | **G3** | Plan | every `in-spec` requirement is in a ticket and every ticket traces to one — `ap.py check-plan` |
 | **G4** | Final | blind acceptance against the brief, spec withheld, from a clean clone |
 
-G2 and G4 are one check at the two ends of the flight: they measure against the user's words with your paraphrase taken away. Between them everything measures against the spec, because that is the contract the executors were given. A failed gate sends its phase back to be redone — G4 once: one fix ticket, one more look, then the report (`phases/8-final.md`).
+G2 and G4 are one check at the two ends of the flight: they measure against the user's words with your paraphrase taken away. Between them everything measures against the spec, because that is the contract the executors were given. A failed gate sends its phase back to be redone — G4 once: one fix ticket, one more look, then the report (`phases/8-final.md`). `ap.py finish` refuses a run with a red or unrun gate; only the user's words land it as it is, and never green.
 
 **The plan may be corrected; the brief may not.** When the build proves the plan wrong, the spec is amended and a `D##` row records what the code demonstrated (`phases/5-repair.md`) — never a way to retire a requirement or to slip in an idea.
 
