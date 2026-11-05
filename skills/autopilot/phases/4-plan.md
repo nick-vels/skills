@@ -25,6 +25,7 @@ A `deep` spec for a landing page is a long document about one page: still T0. St
 ## How to cut
 
 - **Each ticket is a narrow but complete path through every layer it touches** — data, logic, interface, tests. When it lands, something works end to end that did not before.
+- **No ticket only checks.** «Подтвердить готовность», «прогнать полную проверку», «доказать, что сборка работает перед установкой» build nothing, and «всё проходит» has no finish line: every run finds the next timeout, and the executor repairs it as a defect, round after round. Checking is already three steps of the flight — the point review, the whole-branch review, the blind acceptance — and the check before an irreversible step is a question: `ap.py ask action` with what was verified, not a ticket. A ticket's tests prove *its own* criteria, never «everything».
 - **The shell, the schema, the shared primitives are ticket 01, alone.** Nothing parallelises with it.
 - Groundwork that makes later tickets easy goes early. Tickets closing `R` go before tickets closing only `A`.
 - Number from `01` in dependency order; each ticket names what it depends on.

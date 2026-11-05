@@ -2,7 +2,7 @@
 
 Read only when a ticket comes back as anything other than a clean `DONE` — a `BLOCKING` finding, a red check, `BLOCKED`, `NEEDS_CONTEXT`, or a build that proved the plan wrong. Most tickets never open this file.
 
-Two counters, both capped at two: `repairs` (дозапросы) and `retries` (fresh restarts). Running out of either means the cut was wrong, and that belongs in the report, not in another attempt.
+Two counters, both capped at two: `repairs` (дозапросы) and `retries` (fresh restarts). Running out of either means the cut was wrong, and that belongs in the report, not in another attempt. **`ap.py` enforces both**: a third `repair` or `retry` is refused, and so is anything but `reset --by-user` on a `failed` ticket. A refusal is the stop signal — never routed around: not by `reset`, not by a new ticket with the same goal, not by repairing «outside the books».
 
 ## Repair — two kinds, two addresses
 
@@ -42,6 +42,10 @@ Not a failure. If the dependency fits a decision the spec already made, add it t
 `ap.py ticket NN retry`, then a fresh context with the error attached, on the strong model. A second retry only **with a changed approach** — a different design decision, a different library, a path the ticket now names explicitly; the same attempt with more hope is the one forbidden move.
 
 After that the flight stops for this ticket: `ap.py ticket NN fail --note "что блокирует"`, the reason in its manifest rows' Основание, and a plain sentence to the user — what is blocking, what you need from them, and which tickets are now waiting on it. Never improvise around a blocker and never narrow the ticket to whatever happened to work: a quietly reduced ticket is a lost requirement. Its wave-mates are independent by construction — let them land.
+
+**A failed ticket flies again only on the user's word**: they fixed what blocked it, or chose a different way — `ap.py ticket NN reset --by-user "<их слова>"`, which also zeroes its counters. «STOP», then a fresh attempt in the next message, is not a stop.
+
+**Fail early when the cause is the machine, not the code** — a timeout, a native module that will not load, a port, a service that is not running, a path that exists only on this computer. An executor cannot repair an environment; each attempt only moves the failure. One such red is `fail` with the cause named, not a дозапрос.
 
 ## When the build contradicts the plan
 

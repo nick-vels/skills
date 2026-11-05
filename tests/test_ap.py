@@ -219,6 +219,55 @@ class Run(unittest.TestCase):
         self.assertEqual(t["02"]["status"], "pending")
         self.assertNotIn("startedAt", t["02"])
 
+    def test_repairs_and_retries_stop_at_two(self):
+        self.plan()
+        self.ap("tickets")
+        self.ap("ticket", "01", "02", "start")
+        for _ in range(2):
+            self.assertEqual(self.ap("ticket", "01", "repair", "--note", "тест красный")[0], 0)
+            self.assertEqual(self.ap("ticket", "02", "retry")[0], 0)
+        before = self.state()["rev"]
+        code, out = self.ap("ticket", "01", "repair", "--note", "ещё раз")
+        self.assertNotEqual(code, 0)
+        self.assertIn("два дозапроса", out)
+        code, out = self.ap("ticket", "02", "retry")
+        self.assertNotEqual(code, 0)
+        self.assertIn("третьего нет", out)
+        t = {x["id"]: x for x in self.state()["tickets"]}
+        self.assertEqual((t["01"]["repairs"], t["02"]["retries"]), (2, 2))
+        self.assertEqual(self.state()["rev"], before)          # отказ ничего не пишет
+
+    def test_a_failed_ticket_restarts_only_by_the_users_words(self):
+        self.plan()
+        self.ap("tickets")
+        self.ap("ticket", "01", "02", "start")
+        self.ap("ticket", "02", "retry")
+        self.ap("ticket", "02", "fail", "--note", "native-модуль не грузится")
+        for act in ("start", "retry", "repair", "review", "done", "reset"):
+            code, out = self.ap("ticket", "02", act)
+            self.assertNotEqual(code, 0, act)
+            self.assertIn("решает пользователь", out)
+        code, _ = self.ap("ticket", "01", "02", "start")       # волна с упавшим — целиком отказ
+        self.assertNotEqual(code, 0)
+        self.assertEqual({x["id"]: x["status"] for x in self.state()["tickets"]}["02"], "failed")
+        code, out = self.ap("ticket", "02", "reset", "--by-user", "«ключ добавил, давай ещё раз»")
+        self.assertEqual(code, 0, out)
+        t = {x["id"]: x for x in self.state()["tickets"]}["02"]
+        self.assertEqual((t["status"], t["retries"]), ("pending", 0))
+        self.assertEqual(t["reopenedByUser"], ["«ключ добавил, давай ещё раз»"])
+
+    def test_blind_acceptance_runs_at_most_twice(self):
+        self.init()
+        self.assertEqual(self.ap("blind", "checked=4", "matched=3", "--mismatch", "R02 — не видно")[0], 0)
+        self.assertEqual(self.ap("blind", "checked=4", "matched=3", "--mismatch", "R02 — всё ещё")[0], 0)
+        code, out = self.ap("blind", "checked=4", "matched=4")
+        self.assertNotEqual(code, 0)
+        self.assertIn("третьего круга нет", out)
+        self.assertEqual(self.state()["blind"]["mismatches"], ["R02 — всё ещё"])
+        self.ap("finish", "--result", "готово")
+        self.ap("reopen")                                       # новый бриф — новая приёмка
+        self.assertEqual(self.ap("blind", "checked=4", "matched=4")[0], 0)
+
     def test_unknown_ticket_is_an_error(self):
         self.plan()
         self.ap("tickets")

@@ -68,13 +68,14 @@ Immediately after `init`, before Phase 1 asks anything.
 | a blocking finding goes back | `ticket 02 repair --note "условие одной строкой"` |
 | a failed ticket restarts | `ticket 02 retry` |
 | committed | `ticket 02 done --tests 34/0 --commit <sha>` (+ `--placeholder R05` for a stubbed row) — closes the manifest rows whose tickets are all done |
-| failed for good | `ticket 02 fail --note "что блокирует"` |
+| failed for good | `ticket 02 fail --note "что блокирует"` — after it the ticket refuses every command but the next row |
+| the user unblocked a failed ticket | `ticket 02 reset --by-user "их слова"` — counters back to zero |
 | a deferred finding | `add concerns "файл:строка — что не так"` |
 | a stub, an assumption, an empty variable | `add debt.placeholders "…"` · `add debt.assumptions "…"` · `add debt.emptyEnv NAME` |
 | an `A##` that reached the code | `add additions "что — ради R01"` |
 | a finding for the final report | `add report "…"` |
 | G2 result | `coverage found=2 fixed=1 deferred=1 --item "R07 — отложено: …"` |
-| blind acceptance | one call: `blind checked=12 matched=11 --mismatch "R07 — статус не виден" --mismatch "…"` |
+| blind acceptance | one call: `blind checked=12 matched=11 --mismatch "R07 — статус не виден" --mismatch "…"` — twice per run at most, the second after `F2` |
 | a full check outside a ticket | `tests 34/0` |
 | the run waits for the user — a briefing round, the manual spec or plan gate, a yes/no before an irreversible action, a stop condition | `ask briefing\|spec\|plan\|action\|stop --note "что ждём, одной строкой"` — chained with nothing: the message goes out after it |
 | the answer came | `answered` — or nothing, when the next call is a `stage` or `ticket`: those close the wait themselves |

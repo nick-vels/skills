@@ -53,7 +53,9 @@ It receives every `*-brief.md` in `dir`, oldest first, **whole, `## Дополн
 | `dropped` / `deferred` | нет | expected — in the report as not built |
 | — | реализовано, но не из брифа | scope that grew without a parent — reported |
 
-Record it in one call — `ap.py blind checked=N matched=M --mismatch "…" --mismatch "…"`, one `--mismatch` per 🔴. A drift found here is the run working; hiding it is the failure. **A build nobody has launched is a build nobody has seen work** — if it cannot be run here at all, that goes to «Что нужно от тебя», not into the accepted column.
+Record it in one call — `ap.py blind checked=N matched=M --mismatch "…" --mismatch "…"`, one `--mismatch` per 🔴. A drift found here is the run working; hiding it is the failure.
+
+**One round of fixes, then the report — never a third look.** Every 🔴 a ticket can fix goes into **one** ticket, `F2` — built like `F1` (`phases/6-review.md`): the drifted rows as its criteria, verbatim, one executor, one commit. Then **one** more blind check, given only the drifted rows. What still drifts goes to `ap.py add report` and into «Открытые вопросы», plainly. `ap.py blind` refuses a third call: each new look finds something new, and «ещё один круг» is how a run spends a day on acceptance. A 🔴 caused by the machine and not the code — a timeout, a native module, a port, a service that is not up — is not for `F2`: it goes to «Что нужно от тебя». **A build nobody has launched is a build nobody has seen work** — if it cannot be run here at all, that goes to «Что нужно от тебя», not into the accepted column.
 
 ## 2. Memory and ADRs
 

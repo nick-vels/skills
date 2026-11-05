@@ -6,6 +6,15 @@ The skill's version is the `metadata.version` field in `skills/autopilot/SKILL.m
 npx skills update autopilot -g
 ```
 
+## 2.2.2 — 2026-11-05
+
+**A build that cannot finish now stops instead of circling.** From a real run: 19 hours, one task restarted five times over 8½ hours, each attempt ending in «STOP» and followed by the next.
+- `ap.py` enforces the repair caps instead of only describing them: a third follow-up or a third fresh restart of a task is refused. A failed task refuses every command until the user unblocks it — `ticket NN reset --by-user "their words"`, which also zeroes its counters. Before, `fail` then `start` relaunched it with the counters untouched, so the dashboard showed no repairs at all.
+- Blind acceptance runs at most twice: the check, one fix task `F2` with every drift in it, one more look at the drifted rows. What still drifts goes to the report. `ap.py blind` refuses a third call.
+- No task that only checks — «confirm readiness», «run the full check before install». It has no finish line: each run finds the next timeout. The check before an irreversible step is a question to the user.
+- A red caused by the machine, not the code — a timeout, a native module, a port — fails the task with the cause named instead of going to repair.
+- After a compaction the orchestrator also re-reads `phases/5-repair.md` during Build, Review and Final: its stop rules were what long runs forgot first.
+
 ## 2.2.1 — 2026-10-29
 
 **Fixes in `ap.py`**

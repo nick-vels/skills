@@ -4,7 +4,7 @@ description: Builds an app, site, bot, or feature end-to-end from a dictated ide
 disable-model-invocation: true
 argument-hint: "[full|semi|interview|manual] [strict|deep] что нужно построить или путь к brief.md"
 metadata:
-  version: "2.2.1"
+  version: "2.2.2"
 ---
 
 # Autopilot
@@ -34,7 +34,7 @@ This file is the orchestrator: order, gates, the rules that never lose. Each pha
 | — | `phases/9-memory.md` — also in Phase 5, when a ticket discovered something worth keeping | |
 | — | `phases/rationalizations.md` — on a failed gate, on catching yourself excusing something, once before the report | |
 
-**After a compaction, re-read the state, not the phases:** `state.js` (it holds `dir` and `skillDir`), `manifest.md`, `interfaces.md`, `carried.md` if the run has one, and the file of the phase you are in. Nothing else.
+**After a compaction, re-read the state, not the phases:** `state.js` (it holds `dir` and `skillDir`), `manifest.md`, `interfaces.md`, `carried.md` if the run has one, and the file of the phase you are in — in Build, Review and Final also `phases/5-repair.md`: its caps and stop rules are what a long run forgets first. Nothing else.
 
 ## The words the user sees
 
@@ -71,7 +71,7 @@ Two dials, decided once in Phase 0 (`phases/0-modes.md`): **the mode** — `full
 | **G3** | Plan | every `in-spec` requirement is in a ticket and every ticket traces to one — `ap.py check-plan` |
 | **G4** | Final | blind acceptance against the brief, spec withheld, from a clean clone |
 
-G2 and G4 are one check at the two ends of the flight: they measure against the user's words with your paraphrase taken away. Between them everything measures against the spec, because that is the contract the executors were given. A failed gate sends its phase back to be redone.
+G2 and G4 are one check at the two ends of the flight: they measure against the user's words with your paraphrase taken away. Between them everything measures against the spec, because that is the contract the executors were given. A failed gate sends its phase back to be redone — G4 once: one fix ticket, one more look, then the report (`phases/8-final.md`).
 
 **The plan may be corrected; the brief may not.** When the build proves the plan wrong, the spec is amended and a `D##` row records what the code demonstrated (`phases/5-repair.md`) — never a way to retire a requirement or to slip in an idea.
 
@@ -116,7 +116,7 @@ CONTEXT.md                             at T2+: the project's words — or the us
 
 Numbers in this skill — tiers, question counts, wave widths — are **calibration for a first guess, never targets.** The rules are arguments, each paid for, and arguments can lose: where following one would make the result worse for the user, break it deliberately, say so in one line, and carry on. Never quietly, and never keep one only because it is written down.
 
-**The rules that set the run's cost are the exception** — what goes to repair, which tickets get a point review, how many times a fix is re-reviewed. Widening them «for quality» is how a run doubles its bill with nobody having decided to. Break one only by telling the user in one line what it will cost.
+**The rules that set the run's cost are the exception** — what goes to repair, which tickets get a point review, how many times a fix is re-reviewed. Widening them «for quality» is how a run doubles its bill with nobody having decided to. Break one only by telling the user in one line what it will cost. **The caps `ap.py` enforces are not broken at all** — two дозапроса, two restarts, a failed ticket back only on the user's word, two blind checks: when it refuses, the run stops and asks.
 
 **Five rules are not calibration and do not lose** — in every mode, at every depth:
 
